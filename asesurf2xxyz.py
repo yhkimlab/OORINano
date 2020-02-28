@@ -31,7 +31,7 @@ def asesurf2xxyz(symb, lattice, index, size=(1,1,3), vac=15.0, orthogonal=0):
                                                 orthogonal=orthogonal,
                                                 vacuum=vac)
         elif index == '110': at_ase = AS.fcc110(symb, size, vacuum=vac)
-        else: raise ValueError, "100, 111, or 110 surface is supported."
+        else: raise ValueError("100, 111, or 110 surface is supported.")
     elif lattice == 'bcc':
         if index   == '100': at_ase = AS.bcc100(symb, size, vacuum=vac)
         elif index == '111': at_ase = AS.bcc111(symb, size,
@@ -40,10 +40,10 @@ def asesurf2xxyz(symb, lattice, index, size=(1,1,3), vac=15.0, orthogonal=0):
         elif index == '110': at_ase = AS.bcc110(symb, size,
                                                 orthogonal=orthogonal,
                                                 vacuum=vac)
-        else: raise ValueError, "100, 111, or 110 surface is supported."
+        else: raise ValueError("100, 111, or 110 surface is supported.")
     elif lattice == 'hcp0001':
         at_ase = AS.hcp0001(symb, size, orthogonal=orthogonal, vacuum=vac)
-    else: raise ValueError, "fcc, bcc, or hcp0001 surface is supported."
+    else: raise ValueError("fcc, bcc, or hcp0001 surface is supported.")
     
     symbols = at_ase.get_chemical_symbols()
     posits  = at_ase.get_positions()

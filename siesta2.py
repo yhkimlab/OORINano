@@ -1,8 +1,10 @@
-from atoms import *
-import io
-from io import cleansymb, get_unique_symbs, convert_xyz2abc
-from units import ang2bohr
+from __future__ import print_function
+from . atoms import *
+from . import io
+from . io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
+from . units import ang2bohr
 from glob import glob
+
 
 #
 # SIESTA Simulation Object
@@ -33,54 +35,50 @@ Siesta(atoms)
     >>> sim = s2.Siesta(atoms)
     """
 
-    __slots__ = ['params', '_atoms']
+    #__slots__ = ['_params', '_atoms', '_inputs']
 
     #1. Name and basic options
-    params = {'Name'       :'siesta',  # text
-              'Label'      :'siesta',  # text
-              'Optimization' :0,       # integer
-              'MD'           :0,       # integer
-              'Run'          :'CG',    # CG or MD
-              'cell_relax'   :0,       # integer
-              'CGsteps'      :100,     # integer
-              'ForceTol'     :0.04,    # float
-              'MDsteps'      :100,     # integer
-              'MDTimeStep'   :1.0,     # float
-              'MDInitTemp'   :0.0,
-              'MDTargTemp'   :300,
-              'WriteCoorStep':'.false.',
+    _params = {'Name'       :'siesta',  # text
+               'Label'      :'siesta',  # text
+               'Optimization' :0,       # integer
+               'MD'           :0,       # integer
+               'Run'          :'CG',    # CG or MD
+               'cell_relax'   :0,       # integer
+               'CGsteps'      :100,     # integer
+               'ForceTol'     :0.04,    # float
+               'MDsteps'      :100,     # integer
+               'MDTimeStep'   :1.0,     # float
+               'MDInitTemp'   :0.0,
+               'MDTargTemp'   :300,
+               'WriteCoorStep':'.false.',
      
     #2. SCF/kgrid/functional parameters
-              'kgrid'      :[1,1,1],       # 3-vector
-              'kshift'     :[0,0,0],       # 3-vector
-              'BasisType'  :'split',       # split, splitgauss, nodes, nonodes
-              'BasisSize'  :'SZ',          # SZ or MINIMAL, DZ, SZP, DZP or STANDARD
-              'EnergyShift':100,           # default: 0.02 Ry
-              'Splitnorm'  :0.15,          # default: 0.15
-              'XCfunc'     :'GGA',         # GGA or LDA
-              'XCauthor'   :'PBE',         # PBE or CA
-              'MeshCutoff' :100.0,         # float
-              'Solution'   :'Diagon',      # Diagon or OrderN
-              'MaxIt'      :300,           # integer
-              'MixingWt'   :0.2,           # float
-              'Npulay'     :0,             # integer
-              'Temp'       :300.0,         # float
-              #'CellParameter': 1.0,        # float
-              #'CellVector1'  : [1, 0, 0],  # 3-vector
-              #'CellVector2'  : [0, 1, 0],  # 3-vector
-              #'CellVector3'  : [0, 0, 1],  # 3-vector
-     
+               'kgrid'      :[1,1,1],       # 3-vector
+               'kshift'     :[0,0,0],       # 3-vector
+               'BasisType'  :'split',       # split, splitgauss, nodes, nonodes
+               'BasisSize'  :'SZ',          # SZ or MINIMAL, DZ, SZP, DZP or STANDARD
+               'EnergyShift':100,           # default: 0.02 Ry
+               'Splitnorm'  :0.15,          # default: 0.15
+               'XCfunc'     :'GGA',         # GGA or LDA
+               'XCauthor'   :'PBE',         # PBE or CA
+               'MeshCutoff' :100.0,         # float
+               'Solution'   :'Diagon',      # Diagon or OrderN
+               'MaxIt'      :300,           # integer
+               'MixingWt'   :0.2,           # float
+               'Npulay'     :0,             # integer
+               'Temp'       :300.0,         # float
+               'DMtol'      :0.0001, 
     #3. Option for post=process
-              'LDOS'    :0,
-              'LDOSE'   :(-0.10, 0.1),
-              'Denchar' :0,
-              'PDOS'    :0,
-              'PDOSE'   :(-5,5,0.1,1001),
-              'DOS'     :0,
-              'DOSE'    :(-5,5),
-              'RHO'     :0,
-              'VH'      :0,
-             }
+               'LDOS'    :0,
+               'LDOSE'   :(-0.10, 0.1),
+               'Denchar' :0,
+               'PDOS'    :0,
+               'PDOSE'   :(-5,5,0.1,1001),
+               'DOS'     :0,
+               'DOSE'    :(-5,5),
+               'RHO'     :0,
+               'VH'      :0,
+              }
 
 
     def __init__(self, atoms):
@@ -88,7 +86,9 @@ Siesta(atoms)
         if isinstance(atoms, AtomsSystem):
             self._atoms = atoms
         else:
-            raise ValueError, "Invaild AtomsSystem"
+            raise ValueError("Invaild AtomsSystem")
+
+        self._inputs = {}
 
 
     def get_options(self):
@@ -107,7 +107,7 @@ Siesta(atoms)
         >>> sim.get_options()
         """
 
-        return self.params.items()
+        return self._params.items()
 
 
     def set_option(self, key, value):
@@ -119,7 +119,7 @@ Siesta(atoms)
         --------------------------------
 
         #1. Name and basic options
-        params = {'Name'       :'siesta',  # text
+        _params = {'Name'       :'siesta',  # text
                   'Label'      :'siesta',  # text
                   'Optimization' :0,       # integer
                   'MD'           :0,       # integer
@@ -175,10 +175,10 @@ Siesta(atoms)
         >>> sim.set_options('kgrid', [10,10,1])
         """
 
-        if key not in self.params.keys():
-            raise ValueError, "Invaild option," + key
+        if key not in self._params.keys():
+            raise ValueError("Invaild option," + key)
         else:
-            self.params[key] = value
+            self._params[key] = value
 
 
     def write_struct(self, cellparameter=1.0):
@@ -228,10 +228,10 @@ Siesta(atoms)
         fileB = open('BASIS.fdf', 'w')
         unique_symbs = get_unique_symbs(self._atoms)
         fileB.write("\n#(1) Basis definition\n\n")
-        fileB.write("PAO.BasisType    %s\n"        % self.params['BasisType'])   # split, splitgauss, nodes, nonodes
-        fileB.write("PAO.BasisSize    %s\n"        % self.params['BasisSize'])   # SZ or MINIMAL, DZ, SZP, DZP or STANDARD
-        fileB.write("PAO.EnergyShift  %5.3f meV\n" % self.params['EnergyShift']) # default: 0.02 Ry
-        fileB.write("PAO.SplitNorm    %5.3f\n"     % self.params['Splitnorm'])   # default: 0.15
+        fileB.write("PAO.BasisType    %s\n"        % self._params['BasisType'])   # split, splitgauss, nodes, nonodes
+        fileB.write("PAO.BasisSize    %s\n"        % self._params['BasisSize'])   # SZ or MINIMAL, DZ, SZP, DZP or STANDARD
+        fileB.write("PAO.EnergyShift  %5.3f meV\n" % self._params['EnergyShift']) # default: 0.02 Ry
+        fileB.write("PAO.SplitNorm    %5.3f\n"     % self._params['Splitnorm'])   # default: 0.15
         fileB.close()
 
 
@@ -240,9 +240,9 @@ Siesta(atoms)
         #--------------KPT.fdf-----------------
         fileK = open('KPT.fdf','w')   
         fileK.write("%block kgrid_Monkhorst_Pack\n")
-        fileK.write("   %i   0   0   %f\n" % (self.params['kgrid'][0], self.params['kshift'][0]))
-        fileK.write("   0   %i   0   %f\n" % (self.params['kgrid'][1], self.params['kshift'][1]))
-        fileK.write("   0   0   %i   %f\n" % (self.params['kgrid'][2], self.params['kshift'][2]))
+        fileK.write("   %i   0   0   %f\n" % (self._params['kgrid'][0], self._params['kshift'][0]))
+        fileK.write("   0   %i   0   %f\n" % (self._params['kgrid'][1], self._params['kshift'][1]))
+        fileK.write("   0   0   %i   %f\n" % (self._params['kgrid'][2], self._params['kshift'][2]))
         fileK.write("%endblock kgrid_Monkhorst_Pack\n")
         fileK.close()
 
@@ -252,8 +252,8 @@ Siesta(atoms)
         #--------------RUN.fdf-----------------
         file = open('RUN.fdf', 'w')
         file.write("#(1) General system descriptors\n\n")
-        file.write("SystemName       %s           # Descriptive name of the system\n" % self.params['Name'])
-        file.write("SystemLabel      %s           # Short name for naming files\n" % self.params['Label'])    
+        file.write("SystemName       %s           # Descriptive name of the system\n" % self._params['Name'])
+        file.write("SystemLabel      %s           # Short name for naming files\n" % self._params['Label'])    
         file.write("%include STRUCT.fdf\n")
         file.write("%include KPT.fdf\n")
         file.write("%include BASIS.fdf\n")
@@ -265,32 +265,32 @@ Siesta(atoms)
     
         ## XC OPTIONS ##
         file.write("\n#(4) DFT, Grid, SCF\n\n")
-        file.write("XC.functional         %s            # LDA or GGA (default = LDA)\n" % self.params['XCfunc'])
-        file.write("XC.authors            %s            # CA (Ceperley-Aldr) = PZ\n" % self.params['XCauthor'])
+        file.write("XC.functional         %s            # LDA or GGA (default = LDA)\n" % self._params['XCfunc'])
+        file.write("XC.authors            %s            # CA (Ceperley-Aldr) = PZ\n" % self._params['XCauthor'])
         #file.write("                                    #    (Perdew-Zunger) - LDA - Default\n")
         #file.write("                                    # PW92 (Perdew-Wang-92) - LDA\n")
         #file.write("                                    # PBE (Perdew-Burke-Ernzerhof) - GGA\n")
-        file.write("MeshCutoff            %f    Ry      # Default: 50.0 Ry ~ 0.444 Bohr\n" % self.params['MeshCutoff'])
+        file.write("MeshCutoff            %f    Ry      # Default: 50.0 Ry ~ 0.444 Bohr\n" % self._params['MeshCutoff'])
     
         ## SCF OPTIONS ##   
         file.write("                                    #         100.0 Ry ~ 0.314 Bohr\n")
-        file.write("MaxSCFIterations      %d           # Default: 50\n" % self.params['MaxIt'])
-        file.write("DM.MixingWeight       %3.2f          # Default: 0.25\n" % self.params['MixingWt'])
-        file.write("DM.NumberPulay        %d             # Default: 0\n" % self.params['Npulay'])
+        file.write("MaxSCFIterations      %d           # Default: 50\n" % self._params['MaxIt'])
+        file.write("DM.MixingWeight       %6.5f          # Default: 0.25\n" % self._params['MixingWt'])
+        file.write("DM.NumberPulay        %d             # Default: 0\n" % self._params['Npulay'])
         file.write("DM.PulayOnFile        F             # SystemLabel.P1, SystemLabel.P2\n")
-        file.write("DM.Tolerance          1.d-4         # Default: 1.d-4\n")
+        file.write("DM.Tolerance          %6.5f         # Default: 1.d-4\n" % self._params['DMtol'])
         file.write("DM.UseSaveDM          .true.        # because of the bug\n")
         file.write("SCFMustConverge       .true.        \n")
         file.write("NeglNonOverlapInt     F             # Default: F\n")
         file.write("\n#(5) Eigenvalue problem: order-N or diagonalization\n\n")
-        file.write("SolutionMethod        %s \n"  % self.params['Solution'])
-        file.write("ElectronicTemperature %4.1f K       # Default: 300.0 K\n" % self.params['Temp'])
+        file.write("SolutionMethod        %s \n"  % self._params['Solution'])
+        file.write("ElectronicTemperature %4.1f K       # Default: 300.0 K\n" % self._params['Temp'])
         file.write("Diag.ParallelOverK    true\n\n")
 
         ## Calculation OPTIONS ##
-        if self.params['Optimization'] == 1:
+        if self._params['Optimization'] == 1:
             file.write("\n#(6) Molecular dynamics and relaxations\n\n")
-            file.write("MD.TypeOfRun          %s             # Type of dynamics:\n" % self.params['Run'])
+            file.write("MD.TypeOfRun          %s             # Type of dynamics:\n" % self._params['Run'])
             #file.write("                                    #   - CG\n")
             #file.write("                                    #   - Verlet\n")
             #file.write("                                    #   - Nose\n")
@@ -300,41 +300,41 @@ Siesta(atoms)
             #file.write("                                    #   - FC\n")
             #file.write("                                    #   - Phonon\n")
             #file.write("MD.VariableCell       %s\n" %params_opt['cell_opt'])
-            file.write("MD.NumCGsteps         %d            # Default: 0\n" % self.params['CGsteps'])
+            file.write("MD.NumCGsteps         %d            # Default: 0\n" % self._params['CGsteps'])
             #file.write("MD.MaxCGDispl         0.1 Ang       # Default: 0.2 Bohr\n")
-            file.write("MD.MaxForceTol        %f eV/Ang  # Default: 0.04 eV/Ang\n" % self.params['ForceTol'])
+            file.write("MD.MaxForceTol        %f eV/Ang  # Default: 0.04 eV/Ang\n" % self._params['ForceTol'])
             #file.write("MD.MaxStressTol       1.0 GPa       # Default: 1.0 GPa\n")
     
-        if self.params['MD'] == 1:
+        if self._params['MD'] == 1:
             file.write("\n#(6) Molecular dynamics and relaxations\n\n")
-            file.write("MD.TypeOfRun          %s            # Type of dynamics:\n" % self.params['Run'])
+            file.write("MD.TypeOfRun          %s            # Type of dynamics:\n" % self._params['Run'])
             #file.write("MD.VariableCell       %s\n" %params_opt['cell_opt'])
-            file.write("MD.NumCGsteps         %d            # Default: 0\n" % self.params['CGsteps'])
+            file.write("MD.NumCGsteps         %d            # Default: 0\n" % self._params['CGsteps'])
             #file.write("MD.MaxCGDispl         0.1 Ang       # Default: 0.2 Bohr\n")
-            file.write("MD.MaxForceTol        %f eV/Ang  # Default: 0.04 eV/Ang\n" % self.params['ForceTol'])
+            file.write("MD.MaxForceTol        %f eV/Ang  # Default: 0.04 eV/Ang\n" % self._params['ForceTol'])
             #file.write("MD.MaxStressTol       1.0 GPa       # Default: 1.0 GPa\n")
             file.write("MD.InitialTimeStep    1\n")
-            file.write("MD.FinalTimeStep      %i\n" % self.params['MDsteps'])
-            file.write("MD.LengthTimeStep     %f fs      # Default : 1.0 fs\n" % self.params['MDTimeStep'])
-            file.write("MD.InitialTemperature %f K       # Default : 0.0 K\n"  % self.params['MDInitTemp'])
-            file.write("MD.TargetTemperature  %f K       # Default : 0.0 K\n"  % self.params['MDTargTemp'])
-            file.write("WriteCoorStep         %s         # default : .false.\n"% self.params['WriteCoorStep'])
+            file.write("MD.FinalTimeStep      %i\n" % self._params['MDsteps'])
+            file.write("MD.LengthTimeStep     %f fs      # Default : 1.0 fs\n" % self._params['MDTimeStep'])
+            file.write("MD.InitialTemperature %f K       # Default : 0.0 K\n"  % self._params['MDInitTemp'])
+            file.write("MD.TargetTemperature  %f K       # Default : 0.0 K\n"  % self._params['MDTargTemp'])
+            file.write("WriteCoorStep         %s         # default : .false.\n"% self._params['WriteCoorStep'])
             
-        if self.params['LDOS'] == 1:
+        if self._params['LDOS'] == 1:
             file.write("# LDOS \n\n")
             file.write("%block LocalDensityOfStates\n")
-            file.write(" %f %f eV\n" %(self.params['LDOSE'][0], self.params['LDOSE'][1]))
+            file.write(" %f %f eV\n" %(self._params['LDOSE'][0], self._params['LDOSE'][1]))
             file.write("%endblock LocalDensityOfStates\n")
 
-        if self.params['PDOS'] == 1:
+        if self._params['PDOS'] == 1:
             file.write("%block ProjectedDensityOfStates\n")
-            file.write(" %f %f %f %i eV\n" % tuple(self.params['PDOSE'])) #-20.00 10.00 0.200 500 eV Emin Emax broad Ngrid
-    	    file.write("%endblock ProjectedDensityOfStates\n")
+            file.write(" %f %f %f %i eV\n" % tuple(self._params['PDOSE'])) #-20.00 10.00 0.200 500 eV Emin Emax broad Ngrid
+            file.write("%endblock ProjectedDensityOfStates\n")
 
-        if self.params['DOS'] == 1:
+        if self._params['DOS'] == 1:
             file.write("WriteEigenvalues      T      # SystemLabel.out [otherwise ~.EIG]\n")
 
-        if self.params['RHO'] == 1:
+        if self._params['RHO'] == 1:
             file.write('SaveRho   .true.\n')
 
         #file.write("%block GeometryConstraints\n")
@@ -371,7 +371,7 @@ Siesta(atoms)
         #file.write("SaveNeutralAtomPotential F   # SystemLabel.VNA\n")
         #file.write("SaveIonicCharge       F      # SystemLabel.IOCH\n")
 
-        if self.params['VH'] == 1:
+        if self._params['VH'] == 1:
             file.write("SaveElectrostaticPotential T # SystemLabel.VH\n")
 
         #file.write("SaveTotalPotential    F      # SystemLabel.VT\n")
@@ -380,7 +380,7 @@ Siesta(atoms)
         file.close()
 
 
-    def run(self, mode='SCF', cellparameter=1.0, log=0, mpi=0, nproc=1, psf=1):
+    def run(self, mode='SCF', cellparameter=1.0, log=1, mpi=0, nproc=1, psf=1):
 
         """
         Run a simulation based on the information saved in this simulation object
@@ -409,16 +409,16 @@ Siesta(atoms)
         from NanoCore.env import siesta_psf_location as psf_path
 
         if mode == 'SCF' or mode == 'POST': 
-            self.params['Optimization'] = 0
-            self.params['MD'] = 0
+            self._params['Optimization'] = 0
+            self._params['MD'] = 0
 
         elif mode == 'MD':
-            self.params['Optimization'] = 0
-            self.params['MD'] = 1
+            self._params['Optimization'] = 0
+            self._params['MD'] = 1
 
         elif mode == 'Optimization':
-            self.params['Optimization'] = 1
-            self.params['MD'] = 0
+            self._params['Optimization'] = 1
+            self._params['MD'] = 0
 
         # write fdf files
         if not mode == 'POST':
@@ -438,12 +438,50 @@ Siesta(atoms)
 
         if psf:
             symbs = self._atoms.get_symbols()
-            xc = self.params['XCfunc']
+            xc = self._params['XCfunc']
             for symb in symbs:
                 if   xc == 'GGA': os.system('cp %s/GGA/%s.psf .' % (psf_path, symb))
                 elif xc == 'LDA': os.system('cp %s/LDA/%s.psf .' % (psf_path, symb))
 
         os.system(cmd)
+
+        # keep the original input files
+        from glob import glob
+        fdfs = glob('*.fdf') # We have used fixed input file names, 
+                             # RUN.fdf, STRUCT.fdf, BASIS.fdf, and KPT.fdf.
+        for fdf in fdfs:
+            lines = open(fdf).readlines()
+            self._inputs[fdf] = lines
+
+
+    def save_simulation(self):
+
+        import pickle
+        name = 'sim_%s.dat' % self._params['Label']
+        pickle.dump([self._params, 
+                     self._atoms.get_symbols(),
+                     np.array(self._atoms.get_positions()),
+                     np.array(self._atoms.get_cell())], 
+                    open(name,'w'))
+        print ("simulation information is saved as %s." % name)
+
+#
+# REload saved simulation
+#
+
+def load_simulation(filename):
+    import pickle
+    params, symbols, positions, cell = pickle.load(open(filename))
+    atoms = []
+    i = 0
+    for symbol in symbols:
+        atoms.append(Atom(symbol, [positions[i][0], positions[i][1], positions[i][2]]))
+        i += 1
+    atoms = AtomsSystem(atoms, cell=cell)
+    sim = Siesta(atoms)
+    for key, value in params.items():
+        sim.set_option(key, value)    
+    return sim
 
 
 #
@@ -496,7 +534,7 @@ def get_dos(emin, emax, npoints=1001, broad=0.05, label='siesta'):
     return energy, dos, dos_1, dos_2
 
 
-def get_band(simobj, pathfile, label='siesta'):
+def get_band(simobj, pathfile, label='siesta', rerun=0):
 
     """
     Interface to new.gnubands of siesta utils
@@ -525,17 +563,21 @@ def get_band(simobj, pathfile, label='siesta'):
 
     Example
     --------
-    >>> path, eigs = s2.get_band(sim, './bandline')
+    >>> # for spin-unpolarized cases
+    >>> path, eigs = get_band(sim, './bandline')
+    >>>
+    >>> # for spin-polarized cases
+    >>> path1, eig1, path2, eigs2 = get_band(sim, './bandline')
     """
 
-    # attach path file
-    f = open('RUN.fdf', 'a')
-    path = open(pathfile).readlines()
-    for line in path: f.write(line)
-    f.close()
-
-    # re-run
-    simobj.run(mode='POST')
+    if rerun:
+        # attach path file
+        f = open('RUN.fdf', 'a')
+        path = open(pathfile).readlines()
+        for line in path: f.write(line)
+        f.close()
+        # re-run
+        simobj.run(mode='POST')
 
     # gnuband script
     from NanoCore.env import siesta_util_location as sul
@@ -543,24 +585,57 @@ def get_band(simobj, pathfile, label='siesta'):
     os.system('%s/%s < %s.bands > BAND' % (sul, sub, label))
 
     # read band data
-    import DataTnBand as dtb
+    from . import DataTnBand as dtb
     from glob import glob
     dtb.DataTnBand('%s.bands' % label)
-    fs = glob('band???.oneD'); fs.sort()
+    fs  = glob('band???.oneD'); fs.sort()
+    fs1 = glob('band_*spin1.oneD'); fs1.sort()
+    fs2 = glob('band_*spin2.oneD'); fs2.sort()
 
-    kptss = []; eigss = []
-    for f in fs:
-        temp = open(f).readlines()
-        kpts = []; eigs = []
-        for line in temp:
-            if not line.startswith('#'):
-                kpt, eig = line.split()
-                kpt = float(kpt); eig = float(eig)
-                kpts.append(kpt); eigs.append(eig)
-        kptss.append(kpts); eigss.append(eigs)
+    # case 1: spin-unpolarized
+    if not fs1:
+        kptss = []; eigss = []
+        for f in fs:
+            temp = open(f).readlines()
+            kpts = []; eigs = []
+            for line in temp:
+                if not line.startswith('#'):
+                    kpt, eig = line.split()
+                    kpt = float(kpt); eig = float(eig)
+                    kpts.append(kpt); eigs.append(eig)
+            kptss.append(kpts); eigss.append(eigs)
 
-    os.system('rm *.oneD')
-    return kptss, eigss
+        os.system('rm *.oneD')
+        return kptss, eigss
+
+    # case 2: spin-polarized
+    else:
+        # spin 1
+        kptss1 = []; eigss1 = []
+        for f in fs1:
+            temp = open(f).readlines()
+            kpts = []; eigs = []
+            for line in temp:
+                if not line.startswith('#'):
+                    kpt, eig = line.split()
+                    kpt = float(kpt); eig = float(eig)
+                    kpts.append(kpt); eigs.append(eig)
+            kptss1.append(kpts); eigss1.append(eigs)
+
+        # spin 2
+        kptss2 = []; eigss2 = []
+        for f in fs2:
+            temp = open(f).readlines()
+            kpts = []; eigs = []
+            for line in temp:
+                if not line.startswith('#'):
+                    kpt, eig = line.split()
+                    kpt = float(kpt); eig = float(eig)
+                    kpts.append(kpt); eigs.append(eig)
+            kptss2.append(kpts); eigss2.append(eigs)
+
+        os.system('rm *.oneD')
+        return kptss1, eigss1, kptss2, eigss2
 
 
 def siesta_xsf2cube(f_in, grid_type):
@@ -917,22 +992,22 @@ def get_pldos(simobj, emin, emax, broad=0.1, npoints=1001, label='siesta'):
 def get_hartree_pot_z(label='siesta'):
 
     # temp. input file for macrove
-    file_INP = open('INP', 'w')
-    file_INP.write('Siesta     ') # Which code have you used to get the input data?
-    file_INP.write('Potential  ') # Which is the input data used to compute the band offset?
-    file_INP.write('%s' % label)  # Name of the file where the input data is stored
-    file_INP.write('2 ')          # Number of convolutions required to calculate the macro. ave.
-    file_INP.write('0 ')          # First length for the filter function in macroscopic average
-    file_INP.write('0 ')          # Second length for the filter function in macroscopic average
-    file_INP.write('0 ')          # Total charge
-    file_INP.write('spline ')     # Type of interpolation
+    file_INP = open('macroave.in', 'w')
+    file_INP.write('Siesta\n')     # Which code have you used to get the input data?
+    file_INP.write('Potential\n')  # Which is the input data used to compute the band offset?
+    file_INP.write('%s\n' % label) # Name of the file where the input data is stored
+    file_INP.write('2 \n')         # Number of convolutions required to calculate the macro. ave.
+    file_INP.write('0 \n')         # First length for the filter function in macroscopic average
+    file_INP.write('0 \n')         # Second length for the filter function in macroscopic average
+    file_INP.write('0 \n')         # Total charge
+    file_INP.write('spline \n')    # Type of interpolation
     file_INP.close()
 
     # run rho2xsf
     from NanoCore.env import siesta_util_location as sul
     from NanoCore.env import siesta_util_vh as sv
-    os.system('%s/%s < INP' % (sul, sv))
-    os.system('rm INP')
+    os.system('%s/%s < macroave.in' % (sul, sv))
+    os.system('rm macroave.in')
 
     # read PDOS
     lines = open('%s.PAV' % label).readlines()
@@ -958,6 +1033,249 @@ def get_total_energy(output_file='stdout.txt'):
 
 
 #
+# OLD SIESTA UTILS
+#
+
+def read_fdf(file_name):
+    vec_block = []; atoms_block = []; abc_cell_block = []
+    atoms_length = 0; species = []
+    n_of_species = 0; name = ''; atoms = []; cell = []; cell_scale = ''
+    lattice_constant = 0.
+    _is_ang_scale = 0; _is_bohr_scale = 0; _is_scaled_ang_scale = 0
+    _is_fraction_scale = 0
+
+    f = open(file_name)
+    lines = f.readlines()
+
+    i = 0
+    for line in lines:
+        #print i
+        
+        line_s = line.split(); keyword = ''
+
+        if line_s:
+            keyword = line_s[0].lower()
+            #print keyword
+
+        if keyword == "systemlabel":
+            name = line_s[1]
+
+        elif keyword == "latticeconstant":
+            lattice_constant = float(line_s[1])
+            #print lattice_constant
+            try:
+                cell_scale = line_s[2]
+            except:
+                cell_scale = 'Ang'
+
+        elif keyword == "atomiccoordinatesformat":
+            if line_s[1].lower() == 'ang':
+                _is_ang_scale = 1
+            elif line_s[1].lower() == 'bohr':
+                _is_bohr_scale = 1
+            elif line_s[1].lower() == 'scaledcartesian':
+                #print "ON"
+                _is_scaled_ang_scale = 1
+            elif line_s[1].lower() == 'fractional':
+                _is_fraction_scale = 1
+            else:
+                #print 'Warning : Default atomic scale, "Ang".\n'
+                pass
+
+        elif keyword == "numberofatoms":
+            atoms_length = int(line_s[1])
+            #print "natms", atoms_length
+
+        elif keyword == "numberofspecies":
+            n_of_species = int(line_s[1])
+            #print "nspec", n_of_species
+
+        elif keyword =="%block":
+            keyword_ = line_s[1].lower()
+            #print keyword_
+            
+            if keyword_ == "latticeparameters":
+                abc_cell_block = lines[i+1].split()
+
+            elif keyword_ == "latticevectors":
+                vec_block = lines[i+1:i+4]
+
+            elif keyword_ == "atomiccoordinatesandatomicspecies":
+                atoms_block = lines[i+1:i+1+atoms_length]
+                #print "atoms_block", atoms_block
+
+            elif keyword_ == "chemicalspecieslabel":
+                temp = lines[i+1:i+1+n_of_species]
+                for spec in temp:
+                    species.append(spec.split()[2])
+                #print species
+        i +=1
+
+    # cell converting
+    va = 0; vb = 0; vc = 0
+    if (not abc_cell_block) and vec_block:
+        a1, a2, a3 = vec_block[0].split()
+        a1 = float(a1); a2 = float(a2); a3 = float(a3)
+        b1, b2, b3 = vec_block[1].split()
+        b1 = float(b1); b2 = float(b2); b3 = float(b3)
+        c1, c2, c3 = vec_block[2].split()
+        c1 = float(c1); c2 = float(c2); c3 = float(c3)
+        va = np.array([a1, a2, a3])
+        vb = np.array([b1, b2, b3])
+        vc = np.array([c1, c2, c3])
+        if cell_scale == 'Ang':
+            va = lattice_constant * va
+            vb = lattice_constant * vb
+            vc = lattice_constant * vc
+        elif cell_scale == 'Bohr':
+            va = lattice_constant * bohr2ang * va
+            vb = lattice_constant * bohr2ang * vb
+            vc = lattice_constant * bohr2ang * vc
+        else:
+            #print "Can`t find cell scale"
+            pass
+
+        #a, b, c, alpha, beta, gamma = convert_xyz2abc(va, vb, vc)
+        cell = np.array([va,vb,vc])
+
+    elif abc_cell_block and (not vec_block):
+        a, b, c, alpha, beta, gamma = abc_cell_block.split()
+        a = float(a); b = float(b); c = float(c)
+        alpha = float(alpha); beta = float(beta); gamma = float(gamma)
+        cell = [a, b, c, alpha, beta, gamma]
+
+    # atoms
+    for atm in atoms_block:
+        x, y, z, spec, serial = atm.split()
+        x = float(x); y = float(y); z = float(z); spec = int(spec)
+        
+        if _is_ang_scale:
+            pass
+        elif _is_bohr_scale:
+            x = bohr2ang * x; y = bohr2ang * y; z = bohr2ang * z
+
+        elif _is_scaled_ang_scale:
+            #if vec_cell:
+            x = lattice_constant*x
+            y = lattice_constant*y
+            z = lattice_constant*z
+            #elif not vec_cell:
+            #    print "Can`t guess cell scale and type\n"
+#        elif _is_fraction_scale:
+        
+        atom = (species[spec-1], x, y, z)
+        atoms.append(atom)
+
+    if cell.shape == (3,3):
+        #XYZ.write_xyz(file_name.replace('fdf','xyz'), atoms, cell)
+        return AtomsSystem(atoms, cell=cell)
+    else:
+        #XYZ.write_xyz(file_name.replace('fdf','xyz'), atoms)
+        return AtomsSystem(atoms, cell=None)
+
+
+def read_struct_out(file_name):
+    f = open(file_name)
+    lines = f.readlines()
+    v1 = Vector(float(lines[0].split()[0]),float(lines[0].split()[1]),float(lines[0].split()[2]))
+    v2 = Vector(float(lines[1].split()[0]),float(lines[1].split()[1]),float(lines[1].split()[2]))
+    v3 = Vector(float(lines[2].split()[0]),float(lines[2].split()[1]),float(lines[2].split()[2]))
+    num_at = int(lines[3].split()[0])
+    atoms = []
+    for line in lines[4:num_at+4]:
+        spec, atn, sx, sy, sz = line.split()
+        sx, sy, sz = float(sx), float(sy), float(sz)
+        symb = atomic_symbol[int(atn)]
+        position = sx*v1 + sy*v2 + sz*v3
+        atoms.append(Atom(symb, position))
+    return AtomsSystem(atoms, cell = [v1,v2,v3])
+
+
+def get_eos(pattern='*', struct_file='STRUCT.fdf'):
+    # should be replaced by something using xml parser...
+    dirs = glob(pattern)
+    dirs.sort()
+
+    volume = []
+    for f in dirs:
+        os.chdir(f)
+        atoms = read_fdf("%s" % struct_file)
+        cell = atoms.get_cell()
+        v = Vector(cell[0]).dot( Vector(cell[1]).cross(Vector(cell[2])) )
+        volume.append(v)
+        os.chdir('..')
+    os.system("grep 'siesta:         Total =' */stdout.txt > OUT")
+    lines = open('OUT').readlines()
+    volume = np.array(volume)
+
+    energy = []
+    for line in lines:
+        e = float(line.split()[-1])
+        energy.append(e)
+    energy = np.array(energy)
+
+    import pylab as plb # this includes numpy as np!
+    from scipy.optimize import leastsq
+
+    # make a vector to evaluate fits on with a lot of points so it looks smooth                    
+    vfit = np.linspace(min(volume),max(volume),100)
+ 
+    ### fit a parabola to the data
+    # y = ax^2 + bx + c
+    a,b,c = plb.polyfit(volume, energy, 2) #this is from pylab
+ 
+    # now here are our initial guesses.
+    v0 = -b/(2*a)
+    e0 = a*v0**2 + b*v0 + c
+    b0 = 2*a*v0
+    bP = 4
+
+    # now we have to create the equation of state function
+    def Murnaghan(parameters,vol):
+        '''
+        given a vector of parameters and volumes, return a vector of energies.
+        equation From PRB 28,5480 (1983)
+        '''
+        E0 = parameters[0]
+        B0 = parameters[1]
+        BP = parameters[2]
+        V0 = parameters[3]
+        E = E0 + B0*vol/BP*(((V0/vol)**BP)/(BP-1)+1) - V0*B0/(BP-1.)
+        return E
+ 
+    # and we define an objective function that will be minimized
+    def objective(pars,y,x):
+        # we will minimize this function
+        err =  y - Murnaghan(pars,x)
+        return err
+
+    x0 = [e0, b0, bP, v0] #initial guesses in the same order used in the Murnaghan function
+
+    murnpars, ier = leastsq(objective, x0, args=(energy, volume)) #this is from scipy
+
+    # now we make a figure summarizing the results
+    plb.plot(volume,energy,'ro')
+    plb.plot(vfit, a*vfit**2 + b*vfit + c,'--',label='parabolic fit')
+    plb.plot(vfit, Murnaghan(murnpars,vfit), label='Murnaghan fit')
+    plb.xlabel('Volume ($\AA^3$)')
+    plb.ylabel('Energy (eV)')
+    plb.legend(loc='best')
+
+    # add some text to the figure in figure coordinates
+    ax = plb.gca()
+    plb.text(0.4,0.5,'Min volume = %1.2f $\AA^3$' % murnpars[3],
+             transform = ax.transAxes)
+    plb.text(0.4,0.4,'Bulk modulus = %1.2f eV/$\AA^3$ = %1.2f GPa' % (murnpars[1],
+                                                                      murnpars[1]*160.21773)
+             , transform = ax.transAxes)
+    plb.savefig('a-eos.png')
+    plb.show()
+
+    print ('initial guesses  : ',x0)
+    print ('fitted parameters: ', murnpars)
+
+
+#
 # SIESTA Xml parser
 #
 
@@ -972,8 +1290,8 @@ def read_siesta_xml(obj, lv, ith):
     txt = obj.text
     xmlobj = SiestaXmlObject(tag, atr, txt, lv)
 
-    print "    "*(lv-1), "depth lv =", lv, ith, "-th", \
-          "tag =", obj.tag.split('}')[-1], "attrib =", obj.attrib, "text =", obj.text, '\n'
+    print ("    "*(lv-1), "depth lv =", lv, ith, "-th", \
+           "tag =", obj.tag.split('}')[-1], "attrib =", obj.attrib, "text =", obj.text, '\n')
 
     # children
     i = 1
@@ -1198,7 +1516,7 @@ class SiestaXmlObject(XmlObject):
         # spin-polarized
         try:
             dummy = self._children[-3][2][2][0]._atr['coords']
-            print dummy
+            print (dummy)
 
         except:
             # variables

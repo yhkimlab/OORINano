@@ -7,10 +7,13 @@
 # 110711 modified grp_zigzag and grp_armchair (odd numbers can be allowed.)
 # 110709 added grp_zigzag and grp_armchair 
 # 120305 debugging grp_zigzag and grp_armchair with Hydrogen passivation
+# 190311 
+#
 
 
-from atoms import *
-#import XXYZ_beta.vis as vis
+from __future__ import print_function
+from . atoms import *
+
 
 def dmax(a,b):
     """
@@ -99,9 +102,9 @@ def cnt(n, m, bl=1.415):
     r3 = sqrt(3)
     a = bl*r3
     r = a*sqrt(n**2+n*m+m**2)/(2*pi)
-    print "r :", r
+    print ("r :", r)
     c = a*sqrt(n**2+n*m+m**2)
-    print "c :", c
+    print ("c :", c)
     unit= grp_nr(n, m, bl)
     unit1 = []
     for atom in unit:
@@ -123,26 +126,26 @@ def grp_armchair(n, m, bl=1.42, bl2 = 1.0927, passivation=1, BN=0, repeat=1):
     # initalization
     from math import sqrt
 
-    basis1 = Atom('C', [sqrt(3)*bl/2, 0.0, 0.0])
-    basis2 = Atom('C', [0.0, bl/2, 0.0])
-    basis3 = Atom('C', [0.0, 1.5*bl, 0.0])
-    basis4 = Atom('C', [sqrt(3)*bl/2, 2*bl, 0.0])
+    basis1 = Atom('C', [sqrt(3)*bl/2, 0.0,    0.0])
+    basis2 = Atom('C', [         0.0, 0.0,   bl/2])
+    basis3 = Atom('C', [         0.0, 0.0, 1.5*bl])
+    basis4 = Atom('C', [sqrt(3)*bl/2, 0.0,   2*bl])
     basis  = AtomsSystem([basis1, basis2, basis3, basis4])
 
     if BN:
-        basis1 = Atom('B', [sqrt(3)*bl/2, 0.0, 0.0])
-        basis2 = Atom('N', [0.0, bl/2, 0.0])
-        basis3 = Atom('B', [0.0, 1.5*bl, 0.0])
-        basis4 = Atom('N', [sqrt(3)*bl/2, 2*bl, 0.0])
+        basis1 = Atom('B', [sqrt(3)*bl/2, 0.0,    0.0])
+        basis2 = Atom('N', [         0.0, 0.0,   bl/2])
+        basis3 = Atom('B', [         0.0, 0.0, 1.5*bl])
+        basis4 = Atom('N', [sqrt(3)*bl/2, 0.0,   2*bl])
         basis  = AtomsSystem([basis1, basis2, basis3, basis4])
 
    # It's for Passivation 
     if passivation:
         #bl2 = 1.0927
-        Hbasis1 = Atom('H', [-sqrt(3)*bl2/2, bl/2-bl2/2, 0.0])
-        Hbasis2 = Atom('H', [-sqrt(3)*bl2/2, 1.5*bl+bl2/2, 0.0])
-        Hbasis3 = Atom('H', [sqrt(3)*bl/2+sqrt(3)*bl2/2, bl2/2, 0.0])
-        Hbasis4 = Atom('H', [sqrt(3)*bl/2+sqrt(3)*bl2/2, 2*bl-bl2/2, 0.0])
+        Hbasis1 = Atom('H', [-sqrt(3)*bl2/2,              0.0,   bl/2-bl2/2])
+        Hbasis2 = Atom('H', [-sqrt(3)*bl2/2,              0.0, 1.5*bl+bl2/2])
+        Hbasis3 = Atom('H', [ sqrt(3)*bl/2+sqrt(3)*bl2/2, 0.0,        bl2/2])
+        Hbasis4 = Atom('H', [ sqrt(3)*bl/2+sqrt(3)*bl2/2, 0.0,   2*bl-bl2/2])
         Hbasis  = AtomsSystem([Hbasis1, Hbasis2])
         Hbasis_even = AtomsSystem([Hbasis3, Hbasis4])
 
@@ -165,24 +168,24 @@ def grp_armchair(n, m, bl=1.42, bl2 = 1.0927, passivation=1, BN=0, repeat=1):
         atoms.append(tmp[0].copy())
         atoms.append(tmp[1].copy())
         if passivation:
-	    Htmp = Hbasis.copy()
-	    Htmp.select_all()
-	    atoms.append(Htmp[0].copy())	
-	    atoms.append(Htmp[1].copy())
+            Htmp = Hbasis.copy()
+            Htmp.select_all()
+            atoms.append(Htmp[0].copy())	
+            atoms.append(Htmp[1].copy())
 	
-	    Htmp2 = Hbasis.copy()
-	    Htmp2.select_all()
-	    Htmp2.translate(sqrt(3)*bl*i_n+sqrt(3)*bl2, 0.0, 0.0)
-	    atoms.append(Htmp2[0].copy())
-	    atoms.append(Htmp2[1].copy())
+            Htmp2 = Hbasis.copy()
+            Htmp2.select_all()
+            Htmp2.translate(sqrt(3)*bl*i_n+sqrt(3)*bl2, 0.0, 0.0)
+            atoms.append(Htmp2[0].copy())
+            atoms.append(Htmp2[1].copy())
     else:
-	if passivation:
-    	    Htmp = Hbasis.copy()
-    	    Htmp.select_all()
-    	    atoms.append(Htmp[0].copy())
-    	    atoms.append(Htmp[1].copy())    
+        if passivation:
+            Htmp = Hbasis.copy()
+            Htmp.select_all()
+            atoms.append(Htmp[0].copy())
+            atoms.append(Htmp[1].copy())    
 
-    	    Htmp3 = Hbasis_even.copy()
+            Htmp3 = Hbasis_even.copy()
             Htmp3.select_all()
             Htmp3.translate(sqrt(3)*bl*(i_n-1), 0.0, 0.0)
             atoms.append(Htmp3[0].copy())
@@ -191,36 +194,39 @@ def grp_armchair(n, m, bl=1.42, bl2 = 1.0927, passivation=1, BN=0, repeat=1):
     atoms2 = []
     i_m = 0
     while i_m < m:
-	tmp = AtomsSystem(atoms)
-	tmp.select_all()
-	tmp.translate(0.0, i_m*(3*bl), 0.0)
-	for atm in tmp:
-		atoms2.append(atm.copy())
-    	i_m += 1
-    cell = [ [20.0, 0.0, 0.0],
-             [0.0, m*3*bl, 0.0],
-             [0.0, 0.0, 20.0] ]
-    atoms2 = AtomsSystem(atoms2, cell=cell) * (1, repeat, 1)
+        tmp = AtomsSystem(atoms)
+        tmp.select_all()
+        tmp.translate(0.0, i_m*(3*bl), 0.0)
+        for atm in tmp:
+            atoms2.append(atm.copy())
+        i_m += 1
+    cell = [ [20.0,  0.0,    0.0],
+             [ 0.0, 20.0,    0.0],
+             [ 0.0,  0.0, m*3*bl]]
+    atoms2 = AtomsSystem(atoms2, cell=cell) * (1, 1, repeat)
+    atoms2.select_all()
+    atoms2.sort('z')
+    atoms2.set_serials(1)
     return atoms2
 
 
 def grp_zigzag(n,m,bl=1.42, bl2=1.0974, passivation=1, BN=0, repeat=1):
     from math import sqrt
-    basis1 = Atom('C', [0.0, sqrt(3)*bl/2, 0.0])
-    basis2 = Atom('C', [bl/2, 0.0, 0.0])
-    basis3 = Atom('C', [1.5*bl, 0.0, 0.0])
-    basis4 = Atom('C', [2*bl, sqrt(3)*bl/2, 0.0])
+    basis1 = Atom('C', [   0.0, 0.0, sqrt(3)*bl/2])
+    basis2 = Atom('C', [  bl/2, 0.0,          0.0])
+    basis3 = Atom('C', [1.5*bl, 0.0,          0.0])
+    basis4 = Atom('C', [  2*bl, 0.0, sqrt(3)*bl/2])
     basis  = AtomsSystem([basis1, basis2, basis3, basis4])
 
     if BN:
-        basis1 = Atom('B', [0.0, sqrt(3)*bl/2, 0.0])
-        basis2 = Atom('N', [bl/2, 0.0, 0.0])
-        basis3 = Atom('B', [1.5*bl, 0.0, 0.0])
-        basis4 = Atom('N', [2*bl, sqrt(3)*bl/2, 0.0])
+        basis1 = Atom('B', [   0.0, 0.0, sqrt(3)*bl/2])
+        basis2 = Atom('N', [  bl/2, 0.0,          0.0])
+        basis3 = Atom('B', [1.5*bl, 0.0,          0.0])
+        basis4 = Atom('N', [  2*bl, 0.0, sqrt(3)*bl/2])
         basis  = AtomsSystem([basis1, basis2, basis3, basis4])
     
     if passivation:
-        Hbasis1 = Atom('H', [-bl2, sqrt(3)*bl/2 , 0.0])
+        Hbasis1 = Atom('H', [-bl2, 0.0, sqrt(3)*bl/2])
         Hbasis = AtomsSystem([Hbasis1])
 
         Hbasis2=  Atom('H', [bl/2, 0.0, 0.0])
@@ -249,18 +255,18 @@ def grp_zigzag(n,m,bl=1.42, bl2=1.0974, passivation=1, BN=0, repeat=1):
         atoms.append(tmp[0].copy())
         atoms.append(tmp[1].copy())
 
-	if passivation:
-	    Htmp2 = Hbasis_odd.copy()
-	    Htmp2.select_all()
-	    Htmp2.translate(nn*(2*(bl+0.5*bl))+bl2, 0.0, 0.0)
+        if passivation:
+            Htmp2 = Hbasis_odd.copy()
+            Htmp2.select_all()
+            Htmp2.translate(nn*(2*(bl+0.5*bl))+bl2, 0.0, 0.0)
             atoms.append(Htmp2[0].copy())
 
 # If n == even numbers
     elif nm==0:
-	if passivation:
+        if passivation:
             Htmp3 = Hbasis.copy()
             Htmp3.select_all()
-	    Htmp3.translate(2*bl*i_n+(i_n-1)*bl+2*bl2, 0.0, 0.0)
+            Htmp3.translate(2*bl*i_n+(i_n-1)*bl+2*bl2, 0.0, 0.0)
             atoms.append(Htmp3[0].copy())
 
     atoms2 = []
@@ -268,18 +274,28 @@ def grp_zigzag(n,m,bl=1.42, bl2=1.0974, passivation=1, BN=0, repeat=1):
     while i_m < m:
         tmp = AtomsSystem(atoms)
         tmp.select_all()
-        tmp.translate(0.0, i_m*(sqrt(3)*bl), 0.0)
+        tmp.translate(0.0, 0.0, i_m*(sqrt(3)*bl))
         for atm in tmp:
                 atoms2.append(atm.copy())
         i_m += 1
 
-    cell = [ [20.0, 0.0, 0.0],
-             [0.0, m*sqrt(3)*bl, 0.0],
-             [0.0, 0.0, 20.0] ]
+    cell = [ [20.0,  0.0,          0.0],
+             [ 0.0, 20.0,          0.0],
+             [ 0.0,  0.0, m*sqrt(3)*bl]]
     
-    atoms2 = AtomsSystem(atoms2, cell=cell) * (1, repeat, 1)
+    atoms2 = AtomsSystem(atoms2, cell=cell) * (1, 1, repeat)
     atoms2.select_all()
-    atoms2.sort('y')
+    atoms2.sort('z')
+    atoms2.set_serials(1)
     return atoms2
 
-    
+
+def chain(repeat, bl=1.285, bla=0.0):
+    from math import sqrt
+    basis1 = Atom('C', [0.0, 0.0, 0.0])
+    basis2 = Atom('C', [0.0, 0.0, bl+bla])
+    cell = [[10.0, 0.0, 0.0],
+            [0.0, 10.0, 0.0],
+            [0.0, 0.0, 2*bl]]
+    return AtomsSystem([basis1, basis2], cell=cell)*(1,1,repeat)
+

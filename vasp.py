@@ -2,10 +2,11 @@
 # 2012. 04. 16. Add poscar_fractional , Modified by Minkyu            #
 # 2012. 05. 14. Organize module. read_poscar, read_xdat, write_poscar #
 
-
-from atoms import *
-from io import cleansymb, get_unique_symbs
+from __future__ import print_function
+from . atoms import *
+from . io import cleansymb, get_unique_symbs
 import os
+
 
 # DFT parameters
 params = {'force':1,                   # (true or false)
@@ -28,13 +29,13 @@ def write_poscar(atoms, file_name='POSCAR_xxyz', mode='cartesian'):
         va,vb,vc = atoms.get_cell()
         va = Vector(va); vb = Vector(vb); vc = Vector(vc)
     else:
-        raise ValueError, "Cell info. is necessary."
+        raise ValueError("Cell info. is necessary.")
     POSCAR.write('1.000 # fixed lattice parameter unit\n')
     POSCAR.write("%15.9f %15.9f %15.9f\n" % tuple(va))
     POSCAR.write("%15.9f %15.9f %15.9f\n" % tuple(vb))
     POSCAR.write("%15.9f %15.9f %15.9f\n" % tuple(vc))
     contents = atoms.get_contents()
-    print contents
+    print (contents)
     atm_line = ''; len_line = ''
     lines = []
     for sym, num in contents.items():
@@ -80,7 +81,7 @@ def read_poscar(file_name):
     line_cell2 = lines[3].split()
     line_cell3 = lines[4].split()
     line_symb  = lines[5].split()
-    line_numb  = lines[6].split()
+    line_numb  =lines[6].split()
 
     # number of atoms
     n_system = 0
@@ -103,12 +104,20 @@ def read_poscar(file_name):
         cell3.append(line_cell_unit*float(v3))   
     cell = [cell1, cell2, cell3]
 
-    # atoms info.
-    line_atoms = lines[8:]
-    i =0
+    # Constraint
+    line_atoms = ''
+
+    if lines[7].lower()[:9] == 'selective':
+        line_atoms = lines[8:]
+    else:
+        line_atoms = lines[7:]
+
+    i = 0
     for line in line_atoms:
         atoms = []
         i += 1
+
+        # Cartesian        
         if line.split()[0][0:1].lower() == 'c':
             line_coord = line_atoms[i:i+n_system]
             j = 0
@@ -118,13 +127,14 @@ def read_poscar(file_name):
                 symb = list_symb[j]
                 atoms.append(Atom(symb,(x,y,z)))
                 j += 1
-                print x,y,z #####3
+                #print x,y,z 
             atoms_obj = AtomsSystem(atoms)
             atoms_obj.set_cell(cell)
             #name = 'POSCAR.xyz'
             #io.write_xyz(name, atoms_obj)
             return atoms_obj
-            
+
+        # Factional            
         elif line.split()[0][0:1].lower() == 'd':
             line_coord = line_atoms[i:i+n_system]
             j = 0

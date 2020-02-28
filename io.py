@@ -2,11 +2,13 @@
 # read/write structure files
 #
 
+from __future__ import print_function
 import re, sys
 from math import sin, cos, sqrt, pi
-from units import ang2bohr, degrad
-from atomic_data import atomic_weight, atomic_symbol, atomic_number
-from atoms import *
+from . units import ang2bohr, degrad
+from . atomic_data import atomic_weight, atomic_symbol, atomic_number
+from . atoms import *
+
 
 def convert_abc2xyz(a,b,c,alpha,beta,gamma):
     """Convert to cartesian lattice vectors.
@@ -21,8 +23,8 @@ def convert_abc2xyz(a,b,c,alpha,beta,gamma):
     c3bar = (-c1*c2 + c3)/(s1*s2)
     sqrtarg = 1.0 - c3bar*c3bar
     if (sqrtarg <= 0):
-        print "Negative argument to SQRT"
-        print sqrtarg, alpha, beta, gamma
+        print ("Negative argument to SQRT")
+        print (sqrtarg, alpha, beta, gamma)
         sqrtarg = 0.0
     s3bar = sqrt(sqrtarg)
     # The general transformation from scaled to XYZ coordinates is now:
@@ -87,8 +89,8 @@ def read_xyz(file_name, keeptype=False, clean=True, initial=False):
     file_name = file_name.strip()
     try:
         xyz_file = open(file_name,'r')
-    except IOError, exception:
-        print exception
+    except IOError as exception:
+        print (exception)
         #...Alternative...
         #type, message, traceback = sys.exc_info()
         #print 'exception type:',type
@@ -257,15 +259,15 @@ def read_bgf(file_name):
 
     try:
         file = open(file_name,'r')
-    except IOError, exception:
-        print exception
+    except IOError as exception:
+        print (exception)
         #...Alternative...
         #type, message, traceback = sys.exc_info()
         #print 'exception type:',type
         #print 'exception message',message
         return
     else:
-        print 'Reading "%s" ...' % file_name
+        print ('Reading "%s" ...' % file_name)
    
     latpat = re.compile('CRYSTX')
     atmpat = re.compile('HETATM')
@@ -438,7 +440,7 @@ def write_xsf(file_name, atoms):
 
     # Molecular structure...
     if atoms.get_cell() is None:
-        xsf.write('ATOMS\n')
+        xsf.write(' ATOMS\n')
         i = 0
         for atom in atoms._atoms:
             x,y,z = atom.get_position()
@@ -448,28 +450,28 @@ def write_xsf(file_name, atoms):
         xsf.close()
         
     else:
-        xsf.write('CRYSTAL\n')
+        xsf.write(' CRYSTAL\n')
         # Primitive lattice vectors (in Angstroms)
-        xsf.write('PRIMVEC\n')
+        xsf.write(' PRIMVEC\n')
         va,vb,vc = atoms.get_cell()[0],atoms.get_cell()[1],atoms.get_cell()[2] 
         #va, vb, vc = convert_abc2xyz(cell[0], cell[1], cell[2], 
         #                             cell[3], cell[4], cell[5])
-        xsf.write('%12.6f %12.6f %12.6f\n' % tuple(va))
-        xsf.write('%12.6f %12.6f %12.6f\n' % tuple(vb))
-        xsf.write('%12.6f %12.6f %12.6f\n' % tuple(vc))
+        xsf.write(' %12.6f %12.6f %12.6f\n' % tuple(va))
+        xsf.write(' %12.6f %12.6f %12.6f\n' % tuple(vb))
+        xsf.write(' %12.6f %12.6f %12.6f\n' % tuple(vc))
         # Conventional lattice vectors (in Angstroms)        
-        xsf.write('CONVVEC\n')
-        xsf.write('%12.6f %12.6f %12.6f\n' % tuple(va))
-        xsf.write('%12.6f %12.6f %12.6f\n' % tuple(vb))
-        xsf.write('%12.6f %12.6f %12.6f\n' % tuple(vc))
+        xsf.write(' CONVVEC\n')
+        xsf.write(' %12.6f %12.6f %12.6f\n' % tuple(va))
+        xsf.write(' %12.6f %12.6f %12.6f\n' % tuple(vb))
+        xsf.write(' %12.6f %12.6f %12.6f\n' % tuple(vc))
         # Atomic coord. in a primitive unit cell (in Angstroms)
-        xsf.write('PRIMCOORD\n')
-        xsf.write('%s 1\n' % str(len(atoms)))
+        xsf.write(' PRIMCOORD\n')
+        xsf.write(' %-7d1\n' % len(atoms))
         i = 0
         for atom in atoms._atoms:
             x,y,z = atom.get_position()
             info = atomic_number(atom.get_symbol()), x, y, z
-            xsf.write('%2d %12.6f %12.6f %12.6f\n' % info)
+            xsf.write(' %2d %12.6f %12.6f %12.6f\n' % info)
             i += 1
         xsf.close()
 
@@ -548,7 +550,7 @@ def read_cif(file_name):
             if words[2].lower() == 'site':
                 keys.append( '_'.join(words[3:]).replace('\n','') )
 
-    print keys
+    print (keys)
 
     # number of attributes
     n_keys = len(keys)
@@ -562,7 +564,7 @@ def read_cif(file_name):
         if key == 'fract_z': i_z = i
         i += 1
 
-    print n_keys, i_symb, i_x, i_y, i_z
+    print (n_keys, i_symb, i_x, i_y, i_z)
 
     a = 0; b = 0; c = 0; alpha = 0; beta = 0; gamma = 0
     atoms = []
@@ -573,7 +575,7 @@ def read_cif(file_name):
         words = words[:-1] + words[-1].split()
         if len(words) <= 1: continue
         if words[1].lower() == 'cell':
-            print words
+            print (words)
             if words[2].lower() == 'length':
                 if words[3].lower() == 'a': a = float(words[4])
                 if words[3].lower() == 'b': b = float(words[4])
@@ -586,7 +588,7 @@ def read_cif(file_name):
     # abc2xyz results v2 along y v1 in xy plane
     #print a,b,c,alpha,beta,gamma
     cell = convert_abc2xyz(a,b,c,alpha,beta,gamma)
-    print cell
+    print (cell)
 
     # loop 3: get atom info
     for line in lines:
@@ -596,7 +598,7 @@ def read_cif(file_name):
         if len(words) == n_keys:
             symb = words[i_symb]
             u = float(words[i_x]); v = float(words[i_y]); w = float(words[i_z])
-            print symb, u, v, w
+            print (symb, u, v, w)
             x,y,z = Vector(cell[0])*u + Vector(cell[1])*v + Vector(cell[2])*w
             atoms.append( Atom(symb, [x,y,z]) )
 
@@ -604,3 +606,172 @@ def read_cif(file_name):
 
     atoms = AtomsSystem(atoms, cell=cell)
     return atoms   
+
+
+def read_axyz(file_name, clean=True):
+    """
+    Read the structures from an animated XYZ file and return "Trajectory" 
+    instance, a collection of "AtomsSystem" instance.
+
+    Usage:
+    >>> animated_atoms = read_axyz(file_name)
+
+    Parameters:
+    file_name : the name of a xyz-format file
+    """
+    file_name = file_name.strip()
+    try:
+        xyz_file = open(file_name,'r')
+    except IOError as exception:
+        print (exception); return
+
+    # line 3-: atom, position
+    atoms_s = []
+    
+    # Otherwise, repeat until the last structure...
+    while True:
+        # line 1: number of atoms
+        line = xyz_file.readline()
+        if not line: break
+        words = line.split()
+        if not words: break
+        natm = int(words[0])
+        
+        # line 2: title (cell info as custom def.)
+        line = xyz_file.readline()
+        words = line.split()
+
+        #if words[0].split() == []: cell=None
+        # 
+        #elif words[0].upper() == 'CELL':
+        #    cell = map(float,words[1:7])
+        #else:
+        #    cell = None
+        cell = None
+            
+        # line 3-: atom, position
+        atoms = []
+        for i in range(natm):
+            line = xyz_file.readline()
+            words = line.split()
+            symb = words[0]
+            if clean == True:
+                symb = cleansymb(symb)
+            x,y,z = float(words[1]),float(words[2]),float(words[3])
+            #atoms.append(Atom(symb, [x,y,z]))
+            atoms.append(Atom(symb, [x,y,z], serial=i+1))
+            
+        if cell:
+            atoms_s.append(AtomsSystem(atoms,
+                                       cell=convert_abc2xyz(cell[0], cell[1],
+                                                            cell[2], cell[3],
+                                                            cell[4], cell[5])))
+        else:
+            #print AtomsSystem(atoms)
+            #print isinstance(AtomsSystem(atoms), AtomsSystem)
+            atoms_s.append(AtomsSystem(atoms))
+
+    xyz_file.close()
+    return Trajectory(atoms_s)
+
+
+def read_axsf(file_name):
+
+    f = open(file_name)
+    lines = f.readlines()
+    nstep = lines[0]
+    lines = lines[1:]
+    nstep = int(nstep.split()[-1])
+    print ("nstep:", nstep)
+
+    ani = []; cell = []
+    i_line = 0
+    for line in lines:
+        keyword = line.split()[0]
+        #print keyword
+
+        if keyword == 'CRYSTAL':
+            if lines[i_line+1].split()[0] == 'PRIMVEC':
+                vec1 = [float(lines[i_line+2].split()[0]),
+                        float(lines[i_line+2].split()[1]),
+                        float(lines[i_line+2].split()[2])]
+                vec2 = [float(lines[i_line+3].split()[0]),
+                        float(lines[i_line+3].split()[1]),
+                        float(lines[i_line+3].split()[2])]
+                vec3 = [float(lines[i_line+4].split()[0]),
+                        float(lines[i_line+4].split()[1]),
+                        float(lines[i_line+4].split()[2])]
+                cell.append(vec1);cell.append(vec2);cell.append(vec3)
+                print ("cell\n", cell)
+
+        elif keyword == 'PRIMCOORD':
+            i_step = int(line.split()[1]); print ("STEP:", i_step)
+            len_at = int(lines[i_line+1].split()[0])
+            atom_block = lines[i_line+2:i_line+2+len_at]
+            print ("atom_block\n", atom_block)
+
+            atoms = []
+            for atom_line in atom_block:
+                print (atom_line)
+                n,x,y,z = atom_line.split()[:4]
+                atoms.append(Atom(atomic_symbol[int(n)],
+                                  [float(x),float(y),float(z)]))
+            ani.append(atoms)
+            temp = AtomsSystem(atoms); print (temp)
+
+        i_line += 1
+
+    ani2 = []
+    for at in ani:
+        ani2.append(AtomsSystem(at, cell=cell))
+
+    return ani2
+
+
+def write_axsf(file_name, ani):
+    """
+    For the given AtomsSystem instance, write an .xsf file.
+
+    Usage:
+    >>> write_axsf(file_name, ani)
+    """
+
+    # read file
+    xsf = open(file_name, 'w')
+    xsf.write('ANIMSTEPS %i\n' % len(ani))
+
+    # crystal?
+    atoms = ani[0].copy()
+
+    if atoms.get_cell() is None:
+        pass
+
+    else: 
+        xsf.write('CRYSTAL\n')
+        # Primitive lattice vectors (in Angstroms)
+        xsf.write('PRIMVEC\n')
+        va,vb,vc = atoms.get_cell()[0],atoms.get_cell()[1],atoms.get_cell()[2] 
+        xsf.write('%12.6f %12.6f %12.6f\n' % tuple(va))
+        xsf.write('%12.6f %12.6f %12.6f\n' % tuple(vb))
+        xsf.write('%12.6f %12.6f %12.6f\n' % tuple(vc))
+
+    # write coord.
+    i_step = 0
+    while i_step < len(ani):
+        atoms = ani[i_step].copy()
+
+        if atoms.get_cell() is None:
+            xsf.write('ATOMS %i\n' % (i_step+1))
+
+        else:
+            xsf.write('PRIMCOORD %i\n' % (i_step+1))
+            xsf.write('%s 1\n' % str(len(atoms)))
+        i = 0
+        for atom in atoms._atoms:
+            x,y,z = atom.get_position()
+            info = atomic_number(atom.get_symbol()), x, y, z
+            xsf.write('%2d %12.6f %12.6f %12.6f\n' % info)
+            i += 1
+        i_step += 1
+
+    xsf.close()

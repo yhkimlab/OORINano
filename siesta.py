@@ -1,6 +1,8 @@
-from atoms import *
-from io import cleansymb, get_unique_symbs, convert_xyz2abc
-from units import ang2bohr
+from __future__ import print_function
+from . atoms import *
+from . io import cleansymb, get_unique_symbs, convert_xyz2abc
+from . units import ang2bohr
+bohr2ang = 1./ang2bohr
 from glob import glob
 
 
@@ -94,7 +96,7 @@ def write_siesta_basis(atoms, param_scf='LDA'):
     #--------------BASIS.fdf---------------
     fileB = open('BASIS.fdf', 'w')
     unique_symbs = get_unique_symbs(atoms)
-    print unique_symbs
+    print (unique_symbs)
     fileB.write("\n#(1) Basis definition\n\n")
     fileB.write("%block PAO.Basis\n")
     fileB.write("\n")
@@ -103,7 +105,7 @@ def write_siesta_basis(atoms, param_scf='LDA'):
         if param_scf == 'GGA':
             f = open('%s.txt_GGA' % symb)
             basis_info = f.readlines()
-            print basis_info
+            print (basis_info)
             for info in basis_info:
                 fileB.write(info)
             fileB.write("\n")
@@ -111,19 +113,19 @@ def write_siesta_basis(atoms, param_scf='LDA'):
         elif param_scf =='LDA':
             f = open('%s.txt_LDA' % symb)
             basis_info = f.readlines()
-            print basis_info
+            print (basis_info)
             for info in basis_info:
                 fileB.write(info)
             fileB.write("\n")
 
-        else: print "Unknown parameter : %s\n" % param_scf
+        else: print ("Unknown parameter : %s\n" % param_scf)
 
     fileB.write("%endblock PAO.Basis\n\n")
     fileB.close()    
 
 
 def write_siesta(atoms, params_opt, params_scf, params_post):
-    print 'Writing SIESTA input ...'
+    print ('Writing SIESTA input ...')
     #--------------STRUCT.fdf--------------
     write_siesta_struct(atoms, params_scf['CellVector1'], params_scf['CellVector2'], params_scf['CellVector3'],
 			params_scf['CellParameter'])
@@ -212,7 +214,7 @@ def write_siesta(atoms, params_opt, params_scf, params_post):
         #file.write("MD.MaxStressTol       1.0 GPa       # Default: 1.0 GPa\n")
         file.write("MD.InitialTimeStep    1\n")
         file.write("MD.FinalTimeStep      %i\n" % params_opt['MDsteps'])
-	file.write("MD.LengthTimeStep     %f fs      # Default : 1.0 fs\n" % params_opt['MDTimeStep'])
+        file.write("MD.LengthTimeStep     %f fs      # Default : 1.0 fs\n" % params_opt['MDTimeStep'])
         file.write("MD.InitialTemperature %f K       # Default : 0.0 K\n"  % params_opt['MDInitTemp'])
         file.write("MD.TargetTemperature  %f K       # Default : 0.0 K\n"  % params_opt['MDTargTemp'])
         file.write("WriteCoorStep         %s         # default : .false.\n"% params_opt['WriteCoorStep'])
@@ -223,9 +225,9 @@ def write_siesta(atoms, params_opt, params_scf, params_post):
         file.write(" %f %f eV\n" %(params_post['LDOSE'][0],params_post['LDOSE'][1]))
         file.write("%endblock LocalDensityOfStates\n")
     if params_post['PDOS'] == 1:
-	file.write("%block ProjectedDensityOfStates\n")
-	file.write(" %f %f %f %i eV\n" % tuple(params_post['PDOSE'])) #-20.00 10.00 0.200 500 eV Emin Emax broad Ngrid
-	file.write("%endblock ProjectedDensityOfStates\n")
+        file.write("%block ProjectedDensityOfStates\n")
+        file.write(" %f %f %f %i eV\n" % tuple(params_post['PDOSE'])) #-20.00 10.00 0.200 500 eV Emin Emax broad Ngrid
+        file.write("%endblock ProjectedDensityOfStates\n")
     if params_post['DOS'] == 1:
         file.write("WriteEigenvalues      F      # SystemLabel.out [otherwise ~.EIG]\n")
 
@@ -585,8 +587,8 @@ def get_eos(pattern='*', struct_file='STRUCT.fdf'):
     plb.savefig('a-eos.png')
     plb.show()
 
-    print 'initial guesses  : ',x0
-    print 'fitted parameters: ', murnpars
+    print ('initial guesses  : ',x0)
+    print ('fitted parameters: ', murnpars)
 
 
 def get_density_of_states(label, e_min, e_max, npoints=1001, broad=0.05, is_plot=0):

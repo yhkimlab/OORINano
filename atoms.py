@@ -1,26 +1,14 @@
 #
-# Object-Oriented XXYZ Lite version
-# Last revision : 2013. 1. 22
-#
-# 150607 Start version control with github.
-# 130122 Used own Class Vector in AtomsSystem.rotate
+# NanoCore3
+# Last revision : 2019. 02. 12
 #
 
-from atomic_data import atomic_weight, atomic_symbol, atomic_number, covalent_radii 
-#from Scientific.Geometry import Vector
-#from Scientific.Geometry.Objects3D import Line, rotatePoint, Plane
+from __future__ import print_function
+from . atomic_data import atomic_weight, atomic_symbol, atomic_number, covalent_radii 
 from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
 import os
 
-
-## Aux. functions ##
-def _mycmp_x(obj1, obj2):
-    return cmp(obj1[0].get_position()[0], obj2[0].get_position()[0])
-def _mycmp_y(obj1, obj2):
-    return cmp(obj1[0].get_position()[1], obj2[0].get_position()[1])
-def _mycmp_z(obj1, obj2):
-    return cmp(obj1[0].get_position()[2], obj2[0].get_position()[2])
 
 def convert_abc2xyz(a,b,c,alpha,beta,gamma):
     """Convert to cartesian lattice vectors.
@@ -37,8 +25,8 @@ def convert_abc2xyz(a,b,c,alpha,beta,gamma):
     c3bar = (-c1*c2 + c3)/(s1*s2)
     sqrtarg = 1.0 - c3bar*c3bar
     if (sqrtarg <= 0):
-        print "Negative argument to SQRT"
-        print sqrtarg, alpha, beta, gamma
+        print ("Negative argument to SQRT")
+        print (sqrtarg, alpha, beta, gamma)
         sqrtarg = 0.0
     s3bar = sqrt(sqrtarg)
     # The general transformation from scaled to XYZ coordinates is now:
@@ -71,12 +59,12 @@ class Vector(object):
     class Vector to replace Scientific.Geometry.Vector
     """
     
-    __slots__ = ['x1', 'x2', 'x3', 'x', 'y', 'z']
+    __slots__ = ['x1', 'x2', 'x3']
     
     def __init__(self, x1, x2=None, x3=None):
         if x2 == None and x3 == None:
             self.x1 = float(x1[0]); self.x2 = float(x1[1]); self.x3 = float(x1[2])
-	else:
+        else:
             self.x1 = float(x1); self.x2 = float(x2); self.x3 = float(x3)
 
     def __repr__(self):
@@ -126,13 +114,17 @@ class Vector(object):
         return Vector(a1+b1, a2+b2, a3+b3)
 
     def __sub__(self,other):
-	a1, a2, a3 = [self.x1, self.x2, self.x3]
+        a1, a2, a3 = [self.x1, self.x2, self.x3]
         b1, b2, b3 = [other.x1, other.x2, other.x3]
         return Vector(a1-b1, a2-b2, a3-b3)
 
     def __div__(self, other):
-	other = float(other)
-	return Vector(self.x1/other, self.x2/other, self.x3/other)
+        other = float(other)
+        return Vector(self.x1/other, self.x2/other, self.x3/other)
+
+    def __truediv__(self, other):
+        other = float(other)
+        return Vector(self.x1/other, self.x2/other, self.x3/other)
 
     def __abs__(self): return self.length()
 
@@ -146,9 +138,9 @@ class Vector(object):
         >>> angle = vector1.angle(vector2)
         """
         adotb = self.dot(other)
-	lena  = self.length(); lenb = other.length()
-	costh = adotb / (lena*lenb)
-	return acos(costh)
+        lena  = self.length(); lenb = other.length()
+        costh = adotb / (lena*lenb)
+        return acos(costh)
   
     def rotate(self, angle, rot_center, rot_vector):
         """
@@ -238,13 +230,13 @@ Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=N
         if isinstance(symbol, str):
             if symbol not in atomic_symbol.values():
                 if symbol == 'X': self._symbol = 'X'
-                else: raise ValueError, "Unknown species, %s" % symbol
+                else: raise ValueError("Unknown species, %s" % symbol)
             else:
                 self._symbol = symbol
         elif isinstance(symbol, int):
             self._symbol = atomic_symbol[symbol]
         else:
-            raise ValueError
+            raise ValueError()
 
     def set_position(self, position):
         if len(position) == 3 and (isinstance(position, list) or
@@ -253,44 +245,44 @@ Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=N
         elif len(position) == 3 and (isinstance(position, Vector)):
             self._position = position # 110330 for old Scientific
         else:
-            raise ValueError, "Invaild dimension of position vector"
+            raise ValueError("Invaild dimension of position vector")
 
     def set_mass(self, mass):
         if mass == None:
             self._mass = float(atomic_weight[atomic_number(self._symbol)])
         elif mass < 0:
-            raise ValueError, "Negative mass is not allowed."
+            raise ValueError("Negative mass is not allowed.")
         elif type(mass) != float and type(mass) != int:
-            raise ValueError, "Invaild mass value : %s" % str(mass)
+            raise ValueError("Invaild mass value : %s" % str(mass))
         else: self._mass = mass
 
     def set_charge(self, charge):
         if charge == None: self._charge = None
         elif type(charge) != float and type(charge) != int:
-            raise ValueError, "Invaild charge value : %s" % str(charge)
+            raise ValueError("Invaild charge value : %s" % str(charge))
         else: self._charge = charge
 
     def set_connectivity(self, connectivity):
         if connectivity == None: self._connectivity = None
         elif not (isinstance(connectivity, list) or
-                isinstance(connectivity, tuple)): raise ValueError
+                isinstance(connectivity, tuple)): raise ValueError()
         else: self._connectivity = connectivity
 
     def set_groupid(self, groupid):
         if groupid == None: self._groupid = 1
         elif type(groupid) == str or type(groupid) == int:
             self._groupid = groupid
-        else: raise ValueError, "A group id should be a string or integer."
+        else: raise ValueError("A group id should be a string or integer.")
 
     def set_serial(self, serial):
         if serial == None: self._serial = 1
         elif type(serial) == int:
             self._serial = serial
-        else: raise ValueError, "A serial number should be a integer."
+        else: raise ValueError("A serial number should be a integer.")
 
     def set_fftype(self, fftype):
         if fftype == None: self._fftype = None
-        elif not type(fftype) == str: raise ValueError
+        elif not type(fftype) == str: raise ValueError()
         else: self._fftype = fftype
 
     ### under construction... image connectivity ###
@@ -319,17 +311,17 @@ Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=N
 
     def __add__(self, other):
         if self == other:
-            raise ValueError, "Don`t overlap identical atoms."
+            raise ValueError("Don`t overlap identical atoms.")
         elif (self.get_position() - other.get_position()).length() < 0.01:
-            print "Warning : Too close atoms\n"
-            print self; print other
+            print ("Warning : Too close atoms\n")
+            print (self); print (other)
         lefthand = self.copy()
         righthand = other.copy()
         return AtomsSystem([lefthand, righthand])
 
     def __getitem__(self, i):
         if i in [0,1,2]: return self.get_position()[i]
-        else: raise ValueError, "indices must be one of integers 0,1,2"
+        else: raise ValueError("indices must be one of integers 0,1,2")
 
     def __eq__(self, other):
         cond1 = self.get_position() == other.get_position()
@@ -368,7 +360,7 @@ class AtomsSystem(object):
     __slots__ = ['_atoms', '_cell', '_pbc', '_selected', '_constraints',
                  '_pointer', '_bonds']
 
-    def __init__(self, atoms, cell=None, pbc=[False,False,False], i_serial=1,
+    def __init__(self, atoms, cell='None', pbc=[False,False,False], i_serial=1,
                  bonds=None):
 
         if not atoms: # 110924 empty AtomsSystem is allowed.
@@ -388,9 +380,9 @@ class AtomsSystem(object):
                     iatom = Atom(atom[0], [atom[1],atom[2],atom[3]])
                     atoms2.append(iatom)
                 else:
-                    raise ValueError, "Invaild atom data list"
+                    raise ValueError("Invaild atom data list")
             self._atoms = atoms2
-        else: raise ValueError, "Unknown atom data"
+        else: raise ValueError("Unknown atom data")
         
         self.init_pointer()
         self.set_serials(i_serial)
@@ -431,7 +423,7 @@ class AtomsSystem(object):
 
     def reset_serials(self): self.set_serials(1)
 
-    def set_cell(self, cell_vector):
+    def set_cell(self, cell_vector='None'):
         """
         Define lattice vectors
         
@@ -443,14 +435,15 @@ class AtomsSystem(object):
         >>> atoms.set_cell(cell)
         >>> 
         """
-        if cell_vector == None:
-            self._cell = None; return
+        if cell_vector == 'None':
+            self._cell = 'None'; return
         cell_vector = np.array(cell_vector)
         if cell_vector.shape == (3,3):
             self._cell = cell_vector
         elif cell_vector.shape == (6,):
             self._cell = convert_abc2xyz(*cell_vector)
-        else: raise ValueError
+            print ("WARNGING: v3 along z, v2 in xy plane.")
+        else: raise ValueError()
 
     def scale_cell(self, fr_1, fr_2, fr_3):
         v1 = Vector(self._cell[0])
@@ -460,9 +453,9 @@ class AtomsSystem(object):
         self.set_cell([v1, v2, v3])
 
     def set_vacuum(self, vac, direction='z'):
-        if direction == 'x': self._cell[0][0] = vac
-        if direction == 'y': self._cell[1][1] = vac
-        if direction == 'z': self._cell[2][2] = vac
+        if direction == 'x': self._cell[0][0] += vac
+        if direction == 'y': self._cell[1][1] += vac
+        if direction == 'z': self._cell[2][2] += vac
 
     def get_reciprocal_cell(self, unit=1.0):
         """
@@ -484,7 +477,7 @@ class AtomsSystem(object):
                [ -1.22464680e-16,  -1.22464680e-16,   2.00000000e+00]])
         >>>
         """
-        if self._cell == None: return None
+        if self._cell == 'None': return
         from math import pi
         a1 = Vector(self._cell[0])
         a2 = Vector(self._cell[1])
@@ -503,21 +496,22 @@ class AtomsSystem(object):
         """
         Impose periodicity of this system: usually for seqquest code
         """
-        if pbc == None:
+        pbc = np.array(pbc)
+        if not pbc.all():
             self._pbc = np.array([False,False,False])
             return
         if type(pbc) == int:
             if pbc == 1: self._pbc = np.array([True,False,False]); return
             elif pbc == 2: self._pbc = np.array([True,True,False]); return
             elif pbc == 3: self._pbc = np.array([True,True,True]); return
-            else: raise ValueError, "pbc should be lower than 3."
+            else: raise ValueError("pbc should be lower than 3.")
         if np.array(pbc).shape == (3,):
             self._pbc = np.array(pbc)
-        else: raise ValueError, "Can`t guess pbc"
+        else: raise ValueError("Can`t guess pbc")
 
     def set_groupids(self, groupid):
         if not self._selected:
-            raise ValueError, "Select atoms to set groupids"
+            raise ValueError("Select atoms to set groupids")
         for atom in self._atoms:
             if atom.get_serial() in self._selected:
                 atom.set_groupid(groupid)
@@ -568,7 +562,7 @@ class AtomsSystem(object):
         for i in nondgts:
             j = i.strip()
             if j != '' and j != '-':
-                raise ValueError, 'Illegal non-digital character(s)=%s' % j
+                raise ValueError('Illegal non-digital character(s)=%s' % j)
         
         # First, atom #s given in range formats (e.g. '5-7', '10 - 15')
         rngs = re.findall(r'(\d+)\s*-\s*(\d+)', astr)
@@ -591,9 +585,9 @@ class AtomsSystem(object):
         return selected
 
     def select_all(self):
-	"""
-	Select all atoms
-	"""
+        """
+        Select all atoms
+        """
         self._selected = self.get_serials()
     
     def select_atmnbs(self, astr):
@@ -610,7 +604,7 @@ class AtomsSystem(object):
         # Check whether the atom #s are valid.
         for i in selected:
             if i not in self.get_serials():
-                raise ValueError, 'Index is out of range. # of atoms=%d' % natm
+                raise ValueError('Index is out of range. # of atoms=%d' % natm)
         self._selected = selected
 
     def select_elements(self, symbs):
@@ -626,9 +620,9 @@ class AtomsSystem(object):
         self._selected = selected
 
     def select_reverse(self):
-	"""
-	Select all the other atoms not in current selected atom numbers.
-	"""
+        """
+        Select all the other atoms not in current selected atom numbers.
+        """
         temp = []; temp1 = []; temp2 = []
         for i in self._selected:
             temp.append(i)
@@ -654,7 +648,7 @@ class AtomsSystem(object):
             if axis == 'x':   t = atom.get_position()[0]
             elif axis == 'y': t = atom.get_position()[1]
             elif axis == 'z': t = atom.get_position()[2]
-            else: print "Invalid axis type"; raise ValueError
+            else: print ("Invalid axis type"); raise ValueError()
             serial = atom.get_serial()
             if t > pl and t < ph: temp.append(serial)
         if ret: return temp
@@ -710,7 +704,7 @@ class AtomsSystem(object):
         >>> atoms.select_sphere_region((0,0,0), 5.0)
         """
         selected = []; x1, y1, z1 = center
-        if radii <= 0: raise ValueError, "'radii' should be larger than 0."
+        if radii <= 0: raise ValueError("'radii' should be larger than 0.")
         for atom in self._atoms:
             x, y, z = atom.get_position()
             det = (x-x1)**2 + (y-y1)**2 + (z-z1)**2 - radii**2
@@ -873,11 +867,11 @@ class AtomsSystem(object):
             else:
                 total.append((atom, False))
         
-        if option == 'x': sorted.sort(_mycmp_x)
-        elif option == 'y': sorted.sort(_mycmp_y)
-        elif option == 'z': sorted.sort(_mycmp_z)
+        if   option == 'x': sorted.sort(key=lambda x: x[0].get_position()[0])
+        elif option == 'y': sorted.sort(key=lambda x: x[0].get_position()[1])
+        elif option == 'z': sorted.sort(key=lambda x: x[0].get_position()[2])
         else:
-            print "Invalid axis : %s" % option
+            print ("Invalid axis : %s" % option)
             return
         
         m = 0; n = 0
@@ -917,7 +911,7 @@ class AtomsSystem(object):
             
         # safety check...
         if len(self._selected) != 2:
-            raise ValueError, "Please select two atomic label numbers"
+            raise ValueError("Please select two atomic label numbers")
         
         # Now, compute the distance between two atoms.
         atom1 = self._atoms[self._selected[0]-1].get_position()
@@ -948,7 +942,7 @@ class AtomsSystem(object):
             
         # safety check...
         if len(self._selected) != 2:
-            raise ValueError, "Please select two atomic label numbers"
+            raise ValueError("Please select two atomic label numbers")
         
         # Now, compute the distance between two atoms.
         atom1 = self._atoms[self._selected[0]-1].get_position()
@@ -995,7 +989,7 @@ class AtomsSystem(object):
             
         # safety check...
         if len(self._selected) != 3:
-            raise ValueError, "Please select three atomic label numbers"
+            raise ValueError("Please select three atomic label numbers")
         
         # Now, compute the angle.
         atom1 = self._atoms[self._selected[0]-1].get_position()
@@ -1030,7 +1024,7 @@ class AtomsSystem(object):
         elif type(selected) == list or type(selected) == tuple:
             self._selected = selected
         if len(self._selected) != 4:
-            raise ValueError, "Please input four atomic label numbers"
+            raise ValueError("Please input four atomic label numbers")
         
         # Now, compute the dihedral angle.
         atom1 = self._atoms[self._selected[0]-1].get_position()
@@ -1103,8 +1097,20 @@ class AtomsSystem(object):
     
         # Case No.3 : Error for mode
         else:
-            raise ValueError, '"mode" should be either "mass" or "geom"!'
-    
+            raise ValueError('"mode" should be either "mass" or "geom"!')
+
+    def replace_symbols(self, symbol):
+        atoms2 = []
+        atoms = self.copy()
+        i = 0
+        for atom in atoms:
+            atom_ = atom.copy()
+            if (i+1) in self._selected:
+                atom_.set_symbol(symbol)
+            atoms2.append(atom_)
+            i += 1
+        return AtomsSystem(atoms2, cell=atoms.get_cell())
+   
     ## end from old XYZ module - manipulate ##
 
     ## define operators ##
@@ -1122,8 +1128,8 @@ class AtomsSystem(object):
 
     # connectivity across cell boundaries (X)
     def __mul__(self, other):
-        if self.get_cell() == None:
-            raise ValueError, "Can`t expand this system without cell vectors."
+        if self.get_cell() == 'None':
+            raise ValueError("Can`t expand this system without cell vectors.")
         v1, v2, v3 = self.get_cell(); i_serial=1
         loop_1 = 0; loop_2 = 0; loop_3 = 0
 
@@ -1131,22 +1137,22 @@ class AtomsSystem(object):
             if type(other) == int:
                 loop_1 = other-1
             else:
-                raise ValueError, "Only integer values are allowed."
+                raise ValueError("Only integer values are allowed.")
 
         elif np.array(other).shape == (2,):
             if type(other[0]) == int and type(other[1]) == int:
                 loop_1 = other[0]-1; loop_2 = other[1]-1
             else:
-                raise ValueError, "Only integer values are allowed."
+                raise ValueError("Only integer values are allowed.")
 
         elif np.array(other).shape == (3,):
             if type(other[0]) == int and type(other[1]) == int and \
                    type(other[2]) == int:
                 loop_1 = other[0]-1; loop_2 = other[1]-1; loop_3 = other[2]-1
             else:
-                raise ValueError, "Only integer values are allowed."
+                raise ValueError("Only integer values are allowed.")
         else:
-            raise ValueError, "1~3 dimension integer arrays"
+            raise ValueError("1~3 dimension integer arrays")
 
         k=0; atoms2 = []; pointer = {}
         # along cell[2]
@@ -1177,9 +1183,9 @@ class AtomsSystem(object):
         return self._atoms[i].copy()
     
     def __repr__(self):
-        print "%4s %6s %13s %13s %13s %13s" % \
-              ('No.', 'Symbol', 'x','y','z','GroupID')
-        print "="*79
+        print ("%4s %6s %13s %13s %13s %13s" % \
+              ('No.', 'Symbol', 'x','y','z','GroupID') )
+        print ("="*79)
         contents = {}
         for atom in self._atoms:
             contents[atom.get_symbol()] = contents.get(atom.get_symbol(),0)+1
@@ -1187,7 +1193,7 @@ class AtomsSystem(object):
             pos = atom.get_position()
             groupid = atom.get_groupid()
             info2 = (str(serial), symb, pos.x(), pos.y(), pos.z(), groupid)
-            print "%4s %6s %13.6f %13.6f %13.6f%13s" % info2
+            print ("%4s %6s %13.6f %13.6f %13.6f%13s" % info2)
 
             # 110929 connectivity disabled
             #if atom.get_connectivity():
@@ -1197,19 +1203,20 @@ class AtomsSystem(object):
             #    print "%4s %6s %13.6f %13.6f %13.6f" % info2
                 
         info1 = "Number of atoms = %s" % len(self._atoms)
-        print info1
-        print 'Contents =>', contents; i=0
+        print (info1)
+        print ('Contents =>', contents); i=0
         info_cell = self.get_cell(); pbc_info = self.get_pbc()
-        if self._cell != None:
-            print "\nCell & Periodic Boundary Condition Infomation"
-            print "v1  (%10.6f, %10.6f, %10.6f)" % tuple(info_cell[0])
-            print "v2  (%10.6f, %10.6f, %10.6f)" % tuple(info_cell[1])
-            print "v3  (%10.6f, %10.6f, %10.6f)" % tuple(info_cell[2])
+        #if self._cell != None:
+        if self._cell.any():
+            print ("\nCell & Periodic Boundary Condition Infomation")
+            print ("v1  (%10.6f, %10.6f, %10.6f)" % tuple(info_cell[0]))
+            print ("v2  (%10.6f, %10.6f, %10.6f)" % tuple(info_cell[1]))
+            print ("v3  (%10.6f, %10.6f, %10.6f)" % tuple(info_cell[2]))
         #if pbc_info != np.array([None, None, None]):
-        print "PBC (%10s, %10s, %10s)" % (str(pbc_info[0]),
-                                          str(pbc_info[1]),
-                                          str(pbc_info[2]))
-        return 'End of infomation\n'
+        print ("PBC (%10s, %10s, %10s)" % (str(pbc_info[0]),
+                                           str(pbc_info[1]),
+                                           str(pbc_info[2])) )
+        return ('End of infomation\n')
 
     def __eq__(self, other):
         det = []
@@ -1260,7 +1267,7 @@ class AtomsSystem(object):
         if type(selected) == list or type(selected) == tuple:
             self._selected = selected
         if not self._selected:
-            raise ValueError, "select more than one atom number"; return
+            raise ValueError("select more than one atom number"); return
         else:
             atoms2 = []
             for i in self._selected:
@@ -1270,7 +1277,7 @@ class AtomsSystem(object):
     
     def delete(self):
         if self._selected is None:
-            raise ValueError, 'Nothing to delete!'
+            raise ValueError('Nothing to delete!')
         atoms2 = []
         for atom in self._atoms:
             if atom.get_serial() not in self._selected:
@@ -1288,6 +1295,11 @@ class AtomsSystem(object):
         #self.refresh_pointer()
 
     ## end aux. methods ##
+
+
+    #
+    # New features
+    #
     
     def adjust_cell_size(self, ratio, direction=7):
         """                                                                           
@@ -1373,9 +1385,9 @@ class AtomsSystem(object):
                 j += 1
             i += 1
         
-        print i_min+1,"cell(s) for structure 1,"
-        print j_min+1, "cell(s) for structure 2."
-        print "Error (in %) =", min_error/v1[0]*100, '\n'
+        print (i_min+1,"cell(s) for structure 1,")
+        print (j_min+1, "cell(s) for structure 2.")
+        print ("Error (in %) =", min_error/v1[0]*100, '\n')
 
         return i_min+1, j_min+1
 
@@ -1410,4 +1422,332 @@ class AtomsSystem(object):
         if   plane == 'xy': return X, Y
         elif plane == 'yz': return Y, Z
         elif plane == 'zx': return Z, X
-        else: raise ValueError, "plane should be xy, yz, or zx."
+        else: raise ValueError("plane should be xy, yz, or zx.")
+
+
+    def get_fractional_coordinate_system(self):
+
+        atoms2 = []
+        cell_inv = np.matrix(self._cell) ** -1
+        v1, v2, v3 = self.get_cell()
+        cell_new = np.array([v1, v2, v3])
+
+        for atom in self._atoms:
+            symb = atom.get_symbol()
+            x,y,z = atom.get_position()
+            cart_coord = np.matrix(np.array([x,y,z]))
+            frac_coord = cart_coord * cell_inv
+            x,y,z = np.array(frac_coord)[0]
+            atoms2.append(Atom(symb, [x,y,z]))
+
+        return AtomsSystem(atoms2, cell=cell_new)
+
+
+    def get_fractional_coordinate_system2(self):
+
+        import io
+
+        v1, v2, v3 = self.get_cell()
+        a,b,c,alpha,beta,gamma = io.convert_xyz2abc(v1,v2,v3)
+        #print a,b,c,alpha,beta,gamma
+
+        alpha = np.pi/180.0 * alpha
+        beta  = np.pi/180.0 * beta
+        gamma = np.pi/180.0 * gamma
+
+        v = (1 -np.cos(alpha)*np.cos(alpha)\
+               -np.cos(beta)*np.cos(beta)\
+               -np.cos(gamma)*np.cos(gamma)
+               +2*np.cos(alpha)*np.cos(beta)*np.cos(gamma))
+
+        Tmat = np.matrix([
+                          [1.0/a, -cos(gamma)/(a*sin(gamma)), 
+                           (cos(alpha)*cos(gamma)-cos(beta))/(a*v*sin(gamma))  ],
+                          [0.0, 1.0/(b*sin(gamma)), 
+                           (cos(beta) *cos(gamma)-cos(alpha))/(b*v*sin(gamma)) ],
+                          [0.0, 0.0, sin(gamma)/(c*v)  ] ])
+
+        atoms2 = []
+        for atom in self._atoms:
+            symb = atom.get_symbol()
+            p_cart = np.matrix(atom.get_position())
+            p_frac = np.array(p_cart * Tmat.T)[0]
+            #print p_frac
+            atoms2.append(Atom(symb, Vector(p_frac)))
+
+        return AtomsSystem(atoms2, cell=self.get_cell())
+
+
+
+    def get_cartesian_coordinate_system(self):
+
+        atoms2 = []
+        v1, v2, v3 = self.get_cell()
+        cell = np.matrix(np.array([v1, v2, v3]))
+
+        for atom in self._atoms:
+            symb = atom.get_symbol()
+            x,y,z = atom.get_position()
+            frac_coord = np.matrix(np.array([x,y,z]))
+            cart_coord = frac_coord * np.matrix(cell)
+            x,y,z = np.array(cart_coord)[0]
+            atoms2.append(Atom(symb, [x,y,z]))
+
+        return AtomsSystem(atoms2, cell=cell)
+
+
+    def get_cartesian_coordinate_system2(self):
+
+        import io
+
+        v1, v2, v3 = self.get_cell()
+        a,b,c,alpha,beta,gamma = io.convert_xyz2abc(v1,v2,v3)
+        #print a,b,c,alpha,beta,gamma
+
+        alpha = np.pi/180.0 * alpha
+        beta  = np.pi/180.0 * beta
+        gamma = np.pi/180.0 * gamma
+
+        v = (1 -np.cos(alpha)*np.cos(alpha)\
+               -np.cos(beta)*np.cos(beta)\
+               -np.cos(gamma)*np.cos(gamma)
+               +2*np.cos(alpha)*np.cos(beta)*np.cos(gamma))
+
+        Tmat = np.matrix([
+                          [1.0/a, -cos(gamma)/(a*sin(gamma)), 
+                           (cos(alpha)*cos(gamma)-cos(beta))/(a*v*sin(gamma))  ],
+                          [0.0, 1.0/(b*sin(gamma)), 
+                           (cos(beta) *cos(gamma)-cos(alpha))/(b*v*sin(gamma)) ],
+                          [0.0, 0.0, sin(gamma)/(c*v)  ] ])
+        Tmat = Tmat**-1
+
+        atoms2 = []
+        for atom in self._atoms:
+            symb = atom.get_symbol()
+            p_frac = np.matrix(atom.get_position())
+            p_cart = np.array(p_frac * Tmat.T)[0]
+            print (p_cart)
+            atoms2.append(Atom(symb, Vector(p_cart)))
+
+        return AtomsSystem(atoms2, cell=self.get_cell())
+
+
+    def get_in_cell_system(self):
+
+        # get fractional coordinates
+        atoms2 = self.get_fractional_coordinate_system()
+
+        # make all coordinates in 0 < x,y,z < 1
+        atoms3 = []
+        for atom in atoms2:
+            sign_x = 1
+            sign_y = 1
+            sign_z = 1
+            x,y,z = atom.get_position()
+            symb  = atom.get_symbol()
+
+            # record signs
+            if x < 0: sign_x = -1
+            if y < 0: sign_y = -1
+            if z < 0: sign_z = -1
+
+            #print x,y,z, sign_x, sign_y, sign_z, '-->',
+
+            # make all coordinates in 0 < x,y,z < 1
+            while not (x < 1 and x > 0):
+                x += -sign_x
+
+            while not (y < 1 and y > 0):
+                y += -sign_y
+
+            while not (z < 1 and z > 0):
+                z += -sign_z
+
+            #print x,y,z
+
+            atoms3.append( Atom(symb, [x,y,z]) )
+
+        atoms3 = AtomsSystem(atoms3, cell=atoms2.get_cell())
+        atoms4 = atoms3.get_cartesian_coordinate_system()
+        return atoms4
+
+
+    def get_mirrored_structure(self, plane='xy'):
+
+        # get fractional coordinates
+        atoms2 = self.get_fractional_coordinate_system()
+        atoms3 = []
+
+        for atm in atoms2:
+            x,y,z = atm.get_position()
+            symb = atm.get_symbol()
+
+            if   plane == 'xy': z = -z
+            elif plane == 'yz': x = -x
+            elif plane == 'zx': y = -y
+            else: raise ValueError("Invaild plane type: plane = xy, yz, or zx")
+
+            atoms3.append( Atom(symb, [x,y,z]) )
+
+        atoms3 = AtomsSystem(atoms3, cell=atoms2.get_cell())
+        atoms3.select_all()
+        if   plane == 'xy': atoms3.translate(0,0,1)
+        elif plane == 'yz': atoms3.translate(1,0,0)
+        elif plane == 'zx': atoms3.translate(0,1,0)
+        else: raise ValueError("Invaild plane type: plane = xy, yz, or zx")
+        atoms4 = atoms3.get_cartesian_coordinate_system()
+        return atoms4
+
+
+#
+# Animated AtomsSystem
+#
+
+class Trajectory(object):
+    """
+    Class for representing a trajectory
+    """
+
+    __slots__ = ['_snapshots']
+
+    def __init__(self, atoms_s):
+        import io
+        self._snapshots = []
+
+        for atoms in atoms_s:
+            if isinstance(atoms, AtomsSystem):
+                self._snapshots.append(atoms)
+            elif isinstance(atoms, str):
+                self._snapshots.append(io.read_xyz(atoms))
+            else: raise TypeError("Not an AtomsSystem instance")
+
+    def __len__(self): return len(self._snapshots)
+    def __getitem__(self, i): return self._snapshots[i].copy()
+    #def __repr__(self): return
+
+    def is_fixed_cell(self):
+        cell = self._snapshots[0].get_cell()
+        for atoms in self._snapshots[1:]:
+            if (cell != atoms.get_cell()).all(): return False
+        return True
+
+    def is_fixed_N(self):
+        natm = len(self._snapshots[0])
+        for atoms in self._snapshots[1:]:
+            if natm != len(atoms): return False
+        return True
+
+    def geometries(self, selected, geom_type):
+        i_s = 1; data = {}
+        for atoms in self._snapshots:
+            temp = atoms.copy(); temp.select_atmnbs(selected)
+            if geom_type == 'distance': val = temp.distance()
+            elif geom_type == 'angle' : val = temp.angle()
+            elif geom_type == 'dihedral': val = temp.dihedral()
+            elif geom_type == 'center': val = temp.center()
+            else: raise ValueError('Unknown geometry type')
+            data[i_s] = val
+            i_s += 1
+        return data
+
+    def get_geometry_average(self, selected, geom_type):
+        data = self.geometries(selected, geom_type)
+        return np.array(data.values()).mean()
+
+    def get_geometry_stdev(self, selected, geom_type):
+        data = self.geometries(selected, geom_type)
+        return np.array(data.values()).std()
+
+    def get_max(self):
+        x1 = []; x2 = []; y1 = []; y2 = []; z1 = []; z2 = []
+        for atoms in self._snapshots:
+            tmp = atoms.copy()
+            tmp.select_all(); tmp.sort('x')
+            x1.append(tmp._atoms[0][0]); x2.append(tmp._atoms[-1][0])
+            tmp.select_all(); tmp.sort('y')
+            y1.append(tmp._atoms[0][1]); y2.append(tmp._atoms[-1][1])
+            tmp.select_all(); tmp.sort('z')
+            z1.append(tmp._atoms[0][2]); z2.append(tmp._atoms[-1][2])
+        return min(x1), max(x2), min(y1), max(y2), min(z1), max(z2)
+
+    def plot_atomic_density(self, selected, plane='xy', x1=None, x2=None,
+                            y1=None, y2=None, z1=None, z2 = None,
+                            figsize=(6,9),
+                            stdx=0.08, stdy=0.08,
+                            scope=1.1, grid_space=0.1, cont_levels=50,
+                            cont_maxcut=None, cont_mincut=10**-10,
+                            return_instance=False):
+        import matplotlib.pyplot as plt
+        import pylab as plb
+        x11,x22,y11,y22,z11,z22 = self.get_max()
+        xl = x22-x11; yl = y22-y11; zl = z22-z11
+        if not x1: x1 = x11-(scope-1)*xl
+        if not x2: x2 = x22+(scope-1)*xl
+        if not y1: y1 = y11-(scope-1)*yl
+        if not y2: y2 = y22+(scope-1)*yl
+        if not z1: z1 = z11-(scope-1)*zl
+        if not z2: z2 = z22+(scope-1)*zl
+        xp = np.linspace(x1,x2,int(xl/grid_space))
+        yp = np.linspace(y1,y2,int(yl/grid_space))
+        zp = np.linspace(z1,z2,int(zl/grid_space))
+        X = 0; Y = 0
+        if   plane == 'xy': X, Y = plb.meshgrid(xp, yp)
+        elif plane == 'yz': X, Y = plb.meshgrid(yp, zp)
+        elif plane == 'zx': X, Y = plb.meshgrid(xp, zp)
+        else: raise ValueError("Unknown plane type : %s" % plane)
+        Z = 0
+        for atoms in self._snapshots:
+            for atom in atoms:
+                if atom.get_serial() in selected:
+                    x,y,z = atom.get_position()
+                    if plane == 'xy':
+                        Z += plb.bivariate_normal(X, Y, stdx, stdy, x, y)
+                    elif plane == 'yz':
+                        Z += plb.bivariate_normal(X, Y, stdx, stdy, y, z)
+                    elif plane == 'zx':
+                        Z += plb.bivariate_normal(X, Y, stdx, stdy, x, z)
+        if not cont_maxcut: cont_maxcut = Z.max()
+        i = 0
+        while i < len(yp):
+            j = 0
+            while j < len(xp):
+                if Z[i][j] < cont_mincut:
+                    Z[i][j] = cont_mincut
+                elif Z[i][j] > cont_maxcut:
+                    Z[i][j] = cont_maxcut
+                else: pass
+                j += 1
+            i += 1
+        Z = np.log10(Z)
+        levels = np.linspace(Z.min(), Z.max(), cont_levels)
+        fig = plt.figure(1, figsize)
+        fig1 = fig.add_subplot(1,1,1)
+        cset = plb.contourf(X,Y,Z, levels)
+        plb.colorbar(cset, ticks=[float('%6.4f'%Z.min()),
+                                  float('%6.4f'%Z.max())])
+        if self.is_fixed_cell():
+            cell_x = [0]; cell_y = [0]
+            v1,v2,v3 = self._snapshots[0].get_cell()
+            if   plane =='xy': pt10 = v1; pt11 = v1+v2; pt01 = v2
+            elif plane =='yz': pt10 = v2; pt11 = v2+v3; pt01 = v3
+            elif plane =='zx': pt10 = v1; pt11 = v1+v3; pt01 = v3
+            cell_x.append(pt10[0]); cell_y.append(pt10[1])
+            cell_x.append(pt11[0]); cell_y.append(pt11[1])
+            cell_x.append(pt01[0]); cell_y.append(pt01[1])
+            cell_x.append(0); cell_y.append(0)
+            fig1.plot(cell_x,cell_y,'w--',linewidth=2,label='cell')
+        #fig1.axis([x1,x2,y1,y2])
+
+        if return_instance:
+            return fig, fig1
+        else:
+            plt.show()
+
+    def set_cell(self, cell):
+        #self._snapshots = [] 
+        ats_temp = []
+        for atoms in self._snapshots:
+            atoms.set_cell(cell)
+            ats_temp.append(atoms)
+        self._snapshots = ats_temp
+        return

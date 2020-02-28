@@ -43,7 +43,8 @@ atomic_symbol = {
 def atomic_number(symb):
     if symb == 'X': return 0
     symb = symb.capitalize()
-    for k,v in atomic_symbol.iteritems():
+    #for k,v in atomic_symbol.iteritems():
+    for k,v in atomic_symbol.items():
         if v==symb: return k
     raise ValueError('"%s" is not defined in "atomic_symbol"' % symb)
 
@@ -394,5 +395,30 @@ atomic_ichar = [\
 
     1,#K
     2]#Ca
-    
-    
+
+
+from math import sin, cos, pi   
+reference_lattice = {
+
+    'atom':   [[20.0, 0, 0],
+               [0, 20.0, 0],
+               [0, 0, 20.0]],
+
+    'diatom': [[20.0, 0, 0],
+               [0, 20.0, 0],
+               [0, 0, 20.0]],
+
+    'bcc':    [[ 0.5,  0.5, -0.5],
+               [-0.5,  0.5,  0.5],
+               [ 0.5, -0.5,  0.5]],
+
+    'fcc':    [[ 0.5,  0.5,  0.0],
+               [ 0.0,  0.5,  0.5],
+               [ 0.5,  0.0,  0.5]],
+
+    'hcp':    [[ 1.0,  0.0,  0.0],
+               [ cos(pi/3.), sin(pi/3.),  0.0],
+               [ 0.0,  0.0,  1.0]]
+
+}
+

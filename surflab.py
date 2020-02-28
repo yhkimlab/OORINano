@@ -1,10 +1,11 @@
-from atoms import *
-from atomic_data import atomic_symbol, atomic_number, reference_states
-from surface_data import *
-from io import convert_abc2xyz
-#from Scientific.Geometry.Objects3D import Plane
+from __future__ import print_function
+from . atoms import *
+from . atomic_data import atomic_symbol, atomic_number, reference_states
+from . surface_data import *
+from . io import convert_abc2xyz
 from math import sin, cos, sqrt, pi
 import numpy as np
+
 
 # 1. IN : char or int, type, size / vac. thickness, specific lattice const.
 # 2. find type of lattice and its constants
@@ -16,7 +17,7 @@ import numpy as np
 def find_lattice_parameters(symb):
     info = reference_states[atomic_number(symb)]
     if info == None:
-        raise ValueError, 'Can`t guess lattice.'
+        raise ValueError('Can`t guess lattice.')
     lattice = info['symmetry']
     # type, lattice constant
     if lattice == 'fcc' or lattice =='BCC' or lattice == 'Diamond' or lattice == 'Cubic':
@@ -38,7 +39,7 @@ def find_lattice_parameters(symb):
 def fccsurfaces(symb, plane_index, size, vac):
     data = find_lattice_parameters(symb)
     if data[0] != 'fcc':
-        print "Warning : %s is known as %s." % (symb, data[0])
+        print ("Warning : %s is known as %s." % (symb, data[0]))
     a = data[1]
 
     if plane_index == '100':
@@ -125,7 +126,7 @@ def fccsurfaces(symb, plane_index, size, vac):
         surf.set_cell(fcc110_cell)
         surf.select_all(); surf.sort('z')
         return surf
-    else: raise ValueError, '100, 110, and 111 only'
+    else: raise ValueError('100, 110, and 111 only')
     
 def fcc100(symb, size=(1,1,2), vac=15.0):
     return fccsurfaces(symb, '100', size, vac)
@@ -140,7 +141,7 @@ def fcc110(symb, size=(1,1,2), vac=15.0):
 def bccsurfaces(symb, plane_index, size, vac):
     data = find_lattice_parameters(symb)
     if data[0] != 'BCC':
-        print "Warning : %s is known as %s." % (symb, data[0])
+        print ("Warning : %s is known as %s." % (symb, data[0]))
     a = data[1]
     if plane_index == '100':
         N, M = divmod(size[-1],2)
@@ -185,7 +186,7 @@ def bccsurfaces(symb, plane_index, size, vac):
         bcc111_basis1 = [(symb, v1[0], v1[1], v1[2])]
         bcc111_basis1 = [(symb, 0.0, sqrt(2)*a*sin(pi/6.), 2*d)]
         # expend basic cell
-        unit = AtomsSystem(bcc111_basis, cell=bcc11_cell,
+        unit = AtomsSystem(bcc111_basis, cell=bcc111_cell,
                            pbc=(True,True,False))
         surf = unit * (size[0], size[1], N)
         if M:

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #------------------------------------------------------------------------
 # This script plots the E-k band diagram reading the SIESTA output file #
 # systemlabel.bands. If there are bands for both spin states, band for  #
@@ -8,39 +7,17 @@
 #  Updated by Hyo Seok Kim (2013)                                       #                
 #------------------------------------------------------------------------
 
+from __future__ import print_function
+
 import sys,time
-#import matplotlib.pyplot as plt
 import numpy as np
-#from pylab import *
-
-version = 20130115
-
-#nt = time.localtime()
-#now_time = "%s_%s_%s_%s%s%s" % (nt[0],nt[1],nt[2],nt[3],nt[4],nt[5])
-#usage = "Usage: %s [systemlabel.band] [E min] [E max]" % sys.argv[0]
-#foottext = '\n Thank you\n## Kim,Hyo Seok (KAIST) <softmax1986@kaist.ac.kr>'
-
-#print "## Plotting band structure..."
-#print "## Version : %s \n" % version
-
-#Check input file
-
-#if len(sys.argv) != 4:
-#    print usage
-#    print foottext
-#    sys.exit(1)
-
-#if len(sys.argv) == 4:
-#    filename = str(sys.argv[1])
-#    ymn = float(sys.argv[2])
-#    ymx = float(sys.argv[3])
 
 
 def write_oneD_one_line(file_name, array_x, array_y, label_x, label_y):
     
     oneD = open(file_name, 'w')
     if len(array_x) != len(array_y):
-        raise ValueError, "array_x and array_y should have same length."
+        raise ValueError("array_x and array_y should have same length.")
     
     head1 = "#NumField:1\n"
     head2 = "#LabelX:%s,LabelY:%s\n" % (label_x, label_y)
@@ -140,11 +117,11 @@ def DataTnBand(filename,ymn=None,ymx=None):
     ymin = min(bands[0])
     ymax = 0
     if ymn == None and ymx == None:
-	ymin = ymin-abs(Fermi_Energy-ymin) * 0.1
-    	ymax = Fermi_Energy + abs(Fermi_Energy-ymin)
+        ymin = ymin-abs(Fermi_Energy-ymin) * 0.1
+        ymax = Fermi_Energy + abs(Fermi_Energy-ymin)
     else:
-    	ymin = ymn
-    	ymax = ymx
+        ymin = ymn
+        ymax = ymx
     xmin = float(Data_of_Band[1][0])
     xmax = float(Data_of_Band[1][1])
 
@@ -168,7 +145,7 @@ def DataTnBand(filename,ymn=None,ymx=None):
         #fig1.axvline(x=k_point[j_kp], ymin=ymin, ymax=ymax, color ='r')
         #text(k_point[j_kp], ymin-0.7, name_k_point[j_kp], size = 13, 
 	#     horizontalalignment='center',verticalalignment='center')
-	print j_kp+1
+        print (j_kp+1)
         write_oneD_one_line('bandSpecialKPT%3.3i.oneD' % (j_kp+1),
                             k_point[j_kp]*np.ones(100),
                             np.linspace(ymin, ymax, 100),

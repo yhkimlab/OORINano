@@ -2,9 +2,9 @@
 # SIESTA
 #
 
-siesta_calculator = '~/bin/siesta'
-siesta_psf_location = '~/bin/psf'
-siesta_util_location = '~/bin'
+siesta_calculator = '~/mybin/siesta_class'
+siesta_psf_location = '/home2/jhiskard/mybin/psf'
+siesta_util_location = '~/mybin'
 siesta_util_band = 'new.gnubands'
 siesta_util_dos  = 'Eig2DOS'
 siesta_util_pdos = 'fmpdos'
