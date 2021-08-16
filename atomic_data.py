@@ -37,7 +37,10 @@ atomic_symbol = {
 66:'Dy',67:'Ho',68:'Er',69:'Tm',70:'Yb',
 #Actinoids
 89:'Ac',90:'Th',91:'Pa',92:'U',93:'Np',94:'Pu',95:'Am',96:'Cm',97:'Bk',98:'Cf',
-99:'Es',100:'Fm',101:'Md',102:'No',103:'Lr'
+99:'Es',100:'Fm',101:'Md',102:'No',103:'Lr',
+
+# NMJ MODIFICATION
+104:'Had', 105:'Oad'
 }
 
 def atomic_number(symb):
@@ -154,7 +157,9 @@ atomic_weight = N.array([
     N.nan, # Fm
     N.nan, # Md
     N.nan, # No
-    N.nan])# Lw
+    N.nan, # Lr
+    1.00794, # NMJ H for HER
+    15.99940])# NMJ O for HER
 
 covalent_radii = N.array([
  0.20, # X
@@ -260,7 +265,9 @@ covalent_radii = N.array([
  N.nan, # Fm
  N.nan, # Md
  N.nan, # No
- N.nan]) # Lw
+ N.nan, # Lr
+ 0.32,  # NMJ H for HER
+ 0.73]) # NMJ H for ORR
 
 # This data is from Ashcroft and Mermin.
 reference_states = [\

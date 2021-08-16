@@ -230,6 +230,7 @@ Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=N
         if isinstance(symbol, str):
             if symbol not in atomic_symbol.values():
                 if symbol == 'X': self._symbol = 'X'
+#                elif symbol == 'H_HER': self._symbol = 'H'  # NMJ update
                 else: raise ValueError("Unknown species, %s" % symbol)
             else:
                 self._symbol = symbol
