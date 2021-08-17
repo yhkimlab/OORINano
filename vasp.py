@@ -752,9 +752,9 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orbitals=1):
 
     Orb_cent = E_n_Orb / n_Orb
     Ef_abund = df_E_n_Orb / df_n_Orb
-    print('orbital center', Orb_cent)
-    print('fermi-abudnace', Ef_abund)
-    print('highest peak', E_max,'at', E_Orb_max)
+    print('orbital center ', '%12.8f' % Orb_cent)
+    print('fermi-abudnace ', '%12.8f' % Ef_abund)
+    print('highest peak at','%12.8f'  %  E_max, 'eV has', '%12.8f' % Orb_Ef[E_Orb_max[0]], 'states')
     
     return Orb_cent, Ef_abund, (E_max, Orb_Ef[E_Orb_max[0]])
 
