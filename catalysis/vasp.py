@@ -1,10 +1,12 @@
-from . atoms import *
-from . import io
-from . io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
-from . units import ang2bohr
+from ..atoms import *
+from .. import io
+from ..io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
+from ..units import ang2bohr
 from glob import glob
 import os, math
 import numpy as np
+
+from .models import Modeling
 
 #
 # VASP Simulation Object
@@ -449,7 +451,6 @@ class Vasp(object):
 def run_series_HER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1], 
                    ediff = 0.0001, ediffg = -0.05, fix=None, active=None, vib=1, label='test'):
 
-    from NanoCore.catalysis import Modeling
    
     ### Model: substrate
     n_atoms = len(atoms)
@@ -460,7 +461,7 @@ def run_series_HER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1
     os.system('mv OUTCAR OUTCAR_%s_Sys' % label)
     os.system('mv XDATCAR XDATCAR_%s_Sys' % label)
 
-    TE_Sys = atoms_HER.get_total_energy(output_name='OUTCAR_%s_Sys' % label)
+    TE_Sys = atoms_HER.get_total_energy(output_name='OUTCAR_%s_Sys' % label) ## out of class
 
     from NanoCore.io import read_poscar
 
@@ -501,7 +502,6 @@ def run_series_HER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1
 def run_series_ORR(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],                
                 ediff = 0.0001, ediffg = -0.05, fix=None, active=None, vib=1, label='test'):
                                                                                              
-    from NanoCore.catalysis import Modeling
  
     n_atoms      = len(atoms)
     ORR_Sys      = Vasp(atoms)

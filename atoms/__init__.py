@@ -1,10 +1,13 @@
 #
 # NanoCore3
-# Last revision : 2019. 02. 12
+# Last revision         : 2019. 02. 12
+# modularized by J. Park: 2021. 10. 30
 #
 
 from __future__ import print_function
-from . atomic_data import atomic_weight, atomic_symbol, atomic_number, covalent_radii 
+#from .atomic_data import atomic_weight, atomic_symbol, atomic_number, covalent_radii 
+from .atomic_data import *
+
 from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
 import os

@@ -12,7 +12,7 @@
 
 
 from __future__ import print_function
-from . atoms import *
+from ..atoms import *
 import numpy as np
 
 

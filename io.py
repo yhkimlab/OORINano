@@ -6,8 +6,8 @@ from __future__ import print_function
 import re, sys
 from math import sin, cos, sqrt, pi
 from . units import ang2bohr, degrad
-from . atomic_data import atomic_weight, atomic_symbol, atomic_number
-from . atoms import *
+#from . atomic_data import atomic_weight, atomic_symbol, atomic_number
+from .atoms import *
 
 
 def convert_abc2xyz(a,b,c,alpha,beta,gamma):
