@@ -1,2 +1,5 @@
 KAIST EE YHKLab 
 NanoCore in development
+============================= developed by J Park ==========================================================
+io.py: makes error in running $python
+    mv io.py ncio.py
