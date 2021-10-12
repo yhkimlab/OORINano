@@ -6,7 +6,7 @@
 # E-mail      : starnmj@kaist.ac.kr
 
 """
-    class Modeling
+    class Modeling: move to models.py
     class Calculation
     class Performance
 """

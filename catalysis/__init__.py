@@ -2,6 +2,7 @@
 vasp is the seperated module
 """
 #from . import vasp
-#from . import calculation
+from .calculation import Calculation, Performance
 
-__all__=['vasp', 'calculation']
+
+#__all__=['vasp', 'calculation']
