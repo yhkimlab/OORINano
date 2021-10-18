@@ -1,10 +1,12 @@
 # External packages
-
+'''
+    Written by JPark 2021.10.20: Refactorizing modules
+'''
 from __future__ import print_function
 
-# Builders
 
-#from . import build
+
 from . import catalysis
-from .catalysis import vasp
-from .build     import surflab
+from .simulator     import vasp
+from .simulator     import siesta
+from .models        import surflab

@@ -2,7 +2,7 @@
 import os, sys, glob, math
 from ..atoms import *
 
-class Modeling:
+class Catmodeling:
 
     def __init__(self, atoms):
         self.atoms = atoms

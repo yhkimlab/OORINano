@@ -14,7 +14,7 @@
 import os, sys, glob, math
 from ..atoms import *
 
-class Calculation:
+class Analysis:
     
     def free_energies(temp=298.15, pH=0, p=0.035, sol=0):
 
@@ -210,7 +210,8 @@ class Calculation:
                                                                                                                                 
         return Gibbs_E
 
-class Performance:
+
+class Plotgibbs:
 
     def plot_HER(Gibbs_H, legend=None, y_lower=-1, y_upper=1, label="HER", y_ticks=[-1.0, -0.5, 0, 0.5, 1.0], dpi=600):
         """

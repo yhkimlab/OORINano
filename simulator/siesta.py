@@ -1,8 +1,8 @@
 from __future__ import print_function
-from . atoms import *
-from . import io
-from . io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
-from . units import ang2bohr
+from ..atoms import *
+from .. import io
+from ..io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
+from ..units import ang2bohr
 from glob import glob
 
 
