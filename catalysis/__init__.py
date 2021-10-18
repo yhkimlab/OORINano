@@ -7,7 +7,8 @@ import os, math
 import numpy as np
 
 from .catmodels import Catmodeling as Modeling
-from .analysis import Analysis, Plotgibbs
+from .analysis import *
+from .gibbsplot import *
 from ..simulator.vasp import Vasp
 
 
