@@ -1,20 +1,15 @@
-from ..atoms import *
-from .. import io
-from ..io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
-from ..units import ang2bohr
-from glob import glob
-import os, math
-import numpy as np
-
-from .catmodels import Catmodeling as Modeling
-from .analysis import *
-from .gibbsplot import *
-from ..simulator.vasp import Vasp
 #
 # VASP Simulation Object
 # made by Noh           2021. 8.
 # modified by J. Park   2021.10.
 #
+
+import os 
+from .catmodels import Catmodeling as Modeling
+from .analysis import *
+from .gibbsplot import *
+from ..simulator.vasp import Vasp
+
 """
 class Catalysis:
     def __init__(self, structures=None, Lvib=False)
