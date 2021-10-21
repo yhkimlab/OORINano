@@ -10,13 +10,40 @@ from .catmodels import Catmodeling as Modeling
 from .analysis import *
 from .gibbsplot import *
 from ..simulator.vasp import Vasp
-
-
 #
 # VASP Simulation Object
 # made by Noh           2021. 8.
 # modified by J. Park   2021.10.
 #
+"""
+class Catalysis:
+    def __init__(self, structures=None, Lvib=False)
+        self.structures=None
+
+    def runHER(self, params=None):
+        for atoms in structures:
+            run_series_HER(atoms)
+"""
+
+### Workflow for the calculation of catalysis
+
+def runHER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],
+                   ediff = 0.0001, ediffg = -0.05, fix=None, active=None, vib=1, label='test'):
+    ### run HER for a single system
+    TE_Sys, TE_SysH, ZPE, TS = run_series_HER(atoms, mode=mode, nproc=nproc, npar=npar, encut=encut, kpoints=kpoints,
+                                    ediff=ediff, ediffg=ediffg, fix=fix, active=active, vib=vib, label=label)
+    ### Gibbs energy calculation
+    Gibbs_noVib = Gibbs_HER([TE_Sys], [TE_SysH])
+    Gibbs_Vib   = Gibbs_HER([TE_Sys], [TE_SysH], [ZPE], [TS])
+
+    ### Plot Gibbs energy
+    G_H_legend = ['noVib', 'Vib']
+    G_H        = Gibbs_noVib + Gibbs_Vib
+
+    plot_HER(G_H, G_H_legend)
+
+    return 0
+
 
 def run_series_HER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1], 
                    ediff = 0.0001, ediffg = -0.05, fix=None, active=None, vib=1, label='test'):

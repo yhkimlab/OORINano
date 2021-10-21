@@ -12,13 +12,6 @@ from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
 import os
 
-
-
-
-
-
-
-
 ## Class Atom, AtomsSystem ##
 class Atom(object):
     """

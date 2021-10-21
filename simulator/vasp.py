@@ -27,7 +27,8 @@ class Vasp(object):
     Optional parameters
     -------------------
     """
-
+    ncall = 0
+    savefile = ['POSCAR', 'CONTCAR', 'KPOINTS', 'INCAR', 'OUTCAR']
 
     def __init__(self, atoms):
         self.atoms = atoms 
