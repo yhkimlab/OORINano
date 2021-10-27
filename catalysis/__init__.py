@@ -27,7 +27,7 @@ def runHER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],
                                     ediff=ediff, ediffg=ediffg, fix=fix, active=active, vib=vib, label=label)
     ### 2. Gibbs energy calculation by reading OUTCAR
     Gibbs_noVib = Gibbs_HER([totE_sys], [totE_sysH])
-    Gibbs_Vib   = Gibbs_HER([totE_sys], [totEE_sysH], [zpe], [ts])
+    Gibbs_Vib   = Gibbs_HER([totE_sys], [totE_sysH], [zpe], [ts])
 
     ### 3. Plot Gibbs energy for the series of structures
     G_H_legend = ['noVib', 'Vib']
