@@ -12,7 +12,8 @@ from ..simulator.vasp import Vasp
 
 """
 attributes
-    def runHER():
+    def runHER()
+    def runORR()
     def run_series_HER()
     def run_series_ORR()
 """
@@ -36,6 +37,21 @@ def runHER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],
 
     return 0
 
+
+def runORR(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],
+                   ediff = 0.0001, ediffg = -0.05, fix=None, active=None, vib=1, label='test'):
+    ### 1. Run HER for a given system: generate several structures then calculate (opt & zpe)
+    tE, zpe, ts = run_series_ORR(atoms, mode=mode, nproc=nproc, npar=npar, encut=encut, kpoints=kpoints,
+                                    ediff=ediff, ediffg=ediffg, fix=fix, active=active, vib=vib, label=label)
+    print(f"total energy: {tE}\nZPE: {zpe}\nEntropy: {ts}")
+    ### 2. Gibbs energy calculation by reading OUTCAR
+    Gibbs_noVib = Gibbs_ORR_4e_acid(TE=tE, pH=0)
+    Gibbs_Vib   = Gibbs_ORR_4e_acid(TE=tE, ZPE=zpe, TS=ts)
+    print(f"G_ORR: {Gibbs_noVib}\nG_ORR_vib : {Gibbs_Vib}")
+    ### 3. Plot Gibbs energy for the series of structures
+    plot_ORR_4e_acid(G_ORR_vib, U=0.7, legend=['U=1.23V', 'U=0.70V', 'U=0.00V'])
+
+    return 0
 
 def run_series_HER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1], 
                    ediff = 0.0001, ediffg = -0.05, fix=None, active=None, vib=1, label='test'):
