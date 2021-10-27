@@ -11,27 +11,24 @@ from .gibbsplot import *
 from ..simulator.vasp import Vasp
 
 """
-class Catalysis:
-    def __init__(self, structures=None, Lvib=False)
-        self.structures=None
-
-    def runHER(self, params=None):
-        for atoms in structures:
-            run_series_HER(atoms)
+attributes
+    def runHER():
+    def run_series_HER()
+    def run_series_ORR()
 """
 
 ### Workflow for the calculation of catalysis
 
 def runHER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],
                    ediff = 0.0001, ediffg = -0.05, fix=None, active=None, vib=1, label='test'):
-    ### run HER for a single system
-    TE_Sys, TE_SysH, ZPE, TS = run_series_HER(atoms, mode=mode, nproc=nproc, npar=npar, encut=encut, kpoints=kpoints,
+    ### 1. Run HER for a given system: generate several structures then calculate (opt & zpe)
+    totE_sys, totE_sysH, zpe, ts = run_series_HER(atoms, mode=mode, nproc=nproc, npar=npar, encut=encut, kpoints=kpoints,
                                     ediff=ediff, ediffg=ediffg, fix=fix, active=active, vib=vib, label=label)
-    ### Gibbs energy calculation
-    Gibbs_noVib = Gibbs_HER([TE_Sys], [TE_SysH])
-    Gibbs_Vib   = Gibbs_HER([TE_Sys], [TE_SysH], [ZPE], [TS])
+    ### 2. Gibbs energy calculation by reading OUTCAR
+    Gibbs_noVib = Gibbs_HER([totE_sys], [totE_sysH])
+    Gibbs_Vib   = Gibbs_HER([totE_sys], [totEE_sysH], [zpe], [ts])
 
-    ### Plot Gibbs energy
+    ### 3. Plot Gibbs energy for the series of structures
     G_H_legend = ['noVib', 'Vib']
     G_H        = Gibbs_noVib + Gibbs_Vib
 

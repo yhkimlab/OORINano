@@ -10,3 +10,4 @@ from . import catalysis
 from .simulator     import vasp
 from .simulator     import siesta
 from .models        import surflab
+from .models        import carbonlab

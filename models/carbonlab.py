@@ -74,7 +74,7 @@ def SC_2d(n, m, basis, uc):
         
 grp_hexa = grp
 
-def grp_rect(n, m, bl=1.42, vacuum=10.0, center=0.4):
+def grp_rect(n, m, bl=1.42, vacuum=10.0, center=0):
     """
     Generate Graphene as Rectangular shape 
     bl      C-C bond length ase 1.420
