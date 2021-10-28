@@ -4,12 +4,7 @@
 # Developer   : Min Jong Noh
 # Last update : 2020/10/01
 # E-mail      : starnmj@kaist.ac.kr
-
-"""
-    class Modeling: move to models.py
-    class Calculation
-    class Performance
-"""
+# updated by Joonho Park 2021/10/18: refactoring: change class to module
 
 import os, sys, glob, math
 from ..atoms import *

@@ -4,12 +4,7 @@
 # Developer   : Min Jong Noh
 # Last update : 2020/10/01
 # E-mail      : starnmj@kaist.ac.kr
-
-"""
-    class Modeling: move to models.py
-    class Calculation
-    class Performance
-"""
+# updated by Joonho Park 2021/10/18: refactoring: change class to module
 
 import os, sys, glob, math
 from ..atoms import *
@@ -122,7 +117,7 @@ def Gibbs_ORR_4e_acid(TE, ZPE=None, TS=None, temp=298.15, pH=0, p=0.035, sol=0):
         print("ZPE:", len(ZPE))
         print("TS:", len(TS))
      
-    G_H2O_aq, O2_g, H_ion, OH_ion = Calculation.free_energies(temp=temp, pH=pH, p=p, sol=sol)
+    G_H2O_aq, O2_g, H_ion, OH_ion = free_energies(temp=temp, pH=pH, p=p, sol=sol)
     G_Sys     = TE[0] + ZPE[0] - TS[0] + 4 * H_ion + 0 * G_H2O_aq + 1 * O2_g
     G_SysO2   = TE[1] + ZPE[1] - TS[1] + 4 * H_ion + 0 * G_H2O_aq
     G_SysOOH  = TE[2] + ZPE[2] - TS[2] + 3 * H_ion + 0 * G_H2O_aq
@@ -160,7 +155,7 @@ def Gibbs_ORR_4e_alkaline(TE, ZPE=None, TS=None, temp=298.15, pH=14, p=0.035, so
         print("ZPE:", len(ZPE))
         print("TS:", len(TS))
     
-    G_H2O_aq, O2_g, H_ion, OH_ion = Calculation.free_energies(temp=temp, pH=pH, p=p, sol=sol)
+    G_H2O_aq, O2_g, H_ion, OH_ion = free_energies(temp=temp, pH=pH, p=p, sol=sol)
     G_Sys     = TE[0] + ZPE[0] - TS[0] + 0 * OH_ion + 2 * G_H2O_aq + 1 * O2_g
     G_SysO2   = TE[1] + ZPE[1] - TS[1] + 0 * OH_ion + 2 * G_H2O_aq
     G_SysOOH  = TE[2] + ZPE[2] - TS[2] + 1 * OH_ion + 1 * G_H2O_aq
@@ -198,7 +193,7 @@ def Gibbs_OER_4e_acid(TE, ZPE=None, TS=None, temp=298.15, pH=0, p=0.035):
         print("ZPE:", len(ZPE))
         print("TS:", len(TS))
      
-    G_H2O_aq, O2_g, H_ion, OH_ion = Calculation.free_energies(temp=temp, pH=pH, p=p)
+    G_H2O_aq, O2_g, H_ion, OH_ion = free_energies(temp=temp, pH=pH, p=p)
     G_Sys     = TE[0] + ZPE[0] - TS[0] + 0 * H_ion + 2 * G_H2O_aq 
     G_SysOH   = TE[1] + ZPE[1] - TS[1] + 1 * H_ion + 1 * G_H2O_aq
     G_SysO    = TE[2] + ZPE[2] - TS[2] + 2 * H_ion + 1 * G_H2O_aq

@@ -2,7 +2,6 @@
 # VASP Simulation Object
 # made by Noh           2021. 8.
 # modified by J. Park   2021.10.
-#
 
 import os 
 from .catmodels import Catmodeling as Modeling
