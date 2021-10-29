@@ -48,7 +48,7 @@ def runORR(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],
     Gibbs_Vib   = Gibbs_ORR_4e_acid(TE=tE, ZPE=zpe, TS=ts)
     print(f"G_ORR: {Gibbs_noVib}\nG_ORR_vib : {Gibbs_Vib}")
     ### 3. Plot Gibbs energy for the series of structures
-    plot_ORR_4e_acid(G_ORR_vib, U=0.7, legend=['U=1.23V', 'U=0.70V', 'U=0.00V'])
+    plot_ORR_4e_acid(G_ORR_Vib, U=0.7, legend=['U=1.23V', 'U=0.70V', 'U=0.00V'])
 
     return 0
 
