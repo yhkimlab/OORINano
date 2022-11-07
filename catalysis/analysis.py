@@ -8,7 +8,12 @@
 
 import os, sys, glob, math
 from ..atoms import *
-    
+'''
+    free_energies
+
+    gibbs_ORR_4e_acid
+    gibbs_OER_4e_acid
+'''
 def free_energies(temp=298.15, pH=0, p=0.035, sol=0):
 
     E_H2O    = -14.236         # Total energy for H2O(g) in VASP
@@ -48,7 +53,7 @@ def free_energies(temp=298.15, pH=0, p=0.035, sol=0):
     
     return G_H2O_aq, O2_g, H_ion, OH_ion
 
-def Gibbs_HER(Sys, SysH, ZPE=None, TS=None):
+def gibbs_HER(Sys, SysH, ZPE=None, TS=None):
     E_H2   =  -6.760;  ZPE_H2   = 0.270; TS_H2   = 0.410 
     
     n_component = len(Sys)
@@ -90,7 +95,7 @@ def Gibbs_HER(Sys, SysH, ZPE=None, TS=None):
 
     return Gibbs_H
 
-def Gibbs_ORR_4e_acid(TE, ZPE=None, TS=None, temp=298.15, pH=0, p=0.035, sol=0):
+def gibbs_ORR_4e_acid(TE, ZPE=None, TS=None, temp=298.15, pH=0, p=0.035, sol=0):
     
     n_component = len(TE)  
     # TE (DFT total energy) must contain a series of energies
@@ -128,7 +133,7 @@ def Gibbs_ORR_4e_acid(TE, ZPE=None, TS=None, temp=298.15, pH=0, p=0.035, sol=0):
 
     return Gibbs_E
 
-def Gibbs_ORR_4e_alkaline(TE, ZPE=None, TS=None, temp=298.15, pH=14, p=0.035, sol=0):
+def gibbs_ORR_4e_alkaline(TE, ZPE=None, TS=None, temp=298.15, pH=14, p=0.035, sol=0):
     
     n_component = len(TE)  
     # TE (DFT total energy) must contain a series of energies
@@ -166,7 +171,7 @@ def Gibbs_ORR_4e_alkaline(TE, ZPE=None, TS=None, temp=298.15, pH=14, p=0.035, so
     
     return Gibbs_E
 
-def Gibbs_OER_4e_acid(TE, ZPE=None, TS=None, temp=298.15, pH=0, p=0.035):
+def gibbs_OER_4e_acid(TE, ZPE=None, TS=None, temp=298.15, pH=0, p=0.035):
     
     n_component = len(TE)  
     # TE (DFT total energy) must contain a series of energies

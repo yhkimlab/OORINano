@@ -12,7 +12,7 @@ from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
 import os
 
-## Class Atom, AtomsSystem ##
+## Class Atom, AtomsSystem, Vector, Trajectory ##
 class Atom(object):
     """
 Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=None)

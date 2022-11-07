@@ -9,6 +9,13 @@
 import os, sys, glob, math
 from ..atoms import *
 
+'''
+def plot_HER()
+def plot_ORR_4e_acid()
+def plot_ORR_4e_alkaline()
+def plot_OER_4e_acid():
+'''
+
 def plot_HER(Gibbs_H, legend=None, y_lower=-1, y_upper=1, label="HER", y_ticks=[-1.0, -0.5, 0, 0.5, 1.0], dpi=600):
     """
     plot HER profile with python-matplotlib

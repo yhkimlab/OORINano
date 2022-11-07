@@ -2,6 +2,11 @@
 import os, sys, glob, math
 from ..atoms import *
 
+'''
+only class Catmodeling
+'''
+
+
 class Catmodeling:
 
     def __init__(self, atoms):
@@ -57,6 +62,7 @@ class Catmodeling:
         mode = 'ORR' or 'OER'
         active = list
             same as HER_transition_gen
+        return 4 atoms images
         """
         atoms = self.atoms
         

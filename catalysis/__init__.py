@@ -8,6 +8,7 @@ from .catmodels import Catmodeling as Modeling
 from .analysis import *
 from .gibbsplot import *
 from ..simulator.vasp import Vasp
+from ..io import read_poscar
 
 """
 attributes
@@ -25,8 +26,8 @@ def runHER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],
     totE_sys, totE_sysH, zpe, ts = run_series_HER(atoms, mode=mode, nproc=nproc, npar=npar, encut=encut, kpoints=kpoints,
                                     ediff=ediff, ediffg=ediffg, fix=fix, active=active, vib=vib, label=label)
     ### 2. Gibbs energy calculation by reading OUTCAR
-    Gibbs_noVib = Gibbs_HER([totE_sys], [totE_sysH])
-    Gibbs_Vib   = Gibbs_HER([totE_sys], [totE_sysH], [zpe], [ts])
+    Gibbs_noVib = gibbs_HER([totE_sys], [totE_sysH])
+    Gibbs_Vib   = gibbs_HER([totE_sys], [totE_sysH], [zpe], [ts])
 
     ### 3. Plot Gibbs energy for the series of structures
     G_H_legend = ['noVib', 'Vib']
@@ -44,8 +45,8 @@ def runORR(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],
                                     ediff=ediff, ediffg=ediffg, fix=fix, active=active, vib=vib, label=label)
     print(f"total energy: {tE}\nZPE: {zpe}\nEntropy: {ts}")
     ### 2. Gibbs energy calculation by reading OUTCAR
-    Gibbs_noVib = Gibbs_ORR_4e_acid(TE=tE, pH=0)
-    Gibbs_Vib   = Gibbs_ORR_4e_acid(TE=tE, ZPE=zpe, TS=ts)
+    Gibbs_noVib = gibbs_ORR_4e_acid(TE=tE, pH=0)
+    Gibbs_Vib   = gibbs_ORR_4e_acid(TE=tE, ZPE=zpe, TS=ts)
     print(f"G_ORR: {Gibbs_noVib}\nG_ORR_vib : {Gibbs_Vib}")
     ### 3. Plot Gibbs energy for the series of structures
     plot_ORR_4e_acid(Gibbs_Vib, U=0.7, legend=['U=1.23V', 'U=0.70V', 'U=0.00V'])
@@ -67,7 +68,7 @@ def run_series_HER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1
 
     TE_Sys = atoms_HER.get_total_energy(output_name='OUTCAR_%s_Sys' % label) ## out of class
 
-    from NanoCore.io import read_poscar
+    #from nanocore.io import read_poscar
 
     atoms_opt = read_poscar('CONTCAR')
     atoms2 = Modeling(atoms_opt) 
@@ -114,9 +115,10 @@ def run_series_ORR(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1
  
     os.system('mv OUTCAR OUTCAR_%s_Sys' % label)
     os.system('mv XDATCAR XDATCAR_%s_Sys' % label)
+    os.system('cp CONTCAR CONTCAR_%s_Sys' % label)
     TE_ORR_Sys   = ORR_Sys.get_total_energy(output_name='OUTCAR_%s_Sys' % label)
                                                                                              
-    from NanoCore.io import read_poscar
+    #from nanocore.io import read_poscar
                                                                                              
     System_opt   = read_poscar('CONTCAR')
     ORR_Sys_opt  = Modeling(System_opt)
@@ -137,12 +139,14 @@ def run_series_ORR(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1
         idx = j+1
         fix_vib.append(idx)
 
+    ### each model calculation
     for i in range(len(cal_target)):
         cal = Vasp(cal_target[i])
         cal.run_VASP(mode=mode, nproc=nproc, npar=npar, encut=encut, kpoints=kpoints, \
                      ediff=ediff, ediffg=ediffg, fix=fix)
         os.system('mv OUTCAR OUTCAR_%s_Sys%s'   % (label, cal_name[i]))
         os.system('mv XDATCAR XDATCAR_%s_Sys%s' % (label, cal_name[i]))  
+        os.system('cp CONTCAR CONTCAR_%s_Sys%s' % (label, cal_name[i]))  
         E = cal.get_total_energy(output_name='OUTCAR_%s_Sys%s' % (label, cal_name[i]))
         TE.append(E)
 
