@@ -1,8 +1,9 @@
+### refactored by J. Park 2021.11.01
+
 from __future__ import print_function
-from . atoms import *
-from . atomic_data import atomic_symbol, atomic_number, reference_states
-from . surface_data import *
-from . io import convert_abc2xyz
+from ..atoms import atomic_symbol, atomic_number, reference_states
+from .surface_data import *
+from ..io import convert_abc2xyz
 from math import sin, cos, sqrt, pi
 import numpy as np
 

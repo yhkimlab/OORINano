@@ -1,8 +1,8 @@
 from __future__ import print_function
-from . atoms import *
-from . import io
-from . io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
-from . units import ang2bohr
+from ..atoms import *
+from .. import io
+from ..io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
+from ..units import ang2bohr
 from glob import glob
 
 
@@ -433,8 +433,8 @@ Siesta(atoms)
         """
 
         # get the location of executable
-        from NanoCore.env import siesta_calculator as executable
-        from NanoCore.env import siesta_psf_location as psf_path
+        from nanocore.env import siesta_calculator as executable
+        from nanocore.env import siesta_psf_location as psf_path
 
         if mode == 'SCF' or mode == 'POST': 
             self._params['Optimization'] = 0
@@ -568,7 +568,7 @@ def calc_pldos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi 
     file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
     file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
 
-    from NanoCore.env import siesta_pyprojection as pdos
+    from nanocore.env import siesta_pyprojection as pdos
     cmd = 'python %s' % pldos
     if mpi:
         cmd = 'mpirun -np %i ' % nproc + cmd
@@ -616,7 +616,7 @@ def calc_pdos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi =
     file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
     file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
 
-    from NanoCore.env import siesta_pyprojection as pdos
+    from nanocore.env import siesta_pyprojection as pdos
     cmd = 'python %s' % pdos
     if mpi:
         cmd = 'mpirun -np %i ' % nproc + cmd
@@ -664,7 +664,7 @@ def calc_fatband(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mp
     file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
     file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
 
-    from NanoCore.env import siesta_pyprojection as fat
+    from nanocore.env import siesta_pyprojection as fat
     cmd = 'python %s' % fat
     if mpi:
         cmd = 'mpirun -np %i ' % nproc + cmd
@@ -699,8 +699,8 @@ def get_dos(emin, emax, npoints=1001, broad=0.05, label='siesta'):
     """
 
     # Eig2DOS script
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_dos as sud
+    from nanocore.env import siesta_util_location as sul
+    from nanocore.env import siesta_util_dos as sud
     os.system('%s/%s -f -s %f -n %i -m %f -M %f %s.EIG > DOS' % (sul, sud, 
                                                                  broad, npoints, 
                                                                  emin, emax, label))
@@ -765,8 +765,8 @@ def get_band(simobj, pathfile, label='siesta', rerun=0):
         simobj.run(mode='POST')
 
     # gnuband script
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_band as sub
+    from nanocore.env import siesta_util_location as sul
+    from nanocore.env import siesta_util_band as sub
     os.system('%s/%s < %s.bands > BAND' % (sul, sub, label))
 
     # read band data
@@ -825,7 +825,7 @@ def get_band(simobj, pathfile, label='siesta', rerun=0):
 
 def siesta_xsf2cube(f_in, grid_type):
 
-    from NanoCore.io import ang2bohr
+    from nanocore.io import ang2bohr
 
     # read file
     lines = open(f_in).readlines()
@@ -968,8 +968,8 @@ def get_ldos(v1, v2, v3, origin, nmesh, label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_rho as sur
+    from nanocore.env import siesta_util_location as sul
+    from nanocore.env import siesta_util_rho as sur
     os.system('%s/%s < INP' % (sul, sur))
 
     # convert 
@@ -1024,8 +1024,8 @@ def get_rho(v1, v2, v3, origin, nmesh, label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_rho as sur
+    from nanocore.env import siesta_util_location as sul
+    from nanocore.env import siesta_util_rho as sur
     os.system('%s/%s < INP > OUT' % (sul, sur))
 
     # convert 
@@ -1096,8 +1096,8 @@ def get_pdos(simobj, emin, emax, by_atom=1, atom_index=[], species=[], broad=0.1
     file_INP.close()
 
     # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_pdos as sup
+    from nanocore.env import siesta_util_location as sul
+    from nanocore.env import siesta_util_pdos as sup
     os.system('%s/%s < INP > OUT' % (sul, sup))
     os.system('rm INP OUT')
    
@@ -1189,8 +1189,8 @@ def get_hartree_pot_z(label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_vh as sv
+    from nanocore.env import siesta_util_location as sul
+    from nanocore.env import siesta_util_vh as sv
     os.system('%s/%s < macroave.in' % (sul, sv))
     os.system('rm macroave.in')
 

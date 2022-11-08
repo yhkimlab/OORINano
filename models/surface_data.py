@@ -1,5 +1,5 @@
 from math import sin, cos, sqrt, pi
-from . atoms import *
+from ..atoms import *
 
 fcc_surf_basis = {'100':[Atom('X', [0.0, 0.0, 0.0]),
                          Atom('X', [0.0, 0.5, 0.5]) ],

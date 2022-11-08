@@ -9,6 +9,8 @@
 . /etc/profile.d/TMI.sh
 ##
 
-python3 ./test_HER.py
+date > stdout.log
 
+python3 ./test_ORR.py
 
+date >> stdout.log
