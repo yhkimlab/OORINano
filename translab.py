@@ -80,16 +80,16 @@ Transport(elec1, chan, elec2=None)
 #2345678901234567890123456789012345678901234567890123456789012345678901234567890
     def is_possible(self, tol_angle=10**-6, tol_length=0.1):
 
-        """
-Check the given electrodes and channel for possiblity of transport calculation.
-        """
+    """
+    Check the given electrodes and channel for possiblity of transport calculation.
+    """
 
         # messages
         info1 = """
-Conventionally the transport direction is regarded as the third cell vector and 
-perpendicular to the z-direction. 
+        Conventionally the transport direction is regarded as the third cell vector and 
+        perpendicular to the z-direction. 
 
-Currently, the transport direction is fixed to the third cell vector. 
+        Currently, the transport direction is fixed to the third cell vector. 
         """
         print (info1)
 
@@ -155,33 +155,33 @@ Currently, the transport direction is fixed to the third cell vector.
     def determine_nkpt(self, elec, max_nk=10, init_nk=1, step_nk=1, opts=None):
 
         """
-obj.determine_nkpt(elec, max_nk=10, init_nk=1, step_nk=1, opts=None)
-    
-    Automation tool for determination of the number of k-points for electrodes
-    (NOT used by users)
+        obj.determine_nkpt(elec, max_nk=10, init_nk=1, step_nk=1, opts=None)
+        
+        Automation tool for determination of the number of k-points for electrodes
+        (NOT used by users)
 
-    Parameters
-    ----------
-    elec : AtomsSystem
-        an atomic structure as an electrode part
+        Parameters
+        ----------
+        elec : AtomsSystem
+            an atomic structure as an electrode part
 
-    Optional parameters
-    -------------------
-    max_nk : integer
-        the maximum number of k-points along the shortest lattice vector 
-        (longest lattice vector in reciprocal space)
-        --> the number of k-points for the other lattice vectors will be 
-            automatically determined by their length of reciprocal lattice vector.
-    init_nk : integer
-        the initial number of k-points along the shortest lattice vector 
-        (longest in reciprocal space)
-    step_nk : integer
-        the increase of k-points 
-    opts : dict
-        options for SIESTA (refer to siesta.Siesta.get_options().)
+        Optional parameters
+        -------------------
+        max_nk : integer
+            the maximum number of k-points along the shortest lattice vector 
+            (longest lattice vector in reciprocal space)
+            --> the number of k-points for the other lattice vectors will be 
+                automatically determined by their length of reciprocal lattice vector.
+        init_nk : integer
+            the initial number of k-points along the shortest lattice vector 
+            (longest in reciprocal space)
+        step_nk : integer
+            the increase of k-points 
+        opts : dict
+            options for SIESTA (refer to siesta.Siesta.get_options().)
 
-    Examples
-    --------
+        Examples
+        --------
     
         """
 

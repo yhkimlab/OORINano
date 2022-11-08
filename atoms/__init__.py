@@ -7,15 +7,15 @@
 from __future__ import print_function
 #from .atomic_data import atomic_weight, atomic_symbol, atomic_number, covalent_radii 
 from .atomic_data import *
-
 from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
+import copy     # added by SH
 import os
 
 ## Class Atom, AtomsSystem, Vector, Trajectory ##
 class Atom(object):
     """
-Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=None)
+    Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=None)
     
     Class for representing a single atom.
 
@@ -138,7 +138,7 @@ Atoms(symbol, position, serial=1, groupid=None, mass=None, charge=None, fftype=N
     #    else: self._iconnectivity = iconnectivity
 
     def get_symbol(self):return self._symbol
-    def get_position(self):return self._position
+    def get_position(self):return copy.deepcopy(self._position)     # modifyed by SH
     def get_mass(self):return self._mass
     def get_charge(self):return self._charge
     def get_connectivity(self):return self._connectivity
@@ -361,9 +361,9 @@ class AtomsSystem(object):
             if atom.get_serial() in self._selected:
                 atom.set_groupid(groupid)
     
-    def get_cell(self):return self._cell
-    def get_pbc(self):return self._pbc
-    def get_selected(self): return self._selected
+    def get_cell(self):return copy.copy(self._cell)
+    def get_pbc(self):return copy.copy(self._pbc)
+    def get_selected(self): return copy.copy(self._selected)
 
     def get_serials(self):
         serials = []
@@ -1254,6 +1254,12 @@ class AtomsSystem(object):
         at2.select_all()
         at2.sort('z'); at2.set_serials(1)
         return at2[-1][2]
+	### added by SH
+    def get_zmin(self):
+        at2 = self.copy()
+        at2.select_all()
+        at2.sort('z'); at2.set_serials(1)
+        return at2[0][2]
 
 
     def get_2dscatter(self, plane='xy'):
