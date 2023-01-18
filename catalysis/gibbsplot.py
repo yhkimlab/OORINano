@@ -4,7 +4,8 @@
 # Developer   : Min Jong Noh
 # Last update : 2020/10/01
 # E-mail      : starnmj@kaist.ac.kr
-# updated by Joonho Park 2021/10/18: refactoring: change class to module
+# updated by J. Park 2021/10/18: refactoring: change class to module
+# updated by J. Park 2023/01/18: modify
 
 import os, sys, glob, math
 from ..atoms import *
@@ -16,7 +17,7 @@ def plot_ORR_4e_alkaline()
 def plot_OER_4e_acid():
 '''
 
-def plot_HER(Gibbs_H, legend=None, y_lower=-1, y_upper=1, label="HER", y_ticks=[-1.0, -0.5, 0, 0.5, 1.0], dpi=600):
+def plot_HER(Gibbs_H, legend=None, ymin=-1, ymax=1, label="HER", y_ticks=[-1.0, -0.5, 0, 0.5, 1.0], dpi=600):
     """
     plot HER profile with python-matplotlib
     this module is independent, so if you can use only hand-shaved values
@@ -63,7 +64,7 @@ def plot_HER(Gibbs_H, legend=None, y_lower=-1, y_upper=1, label="HER", y_ticks=[
     for i in range(len(e_Gibbs_H)):
         Y = [0, e_Gibbs_H[i], 0]
         plt.plot(X, Y, marker='_', ms='50', mew='5', linestyle='dashed', linewidth='1', label='%s' % str(Z[i]))
-    plt.axis([-0.4, 2.4, y_lower, y_upper])
+    plt.axis([-0.4, 2.4, ymin, ymax])
     plt.xticks([0, 1, 2], [r' H$^{+}$+e$^{-}$ ', r' H$^{*}$ ', r' 1/2H$_{2}$ '], fontsize=20)
     plt.yticks(y_ticks, fontsize=20)
     plt.tick_params(axis="y", direction="in", length=10, width=2)
@@ -73,10 +74,12 @@ def plot_HER(Gibbs_H, legend=None, y_lower=-1, y_upper=1, label="HER", y_ticks=[
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={"size":15}, frameon=False)
     plt.savefig('%s.png' % label, format='png', dpi=dpi, bbox_inches = 'tight')
 
-def plot_ORR_4e_acid(Gibbs_E, U=None, legend=None, y_lower=-2, y_upper=6, label="ORR_4e_acid", y_ticks=[-2, 0, 2, 4, 6], dpi=600, G_cal=0):
+def plot_ORR_4e_acid(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="ORR_4e_acid", y_ticks=[-2, 0, 2, 4, 6], dpi=600, G_cal=0):
     
     X        = [-1, 0, 1, 2, 3, 4, 5, 6]
-    
+    # ymin=-2
+    # ymax=6
+    xmin=-0.5; xmax=5.5
     G_eq  = Gibbs_E 
     
     # Gibbs free energy with applied potential
@@ -158,8 +161,7 @@ def plot_ORR_4e_acid(Gibbs_E, U=None, legend=None, y_lower=-2, y_upper=6, label=
     plt.scatter(X, G_eU_min, color='blue', marker='_', s=6000, linewidth=4, label='%s' % legend[2])
     for i in range(len(X)-1):
         plt.vlines((X[i+1]+X[i])/2, G_eU_min[i], G_eU_min[i+1], linestyle=':', color='blue', linewidth=2)           
-
-    plt.axis([-0.5, 5.5, y_lower, y_upper])
+    plt.axis([xmin, xmax, ymin, ymax])
     plt.xticks([0, 1, 2, 3, 4, 5], ['O$_{2}$', 'O$_{2}^{*}$', 'OOH$^{*}$', 'O$^{*}$', 'OH$^{*}$', 'H$_{2}$O'], fontsize=20)
     plt.yticks(y_ticks, fontsize=20)
     plt.tick_params(axis="y", direction="in", length=10, width=2)
@@ -169,7 +171,7 @@ def plot_ORR_4e_acid(Gibbs_E, U=None, legend=None, y_lower=-2, y_upper=6, label=
     plt.legend(loc='upper left', bbox_to_anchor=(1, 0.5), prop={"size":25}, frameon=False)
     plt.savefig('%s.png' % label, format='png', dpi=dpi, bbox_inches = 'tight')
 
-def plot_ORR_4e_alkaline(Gibbs_E, U=None, legend=None, y_lower=-6, y_upper=2, label="ORR_4e_alkaline", y_ticks=[-6,-4,-2,0,2],dpi=600, G_cal=0):
+def plot_ORR_4e_alkaline(Gibbs_E, U=None, legend=None, ymin=-6, ymax=2, label="ORR_4e_alkaline", y_ticks=[-6,-4,-2,0,2],dpi=600, G_cal=0):
     
     X        = [-1, 0, 1, 2, 3, 4, 5, 6]
     
@@ -256,7 +258,7 @@ def plot_ORR_4e_alkaline(Gibbs_E, U=None, legend=None, y_lower=-6, y_upper=2, la
     for i in range(len(X)-1):
         plt.vlines((X[i+1]+X[i])/2, G_eU_min[i], G_eU_min[i+1], linestyle=':', color='blue', linewidth=2)           
                                                                                                                             
-    plt.axis([-0.5, 5.5, y_lower, y_upper])
+    plt.axis([-0.5, 5.5, ymin, ymax])
     plt.xticks([0, 1, 2, 3, 4, 5], ['O$_{2}$', 'O$_{2}^{*}$', 'OOH$^{*}$', 'O$^{*}$', 'OH$^{*}$', 'OH$^{-}$'], fontsize=20)
     plt.yticks(y_ticks, fontsize=20)
     plt.tick_params(axis="y", direction="in", length=10, width=2)
@@ -266,7 +268,7 @@ def plot_ORR_4e_alkaline(Gibbs_E, U=None, legend=None, y_lower=-6, y_upper=2, la
     plt.legend(loc='upper left', bbox_to_anchor=(1, 0.5), prop={"size":25}, frameon=False)
     plt.savefig('%s.png' % label, format='png', dpi=dpi, bbox_inches = 'tight')
 
-def plot_OER_4e_acid(Gibbs_E, U=None, legend=None, y_lower=-6, y_upper=6, label="OER_4e_acid", y_ticks=[-6, -4, -2, 0, 2, 4, 6], dpi=600, G_cal=0):
+def plot_OER_4e_acid(Gibbs_E, U=None, legend=None, ymin=-6, ymax=6, label="OER_4e_acid", y_ticks=[-6, -4, -2, 0, 2, 4, 6], dpi=600, G_cal=0):
     
     X        = [-1, 0, 1, 2, 3, 4, 5]
     
@@ -351,7 +353,7 @@ def plot_OER_4e_acid(Gibbs_E, U=None, legend=None, y_lower=-6, y_upper=6, label=
     for i in range(len(X)-1):
         plt.vlines((X[i+1]+X[i])/2, G_eU_min[i], G_eU_min[i+1], linestyle=':', color='blue', linewidth=2)           
                                                                                                                                             
-    plt.axis([-0.50, 4.50, y_lower, y_upper])
+    plt.axis([-0.50, 4.50, ymin, ymax])
     plt.xticks([0, 1, 2, 3, 4], ['H$_{2}$O', 'OH$^{*}$', 'O$^{*}$', 'OOH$^{*}$', 'O$_{2}$'], fontsize=20)
     plt.yticks(y_ticks, fontsize=20)
     plt.tick_params(axis="y", direction="in", length=10, width=2)

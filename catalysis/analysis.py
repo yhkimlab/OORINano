@@ -9,9 +9,11 @@
 import os, sys, glob, math
 from ..atoms import *
 '''
+def
     free_energies
-
+    gibbs_HER
     gibbs_ORR_4e_acid
+    gibbs_ORR_4e_alkaline
     gibbs_OER_4e_acid
 '''
 def free_energies(temp=298.15, pH=0, p=0.035, sol=0):
