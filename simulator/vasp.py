@@ -126,6 +126,12 @@ class Vasp(object):
             raise ValueError("Invalid option," + key)
         else:
             self._params[key] = value
+    def set_options(self, **kw):
+        for k, v in kw.items():
+            key = k.upper()
+            self._params[key] = v
+        return 0
+
 
     def write_POSCAR(self, file_name='POSCAR', mode='cartesian', fix=None):
         components = self.atoms.get_contents().items()
@@ -275,7 +281,7 @@ class Vasp(object):
 
     #def run_VASP(self, mode='single', nproc=1, npar=1, encut=400, kpoints=[1,1,1], 
     #             ediff = 0.0001, ediffg = -0.05,  fix=None):
-    def run_VASP(self, mode='sp', fix=None, **kw):
+    def run_VASP(self, mode='sp', fix=None):
         """ 
         Example:
         --------
@@ -290,20 +296,17 @@ class Vasp(object):
         from nanocore.env import vasp_calculator as executable
 
         p = self._params
-        print(f"in run_VASP: {kw}")
 
-        ### Vasp mpirun & KPOINTS params are treated here
-        if 'nproc' in kw:
-            nproc = kw['nproc']
-            del kw['nproc']
+        ### obtain non-INCAR params
+        if not 'KPOINTS' in p.keys():
+            p['KPOINTS'] = [1, 1, 1]
+        if 'NPROC' in p.keys():
+            nproc = p['NPROC']
         else:
-            nproc = 24                  # assign nproc default
+            nproc = 1
+        del p['NPROC']
 
-        ### INCAR keywords and KPOINTS are changed by input
-        for key in kw.keys():
-            p[key.upper()] = kw[key]
-            print(f"{key} = {kw[key]}")
-        
+        ### these are set in set_params() 
         #p['NPAR']       = npar
         #p['ENCUT']      = encut
         #p['EDIFF']      = ediff
@@ -326,10 +329,11 @@ class Vasp(object):
             p['NSW']    = 1
 
         # run_simulation
-        cmd = 'mpirun -np %i %s > stdout.txt' % (nproc, executable)
+        cmd = f'mpirun -np {nproc}  {executable} > stdout.txt'
 
         self.write_POSCAR(fix=fix)
         self.write_KPOINTS()
+        del p['KPOINTS']        # remove params not in INCAR
         self.write_INCAR()
         self.write_POTCAR()
         

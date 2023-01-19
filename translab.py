@@ -1,6 +1,6 @@
 from __future__ import print_function
-from . atoms import *
-import . siesta2 as s2
+from nanocore.atoms import *
+import nanocore.simulator.siesta as s2
 
 
 class Transport(object):
@@ -79,11 +79,9 @@ Transport(elec1, chan, elec2=None)
 
 #2345678901234567890123456789012345678901234567890123456789012345678901234567890
     def is_possible(self, tol_angle=10**-6, tol_length=0.1):
-
-    """
-    Check the given electrodes and channel for possiblity of transport calculation.
-    """
-
+        """
+        Check the given electrodes and channel for possiblity of transport calculation.
+        """
         # messages
         info1 = """
         Conventionally the transport direction is regarded as the third cell vector and 
@@ -251,7 +249,7 @@ Transport(elec1, chan, elec2=None)
             if not pbc[2]: k3 = 1
             if [k1,k2,k3] not in kgrids: kgrids.append([k1,k2,k3])
             i += step_nk
-        print kgrids
+        print (kgrids)
         #import sys
         #sys.exit()
 
