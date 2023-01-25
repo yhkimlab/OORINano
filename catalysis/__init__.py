@@ -46,11 +46,11 @@ def runORR(calc, vas_param , mode='opt', fix=None, active=None, vib=1, label='te
     ### 1. Run HER for a given system: generate several structures then calculate (opt & zpe)
     #tE, zpe, ts = run_series_ORR(atoms, mode=mode, nproc=nproc, npar=npar, encut=encut, kpoints=kpoints,\
     #                                ediff=ediff, ediffg=ediffg, fix=fix, active=active, vib=vib, label=label)
-    tE, zpe, ts = run_series_ORR(calc, vas_param, mode, fix, active, vib, label)
-    print(f"total energy: {tE}\nZPE: {zpe}\nEntropy: {ts}")
+    totE, zpe, TS = run_series_ORR(calc, vas_param, mode, fix, active, vib, label)
+    print(f"total energy: {totE}\nZPE: {zpe}\nEntropy: {TS}")
     ### 2. Gibbs energy calculation by reading OUTCAR: import analysis
-    #Gibbs_novib    = gibbs_ORR_4e_acid(TE=tE, pH=0)
-    Gibbs_vib       = gibbs_ORR_4e_acid(TE=tE, ZPE=zpe, TS=ts)
+    #Gibbs_novib    = gibbs_ORR_4e_acid(TE=totE, pH=0)
+    Gibbs_vib       = gibbs_ORR_4e(totE=totE, ZPE=zpe, TS=TS)
     #print(f"G_ORR: {Gibbs_novib}\nG_ORR_vib : {Gibbs_vib}")
     print(f"G_ORR_vib : {Gibbs_vib}")
     ### --> find onset potential for input
@@ -63,7 +63,6 @@ def runORR(calc, vas_param , mode='opt', fix=None, active=None, vib=1, label='te
 def run_series_HER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1], 
                    ediff = 0.0001, ediffg = -0.05, fix=None, active=None, vib=1, label='test'):
 
-   
     ### Model: substrate
     n_atoms = len(atoms)
     atoms_HER = Vasp(atoms)     ### 
@@ -159,8 +158,8 @@ def run_series_ORR(calc, vas_param, mode, fix, active, vib, label):
         fix_vib.append(idx)
 
     ### each model calculation
-    print("start intermediates calculation")
     for i in range(len(INT_models)):
+        print(f"start {i+1}th intermediates calculation")
         calc = Vasp(INT_models[i])
         calc.set_options(**vas_param)
 
@@ -180,8 +179,8 @@ def run_series_ORR(calc, vas_param, mode, fix, active, vib, label):
         ### vib calculation for adsorbate
         print("start vib calculation")
         if vib:
-            suffix      += '_vib'
-            outcar      = f"OUTCAR_{suffix}"
+            suffixv     = '_vib'
+            outcar      += suffixv
             opt_poscar  = read_poscar('CONTCAR')
             calc_vib    = Vasp(opt_poscar)
             calc_vib.set_options(**vas_param)
