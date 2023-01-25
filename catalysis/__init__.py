@@ -41,12 +41,12 @@ def runHER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],
 
 #def runORR(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],
 #                   ediff = 0.0001, ediffg = -0.05, fix=None, active=None, vib=1, label='test'):
-def runORR(calc, vas_param , mode='opt', fix=None, active=None, vib=1, label='test'):
-    print(vas_param)
+def runORR(calc, sim_param , mode='opt', fix=None, active=None, vib=1, label='test'):
+    print(sim_param)
     ### 1. Run HER for a given system: generate several structures then calculate (opt & zpe)
     #tE, zpe, ts = run_series_ORR(atoms, mode=mode, nproc=nproc, npar=npar, encut=encut, kpoints=kpoints,\
     #                                ediff=ediff, ediffg=ediffg, fix=fix, active=active, vib=vib, label=label)
-    totE, zpe, TS = run_series_ORR(calc, vas_param, mode, fix, active, vib, label)
+    totE, zpe, TS = run_series_ORR(calc, sim_param, mode, fix, active, vib, label)
     print(f"total energy: {totE}\nZPE: {zpe}\nEntropy: {TS}")
     ### 2. Gibbs energy calculation by reading OUTCAR: import analysis
     #Gibbs_novib    = gibbs_ORR_4e_acid(TE=totE, pH=0)
@@ -112,12 +112,13 @@ def run_series_HER(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1
 
 #def run_series_ORR(atoms, mode='opt', nproc=1, npar=1, encut=400, kpoints=[1,1,1],
 #                ediff = 0.0001, ediffg = -0.05, fix=None, active=None, vib=1, label='test'):
-def run_series_ORR(calc, vas_param, mode, fix, active, vib, label):
+def run_series_ORR(calc, sim_param, mode, fix, active, vib, label):
     '''
     Used parameter: mode, vib, label  
     Passed params : fix,  active
     '''
-    print(f"in run_series_ORR: {vas_param}")
+    sim_class = calc.__class__
+    print(f"in run_series_ORR: {sim_param}")
     irc = 0
     natoms          = len(calc.atoms)
     #orr_cat         = Vasp(atoms)
@@ -128,7 +129,7 @@ def run_series_ORR(calc, vas_param, mode, fix, active, vib, label):
     if not os.path.isfile(outcar):
         #orr_cat.run_VASP(mode=mode, nproc=nproc, npar=npar, encut=encut, kpoints=kpoints, \
         #                 ediff=ediff, ediffg=ediffg, fix=fix)
-        calc.run_VASP(mode=mode, fix=fix)
+        calc.run_simulator(mode=mode, fix=fix)
         os.system(f'cp POSCAR  POSCAR_{fsuffix}')
         os.system(f'mv OUTCAR  {outcar}')
         os.system(f'mv XDATCAR XDATCAR_{fsuffix}')
@@ -138,14 +139,14 @@ def run_series_ORR(calc, vas_param, mode, fix, active, vib, label):
     ### No vib cal for pure catalyst: vib for only adsorbate                                          
 
     ### Make Intermediates POSCAR
-    INT_fnames      = ['O2', 'OOH', 'O', 'OH']  
+    interm_fnames      = ['O2', 'OOH', 'O', 'OH']  
     catalyst_opt    = read_poscar('CONTCAR')
     orr_model_gen   = Catmodeling(catalyst_opt)
 
     #orr_catO2, orr_catOOH, orr_catO, orr_catOH = orr_models.four_electron_transition_gen(mode='ORR', active=active)
-    INT_models = orr_model_gen.four_electron_transition_gen(mode='ORR', active=active)
+    interm_models = orr_model_gen.four_electron_transition_gen(mode='ORR', active=active)
     
-    #INT_models  = [orr_catO2, orr_catOOH, orr_catO, orr_catOH]
+    #interm_models  = [orr_catO2, orr_catOOH, orr_catO, orr_catOH]
     
     ### list for data
     ltotE       = [totE_cat]
@@ -158,18 +159,19 @@ def run_series_ORR(calc, vas_param, mode, fix, active, vib, label):
         fix_vib.append(idx)
 
     ### each model calculation
-    for i in range(len(INT_models)):
-        print(f"start {i+1}th intermediates calculation")
-        calc = Vasp(INT_models[i])
-        calc.set_options(**vas_param)
+    for i in range(len(interm_models)):
+        print(f"Make a new class instance with {i+1}th intermediates")
+        #calc = calc.__class__(interm_models[i])
+        calc = sim_class(interm_models[i])
+        calc.set_options(**sim_param)
 
         ### skip if there is OUTCAR
-        suffix = f"{label}_{i+1}_cat{INT_fnames[i]}"
+        suffix = f"{label}_{i+1}_cat{interm_fnames[i]}"
         outcar = f"OUTCAR_{suffix}"
         if not os.path.isfile(outcar):
             #calc.run_VASP(mode=mode, nproc=nproc, npar=npar, encut=encut, kpoints=kpoints, \
             #     ediff=ediff, ediffg=ediffg, fix=fix)
-            calc.run_VASP(mode=mode, fix=fix)
+            calc.run_simulator(mode=mode, fix=fix)
             os.system(f'cp POSCAR  POSCAR_{suffix}')
             os.system(f'mv OUTCAR  {outcar}')
             os.system(f'mv XDATCAR XDATCAR_{suffix}')  
@@ -182,14 +184,14 @@ def run_series_ORR(calc, vas_param, mode, fix, active, vib, label):
             suffixv     = '_vib'
             outcar      += suffixv
             opt_poscar  = read_poscar('CONTCAR')
-            calc_vib    = Vasp(opt_poscar)
-            calc_vib.set_options(**vas_param)
+            calc = sim_class(opt_poscar)
+            calc.set_options(**sim_param)
             if not os.path.isfile(outcar):
                 #cal_vib.run_VASP(mode='vib', nproc=nproc, npar=npar, encut=encut, kpoints=kpoints, \
                 #               ediff=ediff, ediffg=ediffg, fix=fix_vib)
-                calc_vib.run_VASP(mode='vib', fix=fix_vib)
+                calc.run_simulator(mode='vib', fix=fix_vib)
                 os.system(f'mv OUTCAR {outcar}')
-            zpe, TS = calc_vib.get_vibration_energy(output_name=f'{outcar}')
+            zpe, TS = calc.get_vibration_energy(output_name=f'{outcar}')
             lzpe.append(zpe)
             lTS.append(TS)
     if vib:
