@@ -4,9 +4,6 @@
 '''
 from __future__ import print_function
 
-
-
-from . import catalysis
 from .simulator     import vasp
 from .simulator     import siesta
 from .models        import surflab
