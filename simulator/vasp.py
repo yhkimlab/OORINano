@@ -69,7 +69,7 @@ class Vasp(object):
             'ISYM'        :         -1,       # -1 = symmetry off completely
             'LASPH'       :        'T',       # non-spherical contribtuion
             'LMAXMIX'     :          4,       # Density Mixer handles quantumNumber upto (4: d-elements, 6: f-elements)
-            'ISPIN'       :          2,       # 1 = Spin-restricted, 2 = spin-unrestricted
+            'ISPIN'       :          1,       # 1 = Spin-restricted, 2 = spin-unrestricted
               }
 
     def get_options(self):
