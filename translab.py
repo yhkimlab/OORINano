@@ -1,5 +1,5 @@
 from __future__ import print_function
-from nanocore.atoms import *
+from .atoms import *
 import nanocore.simulator.siesta as s2
 
 
