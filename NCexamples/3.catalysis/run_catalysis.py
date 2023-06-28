@@ -36,6 +36,9 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, mode, Lvib, nnode, nproc, n
         atoms = surflab.fccsurfaces('Pt', '111', (3,3,3), vac=15)
         ### default: npar=8, nproc=48, kpoints=[4,4,1], ediffg=-0.04
         sim_params  = dict(npar=npar, kpoints=[2,2,1], nproc=nproc, ediff=0.0001, ediffg=-0.04, encut=400)
+    else:
+        print(f"Error:: {cat_kind} should be 'orr'|'her'")
+        sys.exit(1)
     calc    = Vasp(atoms)
     calc.set_options(**sim_params)  ### why sim_params is input twice? also in catalysis.runORR ?
     ### Run VASP with analysis
@@ -83,15 +86,15 @@ def main():
 
     args = parser.parse_args()
     if args.usage:
-        print("Usage::\
+        print(f"Usage::\
                 \n\tThis is an example of a job submit in queue system such as slurm\
                 \n\tRun sbatch with jobname, partition, nnode, nproc with variables\
-                \n\t\tsbatch -J dtest -p X3 -N 1 -n 20 --export=job='orr' slurm_sbatch_nc.sh\
+                \n\t    sbatch -J dtest -p X3 -N 1 -n 20 --export=job='{args.cat_kind}' slurm_sbatch_nc.sh\
                 \n\trun_catalysis.py is run inside job script\
-                \n\t\trun_catalysis.py -j orr -sj run -N 1 -np 20 --npar $npar\
+                \n\t    run_catalysis.py -j orr -sj run -N {args.nnode} -np {args.nproc} --npar $npar\
                 \n\tjob is running in work dir(jobname) & logfile is written in submit dir\
-                \n\tDuring job running: jobid.jobname.log\
-                \n\tAfter job finished: --> jobid.jobname.out\
+                \n\t    mpirun -np {args.nproc} VASP_EXC # in work dir\
+                \n\tAfter job finished: jobid.jobname.log -> jobid.jobname.out\
             ")
         sys.exit(0)
     run_catalysis(args.job, args.cat_kind, args.flabel, args.overwrite, args.mode, args.novib, args.nnode, args.nproc, args.npar)
