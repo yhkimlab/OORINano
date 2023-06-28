@@ -8,14 +8,8 @@
 # updated by J. Park 2023/01/18: modify
 
 import os, sys, glob, math
-from ..atoms import *
+from ...atoms import *
 
-'''
-def plot_HER()
-def plot_ORR_4e_acid()
-def plot_ORR_4e_alkaline()
-def plot_OER_4e_acid():
-'''
 
 def plot_HER(Gibbs_H, legend=None, ymin=-1, ymax=1, label="HER", y_ticks=[-1.0, -0.5, 0, 0.5, 1.0], dpi=600):
     """

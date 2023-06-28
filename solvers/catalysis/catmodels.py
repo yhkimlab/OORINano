@@ -1,6 +1,6 @@
 
 import os, sys, glob, math
-from ..atoms import *
+from ...atoms import *
 
 '''
 only class Catmodeling

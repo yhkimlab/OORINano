@@ -7,15 +7,8 @@
 # updated by Joonho Park 2021/10/18: refactoring: change class to module
 
 import os, sys, glob, math
-from ..atoms import *
-'''
-def
-    free_energies
-    gibbs_HER
-    gibbs_ORR_4e_acid
-    gibbs_ORR_4e_alkaline
-    gibbs_OER_4e_acid
-'''
+from ...atoms import *
+
 def free_energies(T=298.15, pH=0, p=0.035, sol=0):
 
     totE_H2O    = -14.236                   # Total energy for H2O(g) in VASP

@@ -8,3 +8,5 @@ from .simulator     import vasp
 from .simulator     import siesta
 from .models        import surflab
 from .models        import carbonlab
+from .solvers       import catalysis
+from .solvers       import qttransport

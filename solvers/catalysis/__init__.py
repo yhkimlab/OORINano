@@ -7,17 +7,10 @@ import os
 from .catmodels import Catmodeling
 from .analysis import *
 from .gibbsplot import *
-from ..io import read_poscar
+from ...io import read_poscar
 
 import operator
 import sys
-"""
-attributes
-    def runHER()
-    def runORR()
-    def run_series_HER()
-    def run_series_ORR()
-"""
 
 ### Workflow for the calculation of catalysis
 
