@@ -13,7 +13,7 @@ from glob import glob
 class Siesta(object):
 
     """
-Siesta(atoms)
+    Siesta(atoms)
     
     Class for management of SIESTA simulation.
 
@@ -407,6 +407,12 @@ Siesta(atoms)
         #file.write("SaveInitialChargeDenaisty F  # SystemLabel.RHOINIT\n")
         file.close()
 
+    
+    def run_catalysis():
+        '''
+        Run solvers/catalysis
+        '''
+        pass
 
     def run(self, mode='SCF', cellparameter=1.0, log=1, mpi=0, nproc=1, psf=1):
 

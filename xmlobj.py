@@ -222,8 +222,8 @@ def read_siesta_xml(obj, lv, ith):
     txt = obj.text
     xmlobj = SiestaXmlObject(tag, atr, txt, lv)
 
-    print "    "*(lv-1), "depth lv =", lv, ith, "-th", \
-          "tag =", obj.tag.split('}')[-1], "attrib =", obj.attrib, "text =", obj.text, '\n'
+    print ("    "*(lv-1), "depth lv =", lv, ith, "-th", \
+          "tag =", obj.tag.split('}')[-1], "attrib =", obj.attrib, "text =", obj.text, '\n')
 
     # children
     i = 1

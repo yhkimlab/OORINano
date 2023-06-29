@@ -1,0 +1,5 @@
+### view w.r.t. file format
+xsf:    xcrysden --xsf a.xsf
+        vesta a.xsf
+fdf:    fdf2xcrysden.py a.fdf
+

@@ -6,7 +6,6 @@
 
 #--------- Medules list ---------#
 
-import siestaio as io
 import collections
 import numpy as np
 import string
@@ -18,6 +17,7 @@ import timeit
 from scipy.interpolate import interp1d
 from mpi4py import MPI
 
+from . import siestaio as io
 
 #------- Parameters -------#
 

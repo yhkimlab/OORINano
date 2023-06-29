@@ -34,42 +34,42 @@ class Vasp(object):
         self.__class__.nitem += 1
         self.atoms = atoms 
         self._params = {
-              #1. Name and basic options       
-               'SYSTEM'      :     'vasp',       # text, system name
-               'NPAR'        :          1,       # integer, number of bands
-               'IBRION'      :          2,       # 2=CG/Default, 5=Hessian 
-               'LWAVE'       :        'F',       # boolean, write WAVECAR
-               'LCHARG'      :        'F',       # boolean, write CHGCAR
-               'NSW'         :          0,       # integer, optimization step
-               'PREC'        : 'Accurate',       # precision (Low, Normal, Accurate)
-               'ALGO'        :     'FAST',       # Algorithm, GGA/LDA=Normal, Fast
-               'ISTART'      :          0,       # 0:new, 1:WAVECAR, 2:samecutoff
-               'ICHARG'      :          2,       # charge from 0:WAVECAR, 1:file, 2:atomic, 11:keep CHARGE
-               'ISIF'        :          2,       # 2=Constant cell, 3=relax cell
-              #2. SCF/kgrid/functional parameters          
-               'ENCUT'       :        400,       # float, plane wave basis energy cutoff
-               'ISMEAR'      :          0,       # integer, smearing 0=Gauss, 1=Metal
-               'SIGMA'       :       0.05,       # positive float
-               'NSIM'        :          1,       # integer, bands optimized in RMM-DIIS
-               'NELMIN'      :          4,       # integer, min SCF steps
-               'NELM'        :        500,       # integer, max SCF steps
-               'EDIFF'       :     0.0001,       # float, tolerance of ground state
-               'KPOINTS'     :  [1, 1, 1],       # list, 3-vector
-               'XC'          :      'GGA',       # GGA, LDA
-               'XCAUTHOR'    :      'PE' ,       # PE=PBE, 91=PW91, RP=Revised PBE 
-              #3. Optional parameters 
-               'POTIM'       :        0.3,       # displacement  
-               'EDIFFG'      :      -0.05,       # float, stopping relaxation loop
-               'IVDW'        :         12,       # 11: D3 zero damping 12: D3 BJ damping
-               'LDIPOL'      :        'F',       # dipole correction
-               'IDIPOL'      :          3,       # 1: x, 2: y, 3: z, 4: all
-               'LPLANE'      :        'T',       # data distribution over Nodes
-               'ADDGRID'     :        'T',       # add grid for charge augmentation
-               'LREAL'       :     'Auto',       # for real space projection
-               'ISYM'        :         -1,       # -1 = symmetry off completely
-               'LASPH'       :        'T',       # non-spherical contribtuion
-               'LMAXMIX'     :          4,       # Density Mixer handles quantumNumber upto (4: d-elements, 6: f-elements)
-               'ISPIN'       :          2,       # 1 = Spin-restricted, 2 = spin-unrestricted
+            # 1. Name and basic options       
+            'SYSTEM'      :     'vasp',       # text, system name
+            'NPAR'        :          1,       # integer, number of bands
+            'IBRION'      :          2,       # 2=CG/Default, 5=Hessian 
+            'LWAVE'       :        'F',       # boolean, write WAVECAR
+            'LCHARG'      :        'F',       # boolean, write CHGCAR
+            'NSW'         :          0,       # integer, optimization step
+            'PREC'        : 'Accurate',       # precision (Low, Normal, Accurate)
+            'ALGO'        :     'FAST',       # Algorithm, GGA/LDA=Normal, Fast
+            'ISTART'      :          0,       # 0:new, 1:WAVECAR, 2:samecutoff
+            'ICHARG'      :          2,       # charge from 0:WAVECAR, 1:file, 2:atomic, 11:keep CHARGE
+            'ISIF'        :          2,       # 2=Constant cell, 3=relax cell
+            # 2. SCF/kgrid/functional parameters          
+            'ENCUT'       :        400,       # float, plane wave basis energy cutoff
+            'ISMEAR'      :          0,       # integer, smearing 0=Gauss, 1=Metal
+            'SIGMA'       :       0.05,       # positive float
+            'NSIM'        :          1,       # integer, bands optimized in RMM-DIIS
+            'NELMIN'      :          4,       # integer, min SCF steps
+            'NELM'        :        500,       # integer, max SCF steps
+            'EDIFF'       :     0.0001,       # float, tolerance of ground state
+            'KPOINTS'     :  [1, 1, 1],       # list, 3-vector
+            'XC'          :      'GGA',       # GGA, LDA
+            'XCAUTHOR'    :      'PE' ,       # PE=PBE, 91=PW91, RP=Revised PBE 
+            # 3. Optional parameters 
+            'POTIM'       :        0.3,       # displacement  
+            'EDIFFG'      :      -0.05,       # float, stopping relaxation loop
+            'IVDW'        :         12,       # 11: D3 zero damping 12: D3 BJ damping
+            'LDIPOL'      :        'F',       # dipole correction
+            'IDIPOL'      :          3,       # 1: x, 2: y, 3: z, 4: all
+            'LPLANE'      :        'T',       # data distribution over Nodes
+            'ADDGRID'     :        'T',       # add grid for charge augmentation
+            'LREAL'       :     'Auto',       # for real space projection
+            'ISYM'        :         -1,       # -1 = symmetry off completely
+            'LASPH'       :        'T',       # non-spherical contribtuion
+            'LMAXMIX'     :          4,       # Density Mixer handles quantumNumber upto (4: d-elements, 6: f-elements)
+            'ISPIN'       :          1,       # 1 = Spin-restricted, 2 = spin-unrestricted
               }
 
     def get_options(self):
@@ -126,6 +126,12 @@ class Vasp(object):
             raise ValueError("Invalid option," + key)
         else:
             self._params[key] = value
+    def set_options(self, **kw):
+        for k, v in kw.items():
+            key = k.upper()
+            self._params[key] = v
+        return 0
+
 
     def write_POSCAR(self, file_name='POSCAR', mode='cartesian', fix=None):
         components = self.atoms.get_contents().items()
@@ -273,50 +279,59 @@ class Vasp(object):
         INCAR.write("ISPIN         =   %i\n\n" % p['ISPIN'])
         INCAR.close()
 
-    def run_VASP(self, mode='single', nproc=1, npar=1, encut=400, kpoints=[1,1,1], 
-                 ediff = 0.0001, ediffg = -0.05,  fix=None):
+    def run_catalysis(self, mode='sp', fix=None):
         """ 
         Example:
         --------
 
-        from nanocore import vasp2
+        from nanocore import vasp
         from nanocore import io 
         at = io.read_poscar('POSCAR')
-        at2 = vasp2.Vasp(at)
+        at2 = vasp.Vasp(at)
         at2.run_VASP(nproc=8, npar=2, kpoints=[2,2,1])
         
         """
         from nanocore.env import vasp_calculator as executable
 
         p = self._params
-        
-        p['NPAR']       = npar
-        p['KPOINTS']    = kpoints
-        p['ENCUT']      = encut
-        p['EDIFF']      = ediff
-        p['EDIFFG']     = ediffg
+
+        ### obtain non-INCAR params
+        if not 'KPOINTS' in p.keys():
+            p['KPOINTS'] = [1, 1, 1]
+        if 'NPROC' in p.keys():
+            nproc = p['NPROC']
+        else:
+            nproc = 1
+        del p['NPROC']
+
+        ### these are set in set_params() 
+        #p['NPAR']       = npar
+        #p['ENCUT']      = encut
+        #p['EDIFF']      = ediff
+        #p['EDIFFG']     = ediffg
+        #p['KPOINTS']    = kpoints
         
         if mode == 'opt':
             p['IBRION'] = 2
             p['POTIM']  = 0.300
             p['NSW']    = 500
         
-        if mode == 'single':
+        if mode == 'sp':
             p['IBRION'] = 2
             p['POTIM']  = 0.300
             p['NSW']    =   0
 
-        
-        if mode == 'vib':
+        if mode == 'vib':   # cal adsorbate for TS
             p['IBRION'] = 5
             p['POTIM']  = 0.015
             p['NSW']    = 1
 
         # run_simulation
-        cmd = 'mpirun -np %i %s > stdout.txt' % (nproc, executable)
+        cmd = f'mpirun -np {nproc}  {executable} > stdout.txt'
 
         self.write_POSCAR(fix=fix)
         self.write_KPOINTS()
+        del p['KPOINTS']        # remove params not in INCAR
         self.write_INCAR()
         self.write_POTCAR()
         

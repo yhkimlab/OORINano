@@ -1,6 +1,10 @@
-from atoms import *
-from io import cleansymb, get_unique_symbs
-from units import ang2bohr; bohr2ang = 1/ang2bohr
+"""
+2023.06.26: updating following refactoring: 
+"""
+
+from .atoms import *
+from .io import cleansymb, get_unique_symbs
+from .units import ang2bohr; bohr2ang = 1/ang2bohr
 
 
 def make_seqquest_positions(atoms):
@@ -110,7 +114,8 @@ def write_seqquest(atoms, params, auto_sort=1, file_name=''):
     else:
         if type(file_name) == str:
             file = open(file_name, 'w')
-        else: raise ValueError, "file_name : string type is expected."
+        else:
+            raise ValueError ("file_name : string type is expected.")   # error by pdoc, J Park
     # commends
     file.write("do setup\n")
     file.write("do iters\n")
@@ -336,7 +341,7 @@ def select_rngnbs(astr):
     for i in nondgts:
         j = i.strip()
         if j != '' and j != '-':
-            raise ValueError, 'Illegal non-digital character(s)=%s' % j  
+            raise ValueError('Illegal non-digital character(s)=%s' % j)     # error by pdoc: J Park
     # First, atom #s given in range formats (e.g. '5-7', '10 - 15')
     rngs = re.findall(r'(\d+)\s*-\s*(\d+)', astr)
     selected = []
