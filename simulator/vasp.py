@@ -279,9 +279,7 @@ class Vasp(object):
         INCAR.write("ISPIN         =   %i\n\n" % p['ISPIN'])
         INCAR.close()
 
-    #def run_VASP(self, mode='single', nproc=1, npar=1, encut=400, kpoints=[1,1,1], 
-    #             ediff = 0.0001, ediffg = -0.05,  fix=None):
-    def run_simulator(self, mode='sp', fix=None):
+    def run_catalysis(self, mode='sp', fix=None):
         """ 
         Example:
         --------

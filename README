@@ -1,3 +1,11 @@
 KAIST EE YHKLab 
 NanoCore in development
 ============================= developed by J Park ==========================================================
+# download
+git clone https://github.com/yhkimlab/NanoCore nanocore
+
+# set PYTHONPATH to the front of nanocore or mv nanocore to any $PYTHONPATH such as .../site-packages; e.g.
+export PYTHONPATH=$path_to_before_nanocore:$PYTHONPATH
+
+# copy example directory and run examples at $work_dir
+cp -r NCexamples $work_dir

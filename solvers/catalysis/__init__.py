@@ -1,8 +1,10 @@
-#
 # Catalysis Simulation Object
 # made by Noh           2021. 8.
 # modified by J. Park   2021.10. 2023.01
-
+'''
+solver catalysis module
+run ORR, HER, and OER
+'''
 import os 
 from .catmodels import Catmodeling
 from .analysis import *
@@ -55,7 +57,7 @@ def run_series_HER(calc, sim_params, mode, fix, active, vib, label):
     fsuffix = f"{label}_cat"
     outcar = f"OUTCAR_{fsuffix}"
     #if not os.path.isfile(outcar):
-    calc.run_simulator(mode=mode, fix=fix)
+    calc.run_catalysis(mode=mode, fix=fix)
     os.system(f'cp POSCAR  POSCAR_{fsuffix}')
     os.system(f'mv OUTCAR {outcar}')
     os.system(f'mv XDATCAR XDATCAR_{fsuffix}')
@@ -73,7 +75,7 @@ def run_series_HER(calc, sim_params, mode, fix, active, vib, label):
     
     calc = sim_class(atomsH)
     calc.set_options(**sim_params)
-    calc.run_simulator(mode=mode, fix=fix)
+    calc.run_catalysis(mode=mode, fix=fix)
     os.system(f'mv OUTCAR {outcar}')
     os.system(f'mv XDATCAR XDATCAR_{fsuffix}')  
 
@@ -91,7 +93,7 @@ def run_series_HER(calc, sim_params, mode, fix, active, vib, label):
 
         calc = sim_class(atomsH_opt)
         calc.set_options(**sim_params)
-        calc.run_simulator(mode='vib', fix=fix_vib)
+        calc.run_catalysis(mode='vib', fix=fix_vib)
 
         os.system(f'mv OUTCAR {outcar}')
         
@@ -115,7 +117,7 @@ def run_series_ORR(calc, sim_params, mode, fix, active, vib, label):
     fsuffix     = f"{label}_{irc}_cat"
     outcar      = f"OUTCAR_{fsuffix}"
     #if not os.path.isfile(outcar):
-    calc.run_simulator(mode=mode, fix=fix)
+    calc.run_catalysis(mode=mode, fix=fix)
     os.system(f'cp POSCAR  POSCAR_{fsuffix}')
     os.system(f'mv OUTCAR  {outcar}')
     os.system(f'mv XDATCAR XDATCAR_{fsuffix}')
@@ -152,7 +154,7 @@ def run_series_ORR(calc, sim_params, mode, fix, active, vib, label):
         fsuffix = f"{label}_{i+1}_cat{interm_fnames[i]}"
         outcar = f"OUTCAR_{fsuffix}"
         #if not os.path.isfile(outcar):
-        calc.run_simulator(mode=mode, fix=fix)
+        calc.run_catalysis(mode=mode, fix=fix)
         os.system(f'cp POSCAR  POSCAR_{fsuffix}')
         os.system(f'mv OUTCAR  {outcar}')
         os.system(f'mv XDATCAR XDATCAR_{fsuffix}')  
@@ -168,7 +170,7 @@ def run_series_ORR(calc, sim_params, mode, fix, active, vib, label):
             calc = sim_class(opt_poscar)
             calc.set_options(**sim_params)
             if not os.path.isfile(outcar):
-                calc.run_simulator(mode='vib', fix=fix_vib)
+                calc.run_catalysis(mode='vib', fix=fix_vib)
                 os.system(f'mv OUTCAR {outcar}')
             zpe, TS = calc.get_vibration_energy(output_name=f'{outcar}')
             lzpe.append(zpe)

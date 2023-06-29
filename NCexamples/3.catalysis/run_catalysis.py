@@ -89,7 +89,7 @@ def main():
         print(f"Usage::\
                 \n\tThis is an example of a job submit in queue system such as slurm\
                 \n\tRun sbatch with jobname, partition, nnode, nproc with variables\
-                \n\t    sbatch -J dtest -p X3 -N 1 -n 20 --export=job='{args.cat_kind}' slurm_sbatch_nc.sh\
+                \n\t    sbatch -J test -p X3 -N 1 -n 20 --export=job='{args.cat_kind}' slurm_sbatch_nc.sh\
                 \n\trun_catalysis.py is run inside job script\
                 \n\t    run_catalysis.py -j orr -sj run -N {args.nnode} -np {args.nproc} --npar $npar\
                 \n\tjob is running in work dir(jobname) & logfile is written in submit dir\
