@@ -1,14 +1,91 @@
-from __future__ import print_function
+#from __future__ import print_function
 from ..atoms import *
 from .. import io
-from ..io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
-from ..units import ang2bohr
+from .. io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
+from .. units import ang2bohr
 from glob import glob
+import re
+import sys
 
 
 #
 # SIESTA Simulation Object
 #
+run_keys = [
+    'SystemName',
+    'SystemLabel',
+
+    # grid, scf
+    'XC.functional',
+    'XC.authors',
+    'MeshCutoff',
+    'MaxSCFIterations',
+    'DM.MixingWeight',
+    'DM.PulayOnFile',
+    'SCF.DM.Tolerance',
+    'SCF.H.Tolerance',
+    'DM.UseSaveDM',
+    'SCFMustConverge',
+    'NeglNonOverlapInt',
+
+    #Eigenvalue Problem
+    'SolutionMethod',
+    'ElectronicTemperature',
+
+    #molecular dynamics and relaxation
+    'MD.TypeOfRun',
+    'MD.VariableCell',
+    'MD.NumCGsteps',
+    'MD.MaxCGDispl',
+    'MD.MaxForceTol',
+    'MD.MaxStressTol',
+    'GeometryConstraints', #block
+    'Diag.ParallelOverK',
+    'BandLinesScale',
+    'SlabDipoleCorrection',
+
+    #output option
+    'WriteCoorInitial',
+    'WriteKpoints',
+    'WriteEigenvalues',
+    'WriteKbands',
+    'WriteBands',
+    'WriteDM.NetCDF',
+    'WriteDMHS.NetCDF',
+    'AllocReportLevel',
+    'WriteMullikenPop',
+    'SaveHS',
+    'SaveRho',
+    'SaveDeltaRho',
+    'SaveElectrostaticPotential',
+    'SaveTotalPotential',
+    'WriteMDXmol',
+    'WriteCoorXmol',
+    'WriteCoorStep',
+]
+
+basis_keys = [
+    'PAO.BasisType',
+    'PAO.BasisSize',
+    'PAO.EnergyShift',
+    'PAO.SplitNorm',
+    'PAO.SplitNormH',
+]
+
+kpt_keys = [
+    'kgrid_Monkhorst_Pack', #block
+    'PDOS.kgrid_Monkhorst_Pack',    #block
+    'ProjectedDensityOfStates', #block
+    'LocalDensityOfStates', #block
+]
+
+block_keys =[
+    'GeometryConstraints',
+    'LocalDensityOfStates',
+    'kgrid_Monkhorst_Pack',
+    'PDOS.kgrid_Monkhorst_Pack',
+    'ProjectedDensityOfStates',
+]
 
 class Siesta(object):
 
@@ -37,59 +114,6 @@ class Siesta(object):
 
     #__slots__ = ['_params', '_atoms', '_inputs']
 
-    #1. Name and basic options
-    _params = {'Name'       :'siesta',  # text
-               'Label'      :'siesta',  # text
-               'Optimization' :0,       # integer
-               'MD'           :0,       # integer
-               'Run'          :'CG',    # CG or MD
-               'cell_relax'   :0,       # integer
-               'CGsteps'      :100,     # integer
-               'ForceTol'     :0.04,    # float
-               'MDsteps'      :100,     # integer
-               'MDTimeStep'   :1.0,     # float
-               'MDInitTemp'   :0.0,
-               'MDTargTemp'   :300,
-               'WriteCoorStep':'.false.',
-     
-    #2. SCF/kgrid/functional parameters
-               'kgrid'      :[1,1,1],       # 3-vector
-               'kshift'     :[0,0,0],       # 3-vector
-               'BasisType'  :'split',       # split, splitgauss, nodes, nonodes
-               'BasisSize'  :'SZ',          # SZ or MINIMAL, DZ, SZP, DZP or STANDARD
-               'EnergyShift':100,           # default: 0.02 Ry
-               'Splitnorm'  :0.15,          # default: 0.15
-               'XCfunc'     :'GGA',         # GGA or LDA
-               'XCrel'      :'non',         # CUSTOM - rel
-               'XCauthor'   :'PBE',         # PBE or CA
-               'MeshCutoff' :100.0,         # float
-               'Solution'   :'Diagon',      # Diagon or OrderN
-               'MaxIt'      :300,           # integer
-               'MixingWt'   :0.2,           # float
-               'Npulay'     :0,             # integer
-               'Temp'       :300.0,         # float
-     
-    #3. Option for post=process
-               'LDOS'    :0,
-               'LDOSE'   :(-0.10, 0.1),
-               'Denchar' :0,
-               'PDOS'    :0,
-               'PDOSE'   :(-5,5,0.1,1001),
-               'DOS'     :0,
-               'DOSE'    :(-5,5),
-               'RHO'     :0,
-               'VH'      :0,
-
-               'PLDOS'   :0,
-               'FAT'     :0,
-
-
-    #4. Extra options for test
-               'SlabDipole' :'F',
-               'Spin' :'non-polarized'
-              }
-
-
     def __init__(self, atoms):
 
         if isinstance(atoms, AtomsSystem):
@@ -98,9 +122,21 @@ class Siesta(object):
             raise ValueError("Invaild AtomsSystem")
 
         self._inputs = {}
+        self._run_params = {}
+        self._basis_params = {}
+        self._kpt_params = {}
+        self._block_params = {}
+        for key in run_keys:
+            self._run_params[key] = None
+        for key in basis_keys:
+            self._basis_params[key] = None
+        for key in kpt_keys:
+            self._kpt_params[key] = None
+        for key in block_keys:
+            self._block_params[key] = None
 
 
-    def get_options(self):
+    def get_options(self, key):
 
         """
         print the list of available options and their default values
@@ -115,11 +151,29 @@ class Siesta(object):
         --------
         >>> sim.get_options()
         """
+        try:
+            if key in self._run_params:
+                if key in self._block_params:
+                    return (self._run_params[key], self._block_params[key])
+                else:
+                    return self._run_params[key]
+            if key in self._kpt_params:
+                if key in self._block_params:
+                    return (self._kpt_params[key], self._block_params[key])
+                else:
+                    return self._kpt_params[key]
+            if key in self._basis_params:
+                if key in self._block_params:
+                    return (self._basis_params[key], self._block_params[key])
+                else:
+                    return self._basis_params[key]
+        except KeyError:
+            raise IOError('Keyword "%s" in RUN.fdf is'
+                            'not known.' % key)
+        except IndexError:
+            raise IOError('Value missing for keyword "%s".' % key)
 
-        return self._params.items()
-
-
-    def set_option(self, key, value):
+    def set_option(self, key, value, blockValue = None):
 
         """
         change the options
@@ -184,11 +238,122 @@ class Siesta(object):
         >>> sim.set_options('kgrid', [10,10,1])
         """
 
-        if key not in self._params.keys():
-            raise ValueError("Invaild option," + key)
-        else:
-            self._params[key] = value
+        if value is True and blockValue is None and key in self._block_params:
+            raise IOError('trying to change block value but block value is not given')
+        
+        if key in self._run_params:
+            self._run_params[key] = value
+            if key in self._block_params:
+                self._block_params[key] = blockValue
+        if key in self._basis_params:
+            self._basis_params[key] = value
+            if key in self._block_params:
+                self._block_params[key] = blockValue
+        if key in self._kpt_params:
+            self._kpt_params[key] = value
+            if key in self._block_params:
+                self._block_params[key] = blockValue
+            
 
+    def read_fdf(self, filename):
+        with open(filename, 'r') as fd:
+            lines = fd.readlines()
+        fname = filename.split('/')[-1]
+        self._inputs[fname] = lines
+        self.parse_fdf(filename)
+
+    def write_fdf(self, filename):
+        fd = open(filename, 'w')
+        fname = filename.split('/')[-1]
+        fd.writelines(self._inputs[fname])
+        fd.close()
+
+
+    def parse_fdf(self, fname):
+        dict_input = {'KPT.fdf' : (kpt_keys,self._kpt_params) , 'BASIS.fdf' : (basis_keys,self._basis_params), 'RUN.fdf' : (run_keys,self._run_params)}
+        if self._inputs[fname] is None:
+            raise IOError("cannot find readable fdf file")
+        
+        for i, line in enumerate(self._inputs[fname]):
+            try:
+                line = line.replace("#", "# ")
+                data = line.split()
+                if len(data) == 0:
+                    continue
+                elif data[0][0] in ['#', '!']:
+                    continue
+
+                if "#" in data:
+                    data = data[:data.index("#")]
+                key = data[0]
+
+                if key in dict_input[fname][0] and key not in self._block_params:
+                    value = str(' '.join(data[1:]))
+                    if value in ['T', '.true.']:
+                        dict_input[fname][1][key] = True
+                    elif value in ['F', '.false.']:
+                        dict_input[fname][1][key] = False
+                    else:
+                        dict_input[fname][1][key] = value
+                elif key == '%block':
+                    if len(data) >= 2:
+                        key = data[1]
+                    if key in dict_input[fname][0]:
+                        dict_input[fname][1][key] = True
+                        if key in ['kgrid_Monkhorst_Pack', 'PDOS.kgrid_Monkhorst_Pack']:
+                            kpt = [0, 0, 0]
+                            for j in range(len(kpt)):
+                                if len(self._inputs[fname][i+1+j].split()) > j:
+                                    num = self._inputs[fname][i+1+j].split()[j]
+                                    if num.isdecimal():
+                                        kpt[j] = int(num)
+                            self._block_params[key] = tuple(kpt)
+                        else:
+                            self._block_params[key] = str(self._inputs[fname][i+1])
+                            self._block_params[key] = self._block_params[key].strip()
+                            self._block_params[key] = self._block_params[key].rstrip('\n')
+            except KeyError:
+                raise IOError('Keyword "%s" in RUN.fdf is'
+                              'not known.' % key)
+            except IndexError:
+                raise IOError('Value missing for keyword "%s".' % key)
+
+    def generate_fdf(self, fname):
+        dict_input = {'KPT.fdf' : self._kpt_params , 'BASIS.fdf' : self._basis_params, 'RUN.fdf' : self._run_params}
+
+        lines = []
+        lines.append("#%s generated by NanoCore\n" %fname)
+        lines.append("#(1) General system descriptors\n\n")
+        
+        for key, val in dict_input[fname].items():
+            if val is not None:
+                if val == True:
+                    if key in self._block_params and self._block_params[key] is not None:
+                        if key in ['kgrid_Monkhorst_Pack', 'PDOS.kgrid_Monkhorst_Pack']:
+                            lines.append("\n%block {}\n".format(key))
+                            lines.append("   %i   0   0   0.0\n" %(self._block_params[key][0]))
+                            lines.append("   0   %i   0   0.0\n" %(self._block_params[key][1]))
+                            lines.append("   0   0   %i   0.0\n" %(self._block_params[key][2]))
+                            lines.append("%endblock {}\n".format(key))
+                        else:
+                            lines.append("\n%block {}\n".format(key))
+                            lines.append("  %s\n" %(self._block_params[key]))
+                            lines.append("%endblock {}\n".format(key))
+                    else:
+                        lines.append("%s    T\n" %(key))
+                elif val == False:
+                    lines.append("%s    F\n" %(key))
+                else:
+                    lines.append("%s    %s\n" %(key, val))
+            if key == 'SystemLabel':
+                lines.append("%include STRUCT.fdf\n")
+                lines.append("%include KPT.fdf\n")
+                lines.append("%include BASIS.fdf\n")
+                lines.append("#%include TS_new.fdf\n")
+                lines.append("\n#(4) DFT, Grid, SCF\n")
+        
+        self._inputs[fname] = lines
+        return lines
 
     def write_struct(self, cellparameter=1.0):
 
@@ -205,7 +370,8 @@ class Siesta(object):
         fileS.write("%block ChemicalSpeciesLabel\n")
     
         for symb in unique_symbs:
-            fileS.write(" %d %d %s\n" % (unique_symbs.index(symb)+1,atomic_number(symb),symb) )
+            sym = ''.join(re.findall('[a-zA-Z]', symb))
+            fileS.write(" %d %d %s\n" % (unique_symbs.index(symb)+1,atomic_number(sym),symb) )
         fileS.write("%endblock ChemicalSpeciesLabel\n")
     
         #Lattice
@@ -224,6 +390,8 @@ class Siesta(object):
     
         for atom in self._atoms:
             x,y,z = atom.get_position(); symb = atom.get_symbol()
+            if atom.get_groupid() != 0:
+                symb = symb + str(atom.get_groupid())
             fileS.write(" %15.9f %15.9f %15.9f %4d %4d\n" %\
                        (x,y,z,unique_symbs.index(symb)+1, atom.get_serial()))
             
@@ -287,9 +455,9 @@ class Siesta(object):
         file.write("DM.MixingWeight       %6.5f          # Default: 0.25\n" % self._params['MixingWt'])
         file.write("DM.NumberPulay        %d             # Default: 0\n" % self._params['Npulay'])
         file.write("DM.PulayOnFile        F             # SystemLabel.P1, SystemLabel.P2\n")
-        file.write("DM.Tolerance          1.d-5         # Default: 1.d-4\n")
-        file.write("DM.UseSaveDM          .true.        # because of the bug\n")
-        file.write("SCFMustConverge       .true.        \n")
+        file.write("SCF.DM.Tolerance          1.d-4         # Default: 1.d-4\n")
+        file.write("DM.UseSaveDM          T             # because of the bug\n")
+        file.write("SCFMustConverge       T             \n")
         file.write("NeglNonOverlapInt     F             # Default: F\n")
         file.write("\n#(5) Eigenvalue problem: order-N or diagonalization\n\n")
         file.write("SolutionMethod        %s \n"  % self._params['Solution'])
@@ -322,9 +490,9 @@ class Siesta(object):
             #file.write("                                    #   - Phonon\n")
             #file.write("MD.VariableCell       %s\n" %params_opt['cell_opt'])
             file.write("MD.NumCGsteps         %d            # Default: 0\n" % self._params['CGsteps'])
-           # file.write("MD.MaxCGDispl         0.1 Ang       # Default: 0.2 Bohr\n")
+            file.write("MD.MaxCGDispl         0.2 Bohr       # Default: 0.2 Bohr\n")
             file.write("MD.MaxForceTol        %f eV/Ang  # Default: 0.04 eV/Ang\n" % self._params['ForceTol'])
-            #file.write("MD.MaxStressTol       1.0 GPa       # Default: 1.0 GPa\n")
+            file.write("MD.MaxStressTol       1.0 GPa       # Default: 1.0 GPa\n")
     
         if self._params['MD'] == 1:
             file.write("\n#(6) Molecular dynamics and relaxations\n\n")
@@ -349,26 +517,21 @@ class Siesta(object):
             file.write("WFS.Write.For.Bands .true.\n")
 
         if self._params['LDOS'] == 1:
-            file.write("# LDOS \n\n")
+            file.write("\n# LDOS option \n")
             file.write("%block LocalDensityOfStates\n")
             file.write(" %f %f eV\n" %(self._params['LDOSE'][0], self._params['LDOSE'][1]))
             file.write("%endblock LocalDensityOfStates\n")
 
         if self._params['PDOS'] == 1:
+            file.write("\n# PDOS option \n")
             file.write("%block ProjectedDensityOfStates\n")
             file.write(" %f %f %f %i eV\n" % tuple(self._params['PDOSE'])) #-20.00 10.00 0.200 500 eV Emin Emax broad Ngrid
             file.write("%endblock ProjectedDensityOfStates\n")
 
-        if self._params['DOS'] == 1:
-            file.write("WriteEigenvalues      T      # SystemLabel.out [otherwise ~.EIG]\n")
-
-        if self._params['RHO'] == 1:
-            file.write('SaveRho   .true.\n')
-
-        #file.write("%block GeometryConstraints\n")
-        #file.write("#position from 1 to %d\n" % natm)
-        #file.write("stress 4 5 6\n")
-        #file.write("%endblock GeometryConstraints\n")
+        if self._params['geomConstraints'] == 1:
+            file.write("\n%block GeometryConstraints\n")
+            file.write("    position from %d to %d\n" %tuple(self._params['geomConstraintsE']))
+            file.write("%endblock GeometryConstraints\n")
         #file.write("kgrid_cutoff 15.0 Ang\n")
         #file.write("ProjectedDensityOfStates\n")
                        
@@ -379,8 +542,19 @@ class Siesta(object):
         #file.write("WriteEigenvalues      F      # SystemLabel.out [otherwise ~.EIG]\n")
         #file.write("WriteKbands           T      # SystemLabel.out, band structure\n")
         #file.write("WriteBands            T      # SystemLabel.bands, band structure\n")
-        #file.write("WriteMDXmol           F      # SystemLabel.ANI\n")
-        file.write("WriteCoorXmol        .true.  \n")
+        
+        if self._params['DOS'] == 1:
+            file.write("WriteEigenvalues      T      # SystemLabel.out [otherwise ~.EIG]\n")
+
+        if self._params['Optimization'] == 1:
+            file.write("WriteMDXmol           F      # SystemLabel.ANI\n")
+        file.write("WriteCoorXmol        T  \n")
+        
+        if self._params['VH'] == 1:
+            file.write("SaveElectrostaticPotential T # SystemLabel.VH\n")
+
+        if self._params['RHO'] == 1:
+            file.write('SaveRho   T \n')
         #file.write("WriteDM.NetCDF        F      \n")
         #file.write("WriteDMHS.NetCDF      F      \n")
         #file.write("AllocReportLevel      0      # SystemLabel.alloc, Default: 0\n")
@@ -399,22 +573,13 @@ class Siesta(object):
         #file.write("SaveNeutralAtomPotential F   # SystemLabel.VNA\n")
         #file.write("SaveIonicCharge       F      # SystemLabel.IOCH\n")
 
-        if self._params['VH'] == 1:
-            file.write("SaveElectrostaticPotential T # SystemLabel.VH\n")
-
         #file.write("SaveTotalPotential    F      # SystemLabel.VT\n")
         #file.write("SaveTotalCharge       F      # SystemLabel.TOCH\n")
         #file.write("SaveInitialChargeDenaisty F  # SystemLabel.RHOINIT\n")
         file.close()
 
-    
-    def run_catalysis():
-        '''
-        Run solvers/catalysis
-        '''
-        pass
 
-    def run(self, mode='SCF', cellparameter=1.0, log=1, mpi=0, nproc=1, psf=1):
+    def run(self, mode='Optimization', cellparameter=1.0, log=1, mpi=0, nproc=1, psf=0):
 
         """
         Run a simulation based on the information saved in this simulation object
@@ -439,8 +604,8 @@ class Siesta(object):
         """
 
         # get the location of executable
-        from nanocore.env import siesta_calculator as executable
-        from nanocore.env import siesta_psf_location as psf_path
+        from NanoCore.env import siesta_calculator as executable
+        from NanoCore.env import siesta_psf_location as psf_path
 
         if mode == 'SCF' or mode == 'POST': 
             self._params['Optimization'] = 0
@@ -462,33 +627,31 @@ class Siesta(object):
             self.write_siesta()
 
         # run simulation
-        cmd = '%s < RUN.fdf' % executable
+        # cmd = '%s < RUN.fdf' % executable
 
-        if mpi:
-            cmd = 'mpirun -np %i ' % nproc + cmd
+        # if mpi:
+        #     cmd = 'mpirun -np %i ' % nproc + cmd
 
-        if log:
-            cmd = cmd + ' > stdout.txt'
+        # if log:
+        #     cmd = cmd + ' > stdout.txt'
 
-        if psf:
-            symbs = self._atoms.get_symbols()
-            xc = self._params['XCfunc']
-            r  = self._params['XCrel']
-            for symb in symbs:
-                if   xc == 'GGA':
-                    if r == 'non':
-                        os.system('cp %s/GGA/%s.psf .' % (psf_path, symb))
-                    elif r == 'rel':
-                        os.system('cp %s/GGA/rel/%s.psf .' % (psf_path, symb))
+        # if psf:
+        #     symbs = self._atoms.get_symbols()
+        #     xc = self._params['XCfunc']
+        #     r  = self._params['XCrel']
+        #     for symb in symbs:
+        #         if   xc == 'GGA':
+        #             if r == 'non':
+        #                 os.system('cp %s/GGA/%s.psf .' % (psf_path, symb))
+        #             elif r == 'rel':
+        #                 os.system('cp %s/GGA/rel/%s.psf .' % (psf_path, symb))
 
-                elif xc == 'LDA':
-                    if r == 'non':
-                        os.system('cp %s/LDA/%s.psf .' % (psf_path, symb))
-                    elif r == 'rel':
-                        os.system('cp %s/LDA/rel/%s.psf .' % (psf_path, symb))
-
-
-        os.system(cmd)
+        #         elif xc == 'LDA':
+        #             if r == 'non':
+        #                 os.system('cp %s/LDA/%s.psf .' % (psf_path, symb))
+        #             elif r == 'rel':
+        #                 os.system('cp %s/LDA/rel/%s.psf .' % (psf_path, symb))
+        # os.system(cmd)
 
         # keep the original input files
         from glob import glob
@@ -533,7 +696,7 @@ def load_simulation(filename):
 # SIESTA UTIL interface
 #
 
-def calc_pldos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi = 0, nporc = 1):
+def calc_pldos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi = 0, nproc = 1):
 
     """
     Interface to PyProjection of siesta utils
@@ -574,8 +737,8 @@ def calc_pldos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi 
     file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
     file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
 
-    from nanocore.env import siesta_pyprojection as pdos
-    cmd = 'python %s' % pldos
+    from NanoCore.env import siesta_pyprojection as pdos
+    cmd = 'python %s' % pdos
     if mpi:
         cmd = 'mpirun -np %i ' % nproc + cmd
     os.system(cmd)
@@ -622,7 +785,7 @@ def calc_pdos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi =
     file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
     file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
 
-    from nanocore.env import siesta_pyprojection as pdos
+    from NanoCore.env import siesta_pyprojection as pdos
     cmd = 'python %s' % pdos
     if mpi:
         cmd = 'mpirun -np %i ' % nproc + cmd
@@ -670,7 +833,7 @@ def calc_fatband(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mp
     file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
     file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
 
-    from nanocore.env import siesta_pyprojection as fat
+    from NanoCore.env import siesta_pyprojection as fat
     cmd = 'python %s' % fat
     if mpi:
         cmd = 'mpirun -np %i ' % nproc + cmd
@@ -705,8 +868,8 @@ def get_dos(emin, emax, npoints=1001, broad=0.05, label='siesta'):
     """
 
     # Eig2DOS script
-    from nanocore.env import siesta_util_location as sul
-    from nanocore.env import siesta_util_dos as sud
+    from NanoCore.env import siesta_util_location as sul
+    from NanoCore.env import siesta_util_dos as sud
     os.system('%s/%s -f -s %f -n %i -m %f -M %f %s.EIG > DOS' % (sul, sud, 
                                                                  broad, npoints, 
                                                                  emin, emax, label))
@@ -771,8 +934,8 @@ def get_band(simobj, pathfile, label='siesta', rerun=0):
         simobj.run(mode='POST')
 
     # gnuband script
-    from nanocore.env import siesta_util_location as sul
-    from nanocore.env import siesta_util_band as sub
+    from NanoCore.env import siesta_util_location as sul
+    from NanoCore.env import siesta_util_band as sub
     os.system('%s/%s < %s.bands > BAND' % (sul, sub, label))
 
     # read band data
@@ -831,7 +994,7 @@ def get_band(simobj, pathfile, label='siesta', rerun=0):
 
 def siesta_xsf2cube(f_in, grid_type):
 
-    from nanocore.io import ang2bohr
+    from NanoCore.io import ang2bohr
 
     # read file
     lines = open(f_in).readlines()
@@ -974,8 +1137,8 @@ def get_ldos(v1, v2, v3, origin, nmesh, label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from nanocore.env import siesta_util_location as sul
-    from nanocore.env import siesta_util_rho as sur
+    from NanoCore.env import siesta_util_location as sul
+    from NanoCore.env import siesta_util_rho as sur
     os.system('%s/%s < INP' % (sul, sur))
 
     # convert 
@@ -1030,8 +1193,8 @@ def get_rho(v1, v2, v3, origin, nmesh, label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from nanocore.env import siesta_util_location as sul
-    from nanocore.env import siesta_util_rho as sur
+    from NanoCore.env import siesta_util_location as sul
+    from NanoCore.env import siesta_util_rho as sur
     os.system('%s/%s < INP > OUT' % (sul, sur))
 
     # convert 
@@ -1102,8 +1265,8 @@ def get_pdos(simobj, emin, emax, by_atom=1, atom_index=[], species=[], broad=0.1
     file_INP.close()
 
     # run rho2xsf
-    from nanocore.env import siesta_util_location as sul
-    from nanocore.env import siesta_util_pdos as sup
+    from NanoCore.env import siesta_util_location as sul
+    from NanoCore.env import siesta_util_pdos as sup
     os.system('%s/%s < INP > OUT' % (sul, sup))
     os.system('rm INP OUT')
    
@@ -1195,8 +1358,8 @@ def get_hartree_pot_z(label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from nanocore.env import siesta_util_location as sul
-    from nanocore.env import siesta_util_vh as sv
+    from NanoCore.env import siesta_util_location as sul
+    from NanoCore.env import siesta_util_vh as sv
     os.system('%s/%s < macroave.in' % (sul, sv))
     os.system('rm macroave.in')
 
@@ -1360,7 +1523,14 @@ def read_fdf(file_name):
             #    print "Can`t guess cell scale and type\n"
 #        elif _is_fraction_scale:
         
-        atom = (species[spec-1], x, y, z)
+        group = re.findall('\d', species[spec-1])
+        sym = ''.join(re.findall('[a-zA-Z]', species[spec-1]))
+        if group:
+            group = int(''.join(group))
+        else:
+            group = None
+        
+        atom = Atom(sym, (x, y, z), groupid=group)
         atoms.append(atom)
 
     if cell.shape == (3,3):
@@ -1472,3 +1642,7 @@ def get_eos(pattern='*', struct_file='STRUCT.fdf'):
 
     print ('initial guesses  : ',x0)
     print ('fitted parameters: ', murnpars)
+
+from ase.calculators.vasp import vasp
+
+

@@ -1,5 +1,6 @@
 from nanocore import surflab
 from nanocore import catalysis
+from pyslurm import job
 
 ### make slab model
 at = surflab.fccsurfaces('Pt', '111', (3,3,3), vac=15)

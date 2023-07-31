@@ -1,0 +1,4 @@
+Tue Jun 20 11:56:39 AM KST 2023
+python3 run_catalysis.py running | vasp running
+python3  ../run_catalysis.py -j run -c orr -N 1 -np 24 --npar 4 
+Tue Jun 20 11:56:39 AM KST 2023
