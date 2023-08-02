@@ -1,9 +1,0 @@
-cp: cannot stat 'CONTCAR_Pt-SAC': No such file or directory
-Traceback (most recent call last):
-  File "../run_catalysis.py", line 100, in <module>
-    main()
-  File "../run_catalysis.py", line 97, in main
-    run_catalysis(args.job, args.cat_kind, args.flabel, args.overwrite, args.mode, args.novib, args.nnode, args.nproc, args.npar)
-  File "../run_catalysis.py", line 39, in run_catalysis
-    calc    = Vasp(atoms)
-UnboundLocalError: local variable 'atoms' referenced before assignment

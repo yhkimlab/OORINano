@@ -1,0 +1,242 @@
+TBT.Verbosity         5     # default value
+SystemName     siesta                                                                          
+SystemLabel     siesta                                                                          
+CDF.Compress         0     # default value
+TBT.CDF.Compress         0     # default value
+TBT.Directory           # default value
+timer_report_threshold          0.000000000         # default value
+alloc_report_level         0     # default value
+alloc_report_threshold          0.000000000         # default value
+SpinPolarized              F     # default value
+NonCollinearSpin              F     # default value
+SpinOrbit              F     # default value
+#:block? SpinPolarized              F
+#:defined? SpinPolarized              F
+#:block? NonCollinearSpin              F
+#:defined? NonCollinearSpin              F
+#:block? SpinOrbit              F
+#:defined? SpinOrbit              F
+Spin     none                                 # default value
+TimeReversalSymmetry              T     # default value
+TS.Voltage          0.000000000             Ry
+# above item originally: TS.Voltage          0.000000000     eV        
+TBT.Voltage          0.000000000     Ry     # default value
+TBT.HS     siesta.TSHS     # default value
+#:block? TBT.Atoms.Buffer              F
+#:defined? TBT.Atoms.Buffer              F
+#:block? TS.BufferAtomsLeft              F
+#:defined? TS.BufferAtomsLeft              F
+#:block? TS.BufferAtomsRight              F
+#:defined? TS.BufferAtomsRight              F
+#:list? TS.Atoms.Buffer              F
+TBT.DivideAndConquer              F     # default value
+TBT.Normalize              T     # default value
+ElectronicTemperature         0.1900069269E-02         Ry
+# above item originally: ElectronicTemperature          300.0000000     K         
+TS.ElectronicTemperature         0.1900069269E-02 Ry     # default value
+TBT.ElectronicTemperature         0.1900069269E-02 Ry     # default value
+%block TS.ChemPots
+   Left
+   Right
+%endblock TS.ChemPots
+TS.Contours.Eq.Pole.N         8     # default value
+TS.Contours.Eq.Pole         0.1837449711             Ry
+# above item originally: TS.Contours.Eq.Pole          2.500000000     eV        
+%block TS.ChemPots
+   Left
+   Right
+%endblock TS.ChemPots
+%block TS.ChemPot.Left
+   mu V/2                    #UP  chem. pot.
+   contour.eq
+     begin
+       c-Left
+       t-Left
+     end
+ #:(Backspace to) |    end|
+ #:(Backspace to) |      t-Left|
+ #:(Backspace to) |      c-Left|
+       c-Left
+       t-Left
+     end
+%endblock TS.ChemPot.Left
+TS.Contours.Eq.Pole         0.1837449711             Ry
+# above item originally: TS.Contours.Eq.Pole          2.500000000     eV        
+%block TS.ChemPot.Right
+   mu -V/2                   #DOWN  chem. pot.
+   contour.eq
+     begin
+       c-Right
+       t-Right
+     end
+ #:(Backspace to) |    end|
+ #:(Backspace to) |      t-Right|
+ #:(Backspace to) |      c-Right|
+       c-Right
+       t-Right
+     end
+%endblock TS.ChemPot.Right
+TS.Contours.Eq.Pole         0.1837449711             Ry
+# above item originally: TS.Contours.Eq.Pole          2.500000000     eV        
+TS.Elecs.Coord.Eps         0.1000000000E-03 Bohr     # default value
+TBT.Elecs.Coord.Eps         0.1000000000E-03 Bohr     # default value
+%block TS.Elecs
+   Left
+   Right
+%endblock TS.Elecs
+%block TS.Elecs
+   Left
+   Right
+%endblock TS.Elecs
+TS.Elecs.Bulk              T
+TBT.Elecs.Bulk              T     # default value
+TS.Elecs.Eta         0.7349806700E-05 Ry     # default value
+TBT.Elecs.Eta         0.7349798845E-05         Ry
+# above item originally: TBT.Elecs.Eta         0.1000000000E-03 eV        
+TS.Elecs.Accuracy         0.7349806700E-15 Ry     # default value
+TBT.Elecs.Accuracy         0.7349806700E-15 Ry     # default value
+TBT.Elecs.Out-of-core              F     # default value
+TS.Elecs.GF.ReUse              T     # default value
+TBT.Elecs.GF.ReUse              T     # default value
+TBT.Elecs.GF.Only              F     # default value
+#:block? TBT.Elec.Left.HS              F
+#:defined? TBT.Elec.Left.HS              F
+TBT.Elec.Left.Bloch.A1         1     # default value
+TBT.Elec.Left.Bloch.A2         1     # default value
+TBT.Elec.Left.Bloch.A3         1     # default value
+#:block? TBT.Elec.Left.GF              F
+#:defined? TBT.Elec.Left.GF              F
+#:block? TS.Elec.Left.HS              F
+#:defined? TS.Elec.Left.HS              F
+TS.Elec.Left.Bloch.A1         1     # default value
+TS.Elec.Left.Bloch.A2         1     # default value
+TS.Elec.Left.Bloch.A3         1     # default value
+#:block? TS.Elec.Left.GF              F
+#:defined? TS.Elec.Left.GF              F
+%block TS.Elec.Left
+   HS Left.TSHS
+   chem-pot Left
+   semi-inf-dir -a3
+   elec-pos begin 1
+   used-atoms 32
+%endblock TS.Elec.Left
+#:block? TBT.Elec.Right.HS              F
+#:defined? TBT.Elec.Right.HS              F
+TBT.Elec.Right.Bloch.A1         1     # default value
+TBT.Elec.Right.Bloch.A2         1     # default value
+TBT.Elec.Right.Bloch.A3         1     # default value
+#:block? TBT.Elec.Right.GF              F
+#:defined? TBT.Elec.Right.GF              F
+#:block? TS.Elec.Right.HS              F
+#:defined? TS.Elec.Right.HS              F
+TS.Elec.Right.Bloch.A1         1     # default value
+TS.Elec.Right.Bloch.A2         1     # default value
+TS.Elec.Right.Bloch.A3         1     # default value
+#:block? TS.Elec.Right.GF              F
+#:defined? TS.Elec.Right.GF              F
+%block TS.Elec.Right
+   HS Right.TSHS
+   chem-pot Right
+   semi-inf-dir +a3
+   elec-pos end -1
+   used-atoms 32
+%endblock TS.Elec.Right
+TBT.k.File     NONE     # default value
+SpinSpiral              F     # default value
+TBT.Symmetry.TimeReversal              T     # default value
+#:list? TBT.k              F
+#:list? kgrid.MonkhorstPack              F
+%block kgrid.MonkhorstPack
+    3   0   0   0.0
+    0   3   0   0.0
+    0   0   1   0.0
+%endblock kgrid.MonkhorstPack
+%block kgrid.MonkhorstPack
+    3   0   0   0.0
+    0   3   0   0.0
+    0   0   1   0.0
+%endblock kgrid.MonkhorstPack
+TBT.Progress          5.000000000         # default value
+TBT.SolutionMethod     BTD     # default value
+TS.BTD.Optimize     speed     # default value
+TBT.BTD.Optimize     speed     # default value
+TS.BTD.Spectral     propagation     # default value
+TBT.BTD.Spectral     propagation     # default value
+TBT.T.Elecs.All              F     # default value
+TBT.T.All              F     # default value
+TBT.T.Eig         0     # default value
+TBT.DOS.Elecs              F     # default value
+TBT.T.Bulk              F     # default value
+TBT.DOS.Gf              F     # default value
+TBT.DOS.A              T
+TBT.DOS.A.All              F     # default value
+TBT.Current.Orb              F     # default value
+TBT.DM.Gf              F     # default value
+TBT.DM.A              F     # default value
+TBT.COOP.Gf              F     # default value
+TBT.COOP.A              F     # default value
+TBT.COHP.Gf              F     # default value
+TBT.COHP.A              F     # default value
+TBT.T.Out              T
+TBT.CDF.SelfEnergy.Save              F     # default value
+TBT.SelfEnergy.Save              F     # default value
+CDF.Compress         0     # default value
+TBT.CDF.Compress         0     # default value
+TBT.CDF.SelfEnergy.Compress         0     # default value
+TBT.SelfEnergy.Only              F     # default value
+TBT.dH     NONE 1234567890     # default value
+TBT.dSE     NONE 1234567890     # default value
+TBT.Contours.Eta          0.000000000     Ry     # default value
+TS.Voltage          0.000000000             Ry
+# above item originally: TS.Voltage          0.000000000     eV        
+TBT.Voltage          0.000000000     Ry     # default value
+#:block-line-count? TBT.Contours (n)   1
+%block TBT.Contours
+   neq
+%endblock TBT.Contours
+%block TBT.Contour.neq
+   part line
+    from  -10.00000 eV to    5.00000 eV
+     points    301
+      method mid-rule
+%endblock TBT.Contour.neq
+#:block? TBT.Projs              F
+#:defined? TBT.Projs              F
+TBT.CDF.Precision     single     # default value
+SpinSpiral              F     # default value
+TBT.Symmetry.TimeReversal              T     # default value
+#:list? TBT.Atoms.Device              F
+TBT.Atoms.Device.Connect              F     # default value
+TBT.BTD.Pivot.Elecs     atom+Left     # default value
+TBT.BTD.Pivot.Elec.Left     atom+Left     # default value
+TBT.BTD.Pivot.Graphviz              F     # default value
+TBT.BTD.Pivot.Graphviz              F     # default value
+TBT.Analyze              F     # default value
+TS.BTD.Pivot     atom+Left     # default value
+TBT.BTD.Pivot     atom+Left     # default value
+TBT.BTD.Pivot.Device     atom+Left     # default value
+TBT.BTD.Pivot.Graphviz              F     # default value
+TBT.Region.k              F     # default value
+TS.BTD.Guess1.Min        25     # default value
+TBT.BTD.Guess1.Min        25     # default value
+TS.BTD.Guess1.Max        55     # default value
+TBT.BTD.Guess1.Max        55     # default value
+TS.BTD.Output           # default value
+TBT.Analyze              F     # default value
+TS.BTD.Guess1.Min        19     # default value
+TBT.BTD.Guess1.Min        19     # default value
+TS.BTD.Guess1.Max       154     # default value
+TBT.BTD.Guess1.Max       154     # default value
+TS.BTD.Output           # default value
+TBT.CDF.Precision     single     # default value
+TBT.CDF.DOS.Precision     single                   # default value
+TBT.CDF.Precision     single     # default value
+TBT.CDF.T.Precision     single                   # default value
+TBT.CDF.Precision     single     # default value
+TBT.CDF.T.Eig.Precision     single                   # default value
+TBT.CDF.Precision     single     # default value
+TBT.CDF.Current.Precision     single                   # default value
+TBT.CDF.Precision     single     # default value
+TBT.CDF.COOP.Precision     single                   # default value
+TBT.CDF.Precision     single     # default value
+TBT.CDF.DM.Precision     single                   # default value
