@@ -5,7 +5,7 @@ from .. io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
 from .. units import ang2bohr
 from glob import glob
 import re
-import sys
+import shutil
 import subprocess
 
 #
@@ -159,12 +159,7 @@ class Siesta(object):
 
     #__slots__ = ['_params', '_atoms', '_inputs']
 
-    def __init__(self, atoms):
-
-        if isinstance(atoms, AtomsSystem):
-            self._atoms = atoms
-        else:
-            raise ValueError("Invaild AtomsSystem")
+    def __init__(self):
 
         self._inputs = {}
         self._run_params = {}
@@ -182,7 +177,41 @@ class Siesta(object):
             self._TS_params[key] = None
         for key in block_keys:
             self._block_params[key] = None
+        
+        self._req_files = {}
+        self.read_default_fdf()
+        self.set_necessary_files()
 
+    def set_necessary_files(self):
+        self._req_files['cwd'] = os.getcwd()
+        dir_all = os.listdir(self._req_files['cwd'])
+        dir_pp = [f for f in dir_all if os.path.splitext(f)[-1] == '.psf']
+        self._req_files['pp'] = dir_pp
+
+    def copy_necessary_files(self):
+        cwd = os.getcwd()
+        for pp in self._req_files['pp']:
+            original = os.path.join(self._req_files['cwd'], pp)
+            shutil.copy(original, cwd)
+
+    def read_default_fdf(self):
+        import inspect
+        import nanocore
+        files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf', 'KPT.fdf']
+        rpath = ['simulator', 'siesta_default']
+        module_path = inspect.getfile(nanocore)
+        default_path = os.sep.join(module_path.split(os.sep)[:-1]+rpath)
+        for f in files:
+            self.read_fdf(default_path+os.sep+f)
+
+    def set_atoms(self, atom: AtomsSystem):
+        self._atoms = atom
+
+    def get_atoms(self):
+        if self._atoms:
+            return copy.deepcopy(self._atoms)
+        else:
+            raise ValueError("AtomsSystem is not defined in this class")
 
     def get_options(self, key):
 
@@ -311,27 +340,25 @@ class Siesta(object):
             if key in self._block_params:
                 self._block_params[key] = blockValue
             
-
     def read_fdf(self, filename):
-        if filename == 'STRUCT.fdf':
+        fname = filename.split(os.sep)[-1]
+        if fname == 'STRUCT.fdf':
             self._atoms = read_struct('STRUCT.fdf')
             return
         with open(filename, 'r') as fd:
             lines = fd.readlines()
-        fname = filename.split('/')[-1]
         self._inputs[fname] = lines
-        self.parse_fdf(filename)
+        self.parse_fdf(fname)
 
     def write_fdf(self, filename):
-        if filename == 'STRUCT.fdf':
+        fname = filename.split(os.sep)[-1]
+        if fname == 'STRUCT.fdf':
             self.write_struct()
             return
-        self.generate_fdf(filename)
+        self.generate_fdf(fname)
         fd = open(filename, 'w')
-        fname = filename.split('/')[-1]
         fd.writelines(self._inputs[fname])
         fd.close()
-
 
     def parse_fdf(self, fname):
         dict_input = {'KPT.fdf' : (kpt_keys,self._kpt_params) , 'BASIS.fdf' : (basis_keys,self._basis_params), 'RUN.fdf' : (run_keys,self._run_params), 'TS.fdf':(TS_keys,self._TS_params)}
@@ -520,7 +547,7 @@ class Siesta(object):
 
     def write_struct(self, cellparameter=1.0):
 
-        if self._atoms.get_cell() is not 'None':
+        if self._atoms.get_cell() != 'None':
             cell1 = self._atoms.get_cell()[0]
             cell2 = self._atoms.get_cell()[1]
             cell3 = self._atoms.get_cell()[2]
