@@ -34,9 +34,9 @@ siesta_pyprojection = temporary_location + '/pyprojection/pyprojection.py'
 
 # Siesta utilities location
 siesta_util_tbtrans = siesta_dir + '/Util/TS/TBtrans/tbtrans'
-siesta_util_band = 'Bands/gnubands'
-siesta_util_dos  = 'Eig2DOS/Eig2DOS'
-siesta_util_pdos = 'Contrib/APostnikov/fmpdos'
-siesta_util_rho  = 'Contrib/APostnikov/rho2xsf'
-siesta_util_vh   = 'Macroave/Src/macroave'
+siesta_util_band = 'Util/Bands/gnubands'
+siesta_util_dos  = 'Util/Eig2DOS/Eig2DOS'
+siesta_util_pdos = 'Util/Contrib/APostnikov/fmpdos'
+siesta_util_rho  = 'Util/Contrib/APostnikov/rho2xsf'
+siesta_util_vh   = 'Util/Macroave/Src/macroave'
 

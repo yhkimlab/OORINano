@@ -187,6 +187,8 @@ class Siesta(object):
         dir_all = os.listdir(self._req_files['cwd'])
         dir_pp = [f for f in dir_all if os.path.splitext(f)[-1] == '.psf']
         self._req_files['pp'] = dir_pp
+        dir_result = [f for f in dir_all if os.path.splitext(f)[-1] == '.TSHS']
+        self._req_files['result'] = dir_result
 
     def copy_necessary_files(self):
         cwd = os.getcwd()
@@ -569,7 +571,7 @@ class Siesta(object):
         fileS.write("\n#(3) Lattice, coordinates, k-sampling\n\n")
         fileS.write("LatticeConstant   %15.9f Ang\n" % cellparameter)
         fileS.write("%block LatticeVectors\n")
-        if self._atoms.get_cell() is not 'None':
+        if self._atoms.get_cell() != 'None':
             va, vb, vc = cell1, cell2, cell3
             fileS.write("%15.9f %15.9f %15.9f\n" % tuple(va))
             fileS.write("%15.9f %15.9f %15.9f\n" % tuple(vb))
@@ -1066,8 +1068,8 @@ def get_ldos(v1, v2, v3, origin, nmesh, label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_rho as sur
+    from nanocore.env import siesta_dir as sul
+    from nanocore.env import siesta_util_rho as sur
     os.system('%s/%s < INP' % (sul, sur))
 
     # convert 
@@ -1122,8 +1124,8 @@ def get_rho(v1, v2, v3, origin, nmesh, label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_rho as sur
+    from nanocore.env import siesta_dir as sul
+    from nanocore.env import siesta_util_rho as sur
     os.system('%s/%s < INP > OUT' % (sul, sur))
 
     # convert 
@@ -1248,7 +1250,7 @@ def get_pldos(simobj, emin, emax, broad=0.1, npoints=1001, label='siesta'):
     """
 
     # AtomsSystem from simulation object
-    atoms = simobj._atoms.copy()
+    atoms = simobj.get_atoms()
     
     # slice atoms by z coordinates
     z_coords = []; indice = []

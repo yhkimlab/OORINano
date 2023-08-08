@@ -776,7 +776,6 @@ def write_axsf(file_name, ani):
 
 def write_poscar(atoms, file_name='POSCAR_xxyz', mode='cartesian', constraint=None):
     POSCAR = open(file_name, 'w')
-    POSCAR.write('%s\n' % params['title'])
     if atoms.get_cell() is not None:
         va,vb,vc = atoms.get_cell()
         va = Vector(va); vb = Vector(vb); vc = Vector(vc)
@@ -822,6 +821,14 @@ def write_poscar(atoms, file_name='POSCAR_xxyz', mode='cartesian', constraint=No
     for line in lines:
         POSCAR.write(line)
     POSCAR.close()
+
+    with open(file_name, "r") as f:
+        contents = f.readlines()
+    contents.insert(0, atm_line)
+
+    with open(file_name, "w") as f:
+        contents = "".join(contents)
+        f.write(contents)
 
 
 def read_poscar(file_name):
