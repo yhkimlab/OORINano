@@ -116,12 +116,13 @@ def run_series_ORR(calc, sim_params, mode, fix, active, vib, label):
     ### Skip run_VASP if there is OUTCAR
     fsuffix     = f"{label}_{irc}_cat"
     outcar      = f"OUTCAR_{fsuffix}"
-    #if not os.path.isfile(outcar):
-    calc.run_catalysis(mode=mode, fix=fix)
-    os.system(f'cp POSCAR  POSCAR_{fsuffix}')
-    os.system(f'mv OUTCAR  {outcar}')
-    os.system(f'mv XDATCAR XDATCAR_{fsuffix}')
-    os.system(f'cp CONTCAR CONTCAR_{fsuffix}')
+    if not os.path.isfile(outcar):
+        calc.run_catalysis(mode=mode, fix=fix)
+        os.system(f'cp POSCAR  POSCAR_{fsuffix}')
+        os.system(f'mv OUTCAR  {outcar}')
+        os.system(f'mv XDATCAR XDATCAR_{fsuffix}')
+        os.system(f'cp CONTCAR CONTCAR_{fsuffix}')
+        os.system(f'cp OSZICAR OSZICAR_{fsuffix}')
     totE_cat    = calc.get_total_energy(output_name=outcar)
 
     ### No vib cal for pure catalyst: vib for only adsorbate                                          
@@ -139,11 +140,12 @@ def run_series_ORR(calc, sim_params, mode, fix, active, vib, label):
     lzpe        = [float(0.000)]
     lTS        = [float(0.000)]
     
+    ### all the atoms of cat (natoms) are fixed starting index from 1
     fix_vib      = []
     for j in range(natoms):
         idx = j+1
         fix_vib.append(idx)
-
+    
     ### each model calculation
     for i in range(len(interm_models)):
         #print(f"Make a new class instance with {i+1}th intermediates")
@@ -153,16 +155,17 @@ def run_series_ORR(calc, sim_params, mode, fix, active, vib, label):
         ### skip if there is OUTCAR
         fsuffix = f"{label}_{i+1}_cat{interm_fnames[i]}"
         outcar = f"OUTCAR_{fsuffix}"
-        #if not os.path.isfile(outcar):
-        calc.run_catalysis(mode=mode, fix=fix)
-        os.system(f'cp POSCAR  POSCAR_{fsuffix}')
-        os.system(f'mv OUTCAR  {outcar}')
-        os.system(f'mv XDATCAR XDATCAR_{fsuffix}')  
-        os.system(f'cp CONTCAR CONTCAR_{fsuffix}')  
+        if not os.path.isfile(outcar):
+            calc.run_catalysis(mode=mode, fix=fix)
+            os.system(f'cp POSCAR  POSCAR_{fsuffix}')
+            os.system(f'mv OUTCAR  {outcar}')
+            os.system(f'mv XDATCAR XDATCAR_{fsuffix}')  
+            os.system(f'cp CONTCAR CONTCAR_{fsuffix}')
+            os.system(f'cp OSZICAR OSZICAR_{fsuffix}')  # to check MAGMOM
         E = calc.get_total_energy(output_name=f'{outcar}')
         ltotE.append(E)
         ### vib calculation for adsorbate
-        print("start vib calculation")
+        #print("start vib calculation")
         if vib:
             suffixv     = '_vib'
             outcar      += suffixv

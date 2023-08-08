@@ -5,6 +5,7 @@ from ..units import ang2bohr
 from glob import glob
 import os, math
 import numpy as np
+from ..thermo import *
 
 #
 # VASP Simulation Object
@@ -35,41 +36,42 @@ class Vasp(object):
         self.atoms = atoms 
         self._params = {
             # 1. Name and basic options       
-            'SYSTEM'      :     'vasp',       # text, system name
-            'NPAR'        :          1,       # integer, number of bands
-            'IBRION'      :          2,       # 2=CG/Default, 5=Hessian 
-            'LWAVE'       :        'F',       # boolean, write WAVECAR
-            'LCHARG'      :        'F',       # boolean, write CHGCAR
-            'NSW'         :          0,       # integer, optimization step
-            'PREC'        : 'Accurate',       # precision (Low, Normal, Accurate)
-            'ALGO'        :     'FAST',       # Algorithm, GGA/LDA=Normal, Fast
-            'ISTART'      :          0,       # 0:new, 1:WAVECAR, 2:samecutoff
-            'ICHARG'      :          2,       # charge from 0:WAVECAR, 1:file, 2:atomic, 11:keep CHARGE
-            'ISIF'        :          2,       # 2=Constant cell, 3=relax cell
+            'SYSTEM'    :     'vasp',       # text, system name
+            'NPAR'      :          1,       # integer, number of bands
+            'IBRION'    :          2,       # 2=CG/Default, 5=Hessian 
+            'LWAVE'     :        'F',       # boolean, write WAVECAR
+            'LCHARG'    :        'F',       # boolean, write CHGCAR
+            'NSW'       :          0,       # integer, optimization step
+            'PREC'      : 'Accurate',       # precision (Low, Normal, Accurate)
+            'ALGO'      :     'FAST',       # Algorithm, GGA/LDA=Normal, Fast
+            'ISTART'    :          0,       # 0:new, 1:WAVECAR, 2:samecutoff
+            'ICHARG'    :          2,       # charge from 0:WAVECAR, 1:file, 2:atomic, 11:keep CHARGE
+            'ISIF'      :          2,       # 2=Constant cell, 3=relax cell
             # 2. SCF/kgrid/functional parameters          
-            'ENCUT'       :        400,       # float, plane wave basis energy cutoff
-            'ISMEAR'      :          0,       # integer, smearing 0=Gauss, 1=Metal
-            'SIGMA'       :       0.05,       # positive float
-            'NSIM'        :          1,       # integer, bands optimized in RMM-DIIS
-            'NELMIN'      :          4,       # integer, min SCF steps
-            'NELM'        :        500,       # integer, max SCF steps
-            'EDIFF'       :     0.0001,       # float, tolerance of ground state
-            'KPOINTS'     :  [1, 1, 1],       # list, 3-vector
-            'XC'          :      'GGA',       # GGA, LDA
-            'XCAUTHOR'    :      'PE' ,       # PE=PBE, 91=PW91, RP=Revised PBE 
+            'ENCUT'     :        400,       # float, plane wave basis energy cutoff
+            'ISMEAR'    :          0,       # integer, smearing 0=Gauss, 1=Metal
+            'SIGMA'     :       0.05,       # positive float
+            'NSIM'      :          1,       # integer, bands optimized in RMM-DIIS
+            'NELMIN'    :          4,       # integer, min SCF steps
+            'NELM'      :        500,       # integer, max SCF steps
+            'EDIFF'     :     0.0001,       # float, tolerance of ground state
+            'KPOINTS'   :  [1, 1, 1],       # list, 3-vector
+            'XC'        :      'GGA',       # GGA, LDA
+            'XCAUTHOR'  :      'PE' ,       # PE=PBE, 91=PW91, RP=Revised PBE 
             # 3. Optional parameters 
-            'POTIM'       :        0.3,       # displacement  
-            'EDIFFG'      :      -0.05,       # float, stopping relaxation loop
-            'IVDW'        :         12,       # 11: D3 zero damping 12: D3 BJ damping
-            'LDIPOL'      :        'F',       # dipole correction
-            'IDIPOL'      :          3,       # 1: x, 2: y, 3: z, 4: all
-            'LPLANE'      :        'T',       # data distribution over Nodes
-            'ADDGRID'     :        'T',       # add grid for charge augmentation
-            'LREAL'       :     'Auto',       # for real space projection
-            'ISYM'        :         -1,       # -1 = symmetry off completely
-            'LASPH'       :        'T',       # non-spherical contribtuion
-            'LMAXMIX'     :          4,       # Density Mixer handles quantumNumber upto (4: d-elements, 6: f-elements)
-            'ISPIN'       :          1,       # 1 = Spin-restricted, 2 = spin-unrestricted
+            'POTIM'     :        0.3,       # displacement  
+            'EDIFFG'    :      -0.05,       # float, stopping relaxation loop
+            'IVDW'      :         12,       # 11: D3 zero damping 12: D3 BJ damping
+            'LDIPOL'    :        'F',       # dipole correction
+            'IDIPOL'    :          3,       # 1: x, 2: y, 3: z, 4: all
+            'LPLANE'    :        'T',       # data distribution over Nodes
+            'ADDGRID'   :        'T',       # add grid for charge augmentation
+            'LREAL'     :     'Auto',       # for real space projection
+            'ISYM'      :         -1,       # -1 = symmetry off completely
+            'LASPH'     :        'T',       # non-spherical contribtuion
+            'LMAXMIX'   :          4,       # Density Mixer handles quantumNumber upto (4: d-elements, 6: f-elements)
+            'ISPIN'     :          1,       # 1 = Spin-restricted, 2 = spin-unrestricted
+            'MAGMOM'    :         None,       # can be in or use default
               }
 
     def get_options(self):
@@ -87,7 +89,7 @@ class Vasp(object):
         >>> sim.get_options()
         """
         return self._params.items()
-
+    ### useless: deprecate
     def file_read(fname):
         lineinfo = []
         wordinfo = []
@@ -104,20 +106,16 @@ class Vasp(object):
         
         """
         change the options
-
         available key and default values
         --------------------------------
-
         Parameters
         ----------
         key: str
             option name
         value: (various)
             option name
-
         Optional parameters
         -------------------
-
         Example
         -------
         >>> sim.set_options('KPOINTS', [5, 5, 1])
@@ -129,6 +127,7 @@ class Vasp(object):
     def set_options(self, **kw):
         for k, v in kw.items():
             key = k.upper()
+            ### this can be change or add
             self._params[key] = v
         return 0
 
@@ -142,13 +141,13 @@ class Vasp(object):
         cell2    = self.atoms.get_cell()[1]
         cell3    = self.atoms.get_cell()[2]
 
-        #-------------POSCAR--------------------
-        POSCAR = open(file_name, 'w')
-        POSCAR.write("%s\n" % message)
-        POSCAR.write("1.000  # fixed lattice parameter unit\n")
-        POSCAR.write("%15.9f %15.9f %15.9f\n" % tuple(cell1))
-        POSCAR.write("%15.9f %15.9f %15.9f\n" % tuple(cell2))
-        POSCAR.write("%15.9f %15.9f %15.9f\n" % tuple(cell3))
+        #------------- POSCAR --------------------
+        fout = open(file_name, 'w')
+        fout.write("%s\n" % message)
+        fout.write("1.000  # fixed lattice parameter unit\n")
+        fout.write("%15.9f %15.9f %15.9f\n" % tuple(cell1))
+        fout.write("%15.9f %15.9f %15.9f\n" % tuple(cell2))
+        fout.write("%15.9f %15.9f %15.9f\n" % tuple(cell3))
         atm_line = ''; len_line = ''
         lines = []
         for sym, num in components:
@@ -167,25 +166,25 @@ class Vasp(object):
                    z = z/(cell3[0] + cell3[1] + cell3[2])
                 lines.append("%15.9f %15.9f %15.9f" % (x, y, z))
         atm_line += '\n'; len_line += '\n'
-        POSCAR.write(atm_line)
-        POSCAR.write(len_line)
-        POSCAR.write("Selective Dynamics # constraints enabled\n")
+        fout.write(atm_line)
+        fout.write(len_line)
+        fout.write("Selective Dynamics # constraints enabled\n")
 
         if mode == "cartesian":
-            POSCAR.write("Cartesian \n")
+            fout.write("Cartesian \n")
         elif mode == "direct":
-            POSCAR.write("Direct \n")
+            fout.write("Direct \n")
         
         for i in range(len(lines)):
             idx = i+1
             if fix == None:
-                POSCAR.write(str(lines[i]) + "   T   T   T \n")
+                fout.write(str(lines[i]) + "   T   T   T \n")
             elif fix is not None:
                 if idx in fix:
-                    POSCAR.write(str(lines[i]) + "   F   F   F \n")
+                    fout.write(str(lines[i]) + "   F   F   F \n")
                 else:
-                    POSCAR.write(str(lines[i]) + "   T   T   T \n")
-        POSCAR.close()
+                    fout.write(str(lines[i]) + "   T   T   T \n")
+        fout.close()
     
     def write_KPOINTS(self):
         #-------------KPOINTS-------------------        
@@ -242,6 +241,7 @@ class Vasp(object):
     def write_INCAR(self):
         #-------------INCAR---------------------
         p = self._params
+        print(f"in writing INCAR {p['NPAR']}")
         INCAR = open('INCAR', 'w')
         INCAR.write("# VASP general descriptors \n\n")
         INCAR.write("SYSTEM        =   %s\n" % p['SYSTEM'])
@@ -277,19 +277,24 @@ class Vasp(object):
         INCAR.write("LASPH         =   %s\n" % p['LASPH'])
         INCAR.write("LMAXMIX       =   %i\n" % p['LMAXMIX'])
         INCAR.write("ISPIN         =   %i\n\n" % p['ISPIN'])
+        if p['ISPIN'] == 2:
+            if p['MAGMOM']:
+                #print(f"True {p['MAGMOM']}"), do no pass p['MAGMOM'] if it is {} -> it became True
+                str_mag = get_magmom_4pos(pos="POSCAR", magin=f"{p['MAGMOM']}")
+            else:
+                str_mag = get_magmom_4pos(pos="POSCAR")
+            INCAR.write(f"{str_mag}")
         INCAR.close()
+
+
 
     def run_catalysis(self, mode='sp', fix=None):
         """ 
-        Example:
-        --------
-
-        from nanocore import vasp
-        from nanocore import io 
-        at = io.read_poscar('POSCAR')
-        at2 = vasp.Vasp(at)
-        at2.run_VASP(nproc=8, npar=2, kpoints=[2,2,1])
-        
+        Run VASP with options
+        mode    opt for optimization
+                sp  
+                vib for calc of vibrational frequency
+        fix     atom index (starts from 1) to be fixed for vibration calc      
         """
         from nanocore.env import vasp_calculator as executable
 
@@ -321,7 +326,7 @@ class Vasp(object):
             p['POTIM']  = 0.300
             p['NSW']    =   0
 
-        if mode == 'vib':   # cal adsorbate for TS
+        if mode == 'vib':   # cal adsorbate for T*S
             p['IBRION'] = 5
             p['POTIM']  = 0.015
             p['NSW']    = 1
@@ -360,30 +365,35 @@ class Vasp(object):
         from nanocore import vasp    
         ZPE, TS = vasp.get_vibration_energy(Temp=300)
         """
-
+        global kB
         line_info, word_info = Vasp.file_read(output_name)
 
         ZPE = 0.0; TS = 0.0
-        kB  = 0.0000861733576020577 # eV K-1
+        #kB  = 0.0000861733576020577 # eV K-1
         kT  = kB * Temp
 
-        VASP_Vib = []
-        for i in range(len(line_info)):
-            if 'THz' in line_info[i]:
-                freq_E = 0.001*float(word_info[i][-2])
-                VASP_Vib.append(freq_E)   # for eV
-            else:
-                pass
+        vib_vasp = []
+        with open(output_name, "r") as fp:
+            for line in fp:
+                if 'THz' in line and not 'f/i' in line: # to remove imaginary freq
+                    eles = line.split()
+                    freq_E = 0.001*float(eles[-2])      # convert meV to eV
+                    vib_vasp.append(freq_E)             # eV
+                else:
+                    pass
         
-        for i in range(len(VASP_Vib)):
-            energy = VASP_Vib[i]
-            x      = energy / kT
-            v1     = x / (math.exp(x) - 1)
-            v2     = 1 - math.exp(-x)
-            E_TS   = v1 - math.log(v2)
-                  
+        for i in range(len(vib_vasp)):
+            energy  = vib_vasp[i]
+            x       = energy / kT
+            v1      = x / (math.exp(x) - 1)
+            vlog    = 1 - math.exp(-x)
+            v2      = -math.log(vlog)
+
+            #E_TS   = kT * (v1 + v2)
+            E_TS   = kT * v2
+            print(f"Eentropy: freq {energy*1000:10.5f} : {kT*v1:10.5f} {kT*v2:10.5f}")
             ZPE = ZPE + 0.5*energy
-            TS  = TS  + kT*E_TS
+            TS  = TS  + E_TS
         
         return ZPE, TS
 
@@ -463,6 +473,56 @@ class Vasp(object):
         else:
             pass
 
+def get_atoms_4pos(pos='POSCAR'):
+    with open(pos, 'r') as f:
+        lines = f.readlines()
+        for index, line in enumerate(lines):
+            if index <= 4: continue
+            if line.strip().replace(' ','').isalpha():
+                atoms=line.strip().split()
+                continue
+            if 'atoms' in locals():
+                natoms=line.strip().split()
+                break
+    if 'atoms' in locals() and 'natoms' in locals():
+        return natoms, atoms
+    else:
+        return 'err'
+
+def get_magmom_4pos(pos='POSCAR', magin=None):
+    '''
+	Used in making INCAR: 
+    	Read POSCAR [and input magmom]
+    	Return string of MAGMOM
+    pos     POSCAR
+    magin   MAGMOM input list of [ 'atom symbol', magmom, ... ]
+
+    '''
+    magmom = {}
+    #print(f"{magin}")
+    if magin:
+        #print(f"{magin} is True")
+        if type(magin) == list:
+            li = iter(magin)
+            magmom = dict(zip(li, li))
+        elif type(magin) == dict:
+            magmom = magin
+    natoms, atoms = get_atoms_4pos(pos)
+    magstr="MAGMOM = "
+    Lmag = False
+    for index, atom in enumerate(atoms):
+        if magin and atom in magmom.keys():
+            magstr += f"{natoms[index]}*{magmom[atom]*1.5} "
+            Lmag = True
+        elif atom in atom_prop.keys():
+            magstr += f"{natoms[index]}*{atom_prop[atom][1]*1.5} "
+            Lmag = True
+        else:
+            print("ERROR: no magmom in input and repo")
+            sys.exit(10)
+            #magstr += f"{natoms[index]}*0 "
+    if Lmag: return magstr + "100*0"
+    else:    return "# " + magstr
 
 
 def pdos_split_sum(sum_list=[1]):
