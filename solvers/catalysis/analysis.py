@@ -8,41 +8,33 @@
 
 import os, sys, glob, math
 from ...atoms import *
+from ...thermo import *
 
 def free_energies(T=298.15, pH=0, p=0.035, sol=0):
-
-    totE_H2O    = -14.236                   # Total energy for H2O(g) in VASP
-    if sol == 1:
-        totE_H2O -= 0.310
-    zpeH2O  =  0.560                        # Norskov parameter
-    S_H2O    =  0.00223333333               # Norskov parameter 0.67 eV at 300 K
-    G_H2O_g = totE_H2O + zpeH2O - T*S_H2O
+    global Etot_H2O, zpe_H2O, Etot_H2, zpe_H2, R, kB, p0
     
-    totE_H2   =  -6.760                     # Total energy for H2(g) in VASP
-    if sol == 1:
-        totE_H2 += 0.056
-    zpeH2   = 0.270                         # Norskov parameter
-    S_H2   =  0.001366666666                # Norskov parameter 0.41 eV at 300 K
-    G_H2_g  = totE_H2  + zpeH2  - T*S_H2   # Gas phase calculation
+    #if sol == 1:
+    #    Etot_H2O -= 0.310
+    #    Etot_H2 += 0.056
+    G_H2O_g = Etot_H2O + zpe_H2O - T*S_H2O
     
-    R      = 0.0000861733254056734          # eV / K
-    kB     = 0.0000861733254056734          # eV / K
-    p0     = 1
-    E_pH   = R * T * np.log(10) * pH        # RT ln10 = 0.05916
+    G_H2_g  = Etot_H2  + zpe_H2  - T*S_H2   # Gas phase calculation
+    
+    E_pH   = R * T * np.log(10) * pH       # RT ln10 = 0.05916
     
     ### Gibbs correction for H2O(l) from H2O(g, DFT)
-    G_H2O_aq = G_H2O_g + R*T*np.log(p/p0) # only available for around p=0.035,(0.0313?) T=298.15K
+    G_H2O_l = G_H2O_g + R*T*np.log(p/p0) # only available for around p=0.035,(0.0313?) T=298.15K
 
     # O2
-    O2_g     = 2 * G_H2O_aq - 2 * G_H2_g + 4.92 # O2(g) from O2 + 2H2 -> 2H2O
+    O2_g     = 2 * G_H2O_l - 2 * G_H2_g + 4.92 # O2(g) from O2 + 2H2 -> 2H2O
     
     # H+
     H_ion    = 0.5*G_H2_g - E_pH            ### delG = delG0 - 0.0592pH
     
     # OH-
-    OH_ion   = G_H2O_aq - H_ion
-    
-    return G_H2O_aq, O2_g, H_ion, OH_ion
+    OH_ion   = G_H2O_l - H_ion
+    print(f"{G_H2O_l:10.3f}  {O2_g:10.3f}, {H_ion:10.3f}, {OH_ion:10.3f}")
+    return G_H2O_l, O2_g, H_ion, OH_ion
 
 def gibbs_HER(Sys, SysH, ZPE=None, TS=None):
     E_H2   =  -6.760;  ZPE_H2   = 0.270; TS_H2   = 0.410 
@@ -115,15 +107,15 @@ def gibbs_ORR_4e(totE, ZPE=None, TS=None, T=298.15, pH=0, p=0.035, sol=0):
         print("TS:", len(TS))
     ### Gibbs for adsorbates 
     print("get Gibbs enegy for molecules")
-    G_H2O_aq, O2_g, H_ion, OH_ion = free_energies(T=T, pH=pH, p=p, sol=sol)
+    G_H2O_l, O2_g, H_ion, OH_ion = free_energies(T=T, pH=pH, p=p, sol=sol)
     ### Gibbs through ORR
     print("calculate gibbs")
-    G_Sys     = totE[0] + ZPE[0] - TS[0] + 4 * H_ion + 0 * G_H2O_aq + 1 * O2_g
-    G_SysO2   = totE[1] + ZPE[1] - TS[1] + 4 * H_ion + 0 * G_H2O_aq
-    G_SysOOH  = totE[2] + ZPE[2] - TS[2] + 3 * H_ion + 0 * G_H2O_aq
-    G_SysO    = totE[3] + ZPE[3] - TS[3] + 2 * H_ion + 1 * G_H2O_aq
-    G_SysOH   = totE[4] + ZPE[4] - TS[4] + 1 * H_ion + 1 * G_H2O_aq                         
-    G_Sys_end = totE[0] + ZPE[0] - TS[0] + 0 * H_ion + 2 * G_H2O_aq 
+    G_Sys     = totE[0] + ZPE[0] - TS[0] + 4 * H_ion + 0 * G_H2O_l + 1 * O2_g
+    G_SysO2   = totE[1] + ZPE[1] - TS[1] + 4 * H_ion + 0 * G_H2O_l
+    G_SysOOH  = totE[2] + ZPE[2] - TS[2] + 3 * H_ion + 0 * G_H2O_l
+    G_SysO    = totE[3] + ZPE[3] - TS[3] + 2 * H_ion + 1 * G_H2O_l
+    G_SysOH   = totE[4] + ZPE[4] - TS[4] + 1 * H_ion + 1 * G_H2O_l                         
+    G_Sys_end = totE[0] + ZPE[0] - TS[0] + 0 * H_ion + 2 * G_H2O_l 
     Gibbs_E   = [G_Sys, G_SysO2, G_SysOOH, G_SysO, G_SysOH, G_Sys_end]
 
     return Gibbs_E
@@ -155,13 +147,13 @@ def gibbs_ORR_4e_alkaline(TE, ZPE=None, TS=None, T=298.15, pH=14, p=0.035, sol=0
         print("ZPE:", len(ZPE))
         print("TS:", len(TS))
     
-    G_H2O_aq, O2_g, H_ion, OH_ion = free_energies(T=T, pH=pH, p=p, sol=sol)
-    G_Sys     = TE[0] + ZPE[0] - TS[0] + 0 * OH_ion + 2 * G_H2O_aq + 1 * O2_g
-    G_SysO2   = TE[1] + ZPE[1] - TS[1] + 0 * OH_ion + 2 * G_H2O_aq
-    G_SysOOH  = TE[2] + ZPE[2] - TS[2] + 1 * OH_ion + 1 * G_H2O_aq
-    G_SysO    = TE[3] + ZPE[3] - TS[3] + 2 * OH_ion + 1 * G_H2O_aq
-    G_SysOH   = TE[4] + ZPE[4] - TS[4] + 3 * OH_ion + 0 * G_H2O_aq                         
-    G_Sys_end = TE[0] + ZPE[0] - TS[0] + 4 * OH_ion + 0 * G_H2O_aq 
+    G_H2O_l, O2_g, H_ion, OH_ion = free_energies(T=T, pH=pH, p=p, sol=sol)
+    G_Sys     = TE[0] + ZPE[0] - TS[0] + 0 * OH_ion + 2 * G_H2O_l + 1 * O2_g
+    G_SysO2   = TE[1] + ZPE[1] - TS[1] + 0 * OH_ion + 2 * G_H2O_l
+    G_SysOOH  = TE[2] + ZPE[2] - TS[2] + 1 * OH_ion + 1 * G_H2O_l
+    G_SysO    = TE[3] + ZPE[3] - TS[3] + 2 * OH_ion + 1 * G_H2O_l
+    G_SysOH   = TE[4] + ZPE[4] - TS[4] + 3 * OH_ion + 0 * G_H2O_l                         
+    G_Sys_end = TE[0] + ZPE[0] - TS[0] + 4 * OH_ion + 0 * G_H2O_l 
     Gibbs_E   = [G_Sys, G_SysO2, G_SysOOH, G_SysO, G_SysOH, G_Sys_end]
     
     return Gibbs_E
@@ -193,12 +185,12 @@ def gibbs_OER_4e_acid(TE, ZPE=None, TS=None, T=298.15, pH=0, p=0.035):
         print("ZPE:", len(ZPE))
         print("TS:", len(TS))
      
-    G_H2O_aq, O2_g, H_ion, OH_ion = free_energies(T=T, pH=pH, p=p)
-    G_Sys     = TE[0] + ZPE[0] - TS[0] + 0 * H_ion + 2 * G_H2O_aq 
-    G_SysOH   = TE[1] + ZPE[1] - TS[1] + 1 * H_ion + 1 * G_H2O_aq
-    G_SysO    = TE[2] + ZPE[2] - TS[2] + 2 * H_ion + 1 * G_H2O_aq
-    G_SysOOH  = TE[3] + ZPE[3] - TS[3] + 3 * H_ion + 0 * G_H2O_aq
-    G_Sys_end = TE[0] + ZPE[0] - TS[0] + 4 * H_ion + 0 * G_H2O_aq + 1 * O2_g 
+    G_H2O_l, O2_g, H_ion, OH_ion = free_energies(T=T, pH=pH, p=p)
+    G_Sys     = TE[0] + ZPE[0] - TS[0] + 0 * H_ion + 2 * G_H2O_l 
+    G_SysOH   = TE[1] + ZPE[1] - TS[1] + 1 * H_ion + 1 * G_H2O_l
+    G_SysO    = TE[2] + ZPE[2] - TS[2] + 2 * H_ion + 1 * G_H2O_l
+    G_SysOOH  = TE[3] + ZPE[3] - TS[3] + 3 * H_ion + 0 * G_H2O_l
+    G_Sys_end = TE[0] + ZPE[0] - TS[0] + 4 * H_ion + 0 * G_H2O_l + 1 * O2_g 
     Gibbs_E   = [G_Sys, G_SysOH, G_SysO, G_SysOOH, G_Sys_end]
                                                                                                                             
     return Gibbs_E
