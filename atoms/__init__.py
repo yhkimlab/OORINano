@@ -206,7 +206,7 @@ class AtomsSystem(object):
     __slots__ = ['_atoms', '_cell', '_pbc', '_selected', '_constraints',
                  '_pointer', '_bonds']
 
-    def __init__(self, atoms, cell='None', pbc=[False,False,False], i_serial=1,
+    def __init__(self, atoms, cell=None, pbc=[False,False,False], i_serial=1,
                  bonds=None):
 
         if not atoms: # 110924 empty AtomsSystem is allowed.
@@ -269,7 +269,7 @@ class AtomsSystem(object):
 
     def reset_serials(self): self.set_serials(1)
 
-    def set_cell(self, cell_vector='None'):
+    def set_cell(self, cell_vector=None):
         """
         Define lattice vectors
         
@@ -281,8 +281,8 @@ class AtomsSystem(object):
         >>> atoms.set_cell(cell)
         >>> 
         """
-        if cell_vector == 'None':
-            self._cell = 'None'; return
+        if cell_vector is None:
+            self._cell = None; return
         cell_vector = np.array(cell_vector)
         if cell_vector.shape == (3,3):
             self._cell = cell_vector
@@ -323,7 +323,7 @@ class AtomsSystem(object):
                [ -1.22464680e-16,  -1.22464680e-16,   2.00000000e+00]])
         >>>
         """
-        if self._cell == 'None': return
+        if self._cell == None: return
         from math import pi
         a1 = Vector(self._cell[0])
         a2 = Vector(self._cell[1])
@@ -974,7 +974,7 @@ class AtomsSystem(object):
 
     # connectivity across cell boundaries (X)
     def __mul__(self, other):
-        if self.get_cell() == 'None':
+        if self.get_cell() is None:
             raise ValueError("Can`t expand this system without cell vectors.")
         v1, v2, v3 = self.get_cell(); i_serial=1
         loop_1 = 0; loop_2 = 0; loop_3 = 0

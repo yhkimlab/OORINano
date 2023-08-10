@@ -150,7 +150,7 @@ class Vasp(object):
         fout.write("%15.9f %15.9f %15.9f\n" % tuple(cell3))
         atm_line = ''; len_line = ''
         lines = []
-        for sym, num in components:
+        for sym, num in components:     # sym: symbol
             self.atoms.select_elements(sym)
             atoms1 = self.atoms.copy_atoms()
             atm_line = atm_line + sym      + '   '
@@ -164,7 +164,9 @@ class Vasp(object):
                    x = x/(cell1[0] + cell1[1] + cell1[2])
                    y = y/(cell2[0] + cell2[1] + cell2[2])
                    z = z/(cell3[0] + cell3[1] + cell3[2])
-                lines.append("%15.9f %15.9f %15.9f" % (x, y, z))
+                sline = f"{x:15.9f} {y:15.9f} {z:15.9f}"
+                lines.append(sline)
+                print(sline)
         atm_line += '\n'; len_line += '\n'
         fout.write(atm_line)
         fout.write(len_line)
@@ -241,7 +243,7 @@ class Vasp(object):
     def write_INCAR(self):
         #-------------INCAR---------------------
         p = self._params
-        print(f"in writing INCAR {p['NPAR']}")
+        #print(f"in writing INCAR {p['NPAR']}")
         INCAR = open('INCAR', 'w')
         INCAR.write("# VASP general descriptors \n\n")
         INCAR.write("SYSTEM        =   %s\n" % p['SYSTEM'])

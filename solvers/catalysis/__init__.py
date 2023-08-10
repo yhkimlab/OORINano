@@ -106,13 +106,20 @@ def run_series_HER(calc, sim_params, mode, fix, active, vib, label):
 
 def run_series_ORR(calc, sim_params, mode, fix, active, vib, label):
     '''
-    Used parameter: mode, vib, label  
-    Passed params : fix,  active
+    mode    opt (default)
+    fix     None (default)
+            1L  fixed bottom 1 layer in case of slab
+    vib
+    label  
+    active  passed to 
     '''
     sim_class = calc.__class__
     #print(f"in run_series_ORR: {sim_params}")
     irc = 0
     natoms      = len(calc.atoms)
+
+    ### if fix=NL, sort atoms and fix NL
+
     ### Skip run_VASP if there is OUTCAR
     fsuffix     = f"{label}_{irc}_cat"
     outcar      = f"OUTCAR_{fsuffix}"
