@@ -102,6 +102,7 @@ def fccsurfaces(symb, plane_index, size, vac):
         fcc111_cell[2][2] += vac
         surf.set_cell(fcc111_cell)
         surf.select_all(); surf.sort('z')
+        surf.reset_serials()
         return surf
     elif plane_index =='110':
         N, M = divmod(size[-1], 2)

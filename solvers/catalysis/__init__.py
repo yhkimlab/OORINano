@@ -108,7 +108,7 @@ def run_series_ORR(calc, sim_params, mode, fix, active, vib, label):
     '''
     mode    opt (default)
     fix     None (default)
-            1L  fixed bottom 1 layer in case of slab
+            b1L  fixed bottom 1 layer in case of slab
     vib
     label  
     active  passed to 
@@ -116,15 +116,22 @@ def run_series_ORR(calc, sim_params, mode, fix, active, vib, label):
     sim_class = calc.__class__
     #print(f"in run_series_ORR: {sim_params}")
     irc = 0
-    natoms      = len(calc.atoms)
+    natoms      = len(calc.atoms._atoms)
 
-    ### if fix=NL, sort atoms and fix NL
-
+    ### fixed start from 0
+    if fix == 'b1L':
+        ngroup = calc.atoms.make_groups()
+        calc.atoms.select_atoms("gid", 0)
+        fixed = calc.atoms._selected
+    elif type(fix) == list:
+        fixed = fixed
+    else:
+        fixed = None
     ### Skip run_VASP if there is OUTCAR
     fsuffix     = f"{label}_{irc}_cat"
     outcar      = f"OUTCAR_{fsuffix}"
     if not os.path.isfile(outcar):
-        calc.run_catalysis(mode=mode, fix=fix)
+        calc.run_catalysis(mode=mode, fix=fixed)
         os.system(f'cp POSCAR  POSCAR_{fsuffix}')
         os.system(f'mv OUTCAR  {outcar}')
         os.system(f'mv XDATCAR XDATCAR_{fsuffix}')
@@ -163,7 +170,7 @@ def run_series_ORR(calc, sim_params, mode, fix, active, vib, label):
         fsuffix = f"{label}_{i+1}_cat{interm_fnames[i]}"
         outcar = f"OUTCAR_{fsuffix}"
         if not os.path.isfile(outcar):
-            calc.run_catalysis(mode=mode, fix=fix)
+            calc.run_catalysis(mode=mode, fix=fixed)
             os.system(f'cp POSCAR  POSCAR_{fsuffix}')
             os.system(f'mv OUTCAR  {outcar}')
             os.system(f'mv XDATCAR XDATCAR_{fsuffix}')  

@@ -152,10 +152,10 @@ class Vasp(object):
         lines = []
         for sym, num in components:     # sym: symbol
             self.atoms.select_elements(sym)
-            atoms1 = self.atoms.copy_atoms()
+            #atoms1 = self.atoms.copy_atoms() # sorted order is lost in a.copy_atoms()
             atm_line = atm_line + sym      + '   '
             len_line = len_line + str(num) + '   ' 
-            for atom in atoms1:
+            for atom in self.atoms:
                 x = 0. ; y = 0.; z = 0.
                 if mode == 'cartesian':
                    x, y, z = Vector(atom.get_position())
@@ -166,7 +166,7 @@ class Vasp(object):
                    z = z/(cell3[0] + cell3[1] + cell3[2])
                 sline = f"{x:15.9f} {y:15.9f} {z:15.9f}"
                 lines.append(sline)
-                print(sline)
+                #print(sline)
         atm_line += '\n'; len_line += '\n'
         fout.write(atm_line)
         fout.write(len_line)

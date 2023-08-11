@@ -396,7 +396,26 @@ class AtomsSystem(object):
         for atom in self._atoms:
             contents[atom.get_symbol()] = contents.get(atom.get_symbol(),0)+1
         return contents
-    
+    ### make groups by layers through z-axis
+    def make_groups(self, Lsort = True, kind = 'z'):
+        '''
+        If already sorted, use the atom.get_position()
+        divide group by z-position with dz
+        '''
+        delta = 0.1
+        gid = 0
+        zpivot = self._atoms[0].get_position()[2]
+        
+        for atom in self._atoms:
+            if abs(atom.get_position()[2] - zpivot) <= delta:
+                atom.set_groupid(gid)
+            else:
+                gid += 1
+                atom.set_groupid(gid)
+                zpivot = atom.get_position()[2]
+        ngroup = gid + 1
+        return ngroup
+
     ## from old XYZ module - select ##
     def _select_rngnbs(self, astr):
         """
@@ -463,6 +482,26 @@ class AtomsSystem(object):
         for i in self.get_serials():
             if self._atoms[i-1].get_symbol() in spcs:
                 selected.append(i)
+        self._selected = selected
+
+    def select_atoms(self, byref, tag):
+        """
+        Select the atoms by
+            gid     group id
+            symbol  symbol names
+        """
+        import re
+        selected = []
+        if byref == "symbol":
+            spcs = re.findall(r'\w+', tag)
+            for i in self.get_serials():
+                if self._atoms[i-1].get_symbol() in spcs:
+                    selected.append(i)
+        elif byref == "gid":
+            for atom in self._atoms:
+                if atom._groupid == tag:
+                    selected.append(atom._serial)
+                
         self._selected = selected
 
     def select_reverse(self):
@@ -1383,7 +1422,7 @@ class AtomsSystem(object):
 
         return AtomsSystem(atoms2, cell=self.get_cell())
 
-
+    
     def get_in_cell_system(self):
 
         # get fractional coordinates
