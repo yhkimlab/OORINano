@@ -85,8 +85,7 @@ class Atom(object):
             raise ValueError()
 
     def set_position(self, position):
-        if len(position) == 3 and (isinstance(position, list) or
-                                   isinstance(position, tuple)):
+        if len(position) == 3 and not isinstance(position, Vector):
             self._position = Vector(position)
         elif len(position) == 3 and (isinstance(position, Vector)):
             self._position = position # 110330 for old Scientific
@@ -377,6 +376,10 @@ class AtomsSystem(object):
         for atom in self._atoms:
             positions.append(atom.get_position())
         return positions
+    
+    def set_positions(self, positions):
+        for i, atom in enumerate(self._atoms):
+            atom.set_position(positions[i])
 
     def get_symbols(self):
         symbols = []
@@ -653,6 +656,21 @@ class AtomsSystem(object):
             new_cellv = Vector(cellv).rotate(angle, Vector(0, 0, 0), axis_dir)
             cell2.append(new_cellv)
         self.set_cell(cell2)
+
+    def wrap_positions(self):
+
+        positions = self.get_positions()
+
+        cell = self.get_cell()
+
+        fractional = np.linalg.solve(cell.T,
+                                    np.asarray(positions).T).T
+
+        for i in range(3):
+            fractional[:, i] %= 1.0
+
+        new_positions = np.dot(fractional, cell)
+        self.set_positions(new_positions)
 
     def translate(self, dx=None, dy=None, dz=None):
         """
@@ -1454,7 +1472,7 @@ class AtomsSystem(object):
         elif plane == 'zx': atoms3.translate(0,1,0)
         else: raise ValueError("Invaild plane type: plane = xy, yz, or zx")
         atoms4 = atoms3.get_cartesian_coordinate_system()
-        return atoms4
+        self._atoms = atoms4
 
 
 def convert_abc2xyz(a,b,c,alpha,beta,gamma):

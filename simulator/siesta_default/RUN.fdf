@@ -121,11 +121,11 @@ AllocReportLevel      0      # SystemLabel.alloc, Default: 0
 
 #(10) Options for saving/reading information
 
-SaveHS                T      # SystemLabel.HS
+SaveHS                F      # SystemLabel.HS
 SaveRho               T      # SystemLabel.RHO, rho2xsf(3D),macroave-charge dendity(1D)
 SaveDeltaRho          T      # SystemLabel.DRHO
 SaveElectrostaticPotential T # SystemLabel.VH , macroave-potential
 SaveTotalPotential    T      # SystemLabel.VT
-#WriteMDXmol           T      # SystemLabel.ANI, optimization
-WriteCoorXmol        .true.  # SystemLavel.xyz
-#WriteCoorStep        .true.  # SystemLabel.XV , rho2xsf
+WriteMDXmol           F      # SystemLabel.ANI, optimization
+WriteCoorXmol         F  # SystemLavel.xyz
+WriteCoorStep         F  # SystemLabel.XV , rho2xsf

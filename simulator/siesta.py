@@ -1,10 +1,11 @@
 #from __future__ import print_function
 from ..atoms import *
 from .. import io
-from .. io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
+from .. io import write_struct, cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr, read_struct
 from .. units import ang2bohr
 from glob import glob
-import re
+import yaml
+import re, sys
 import shutil
 import subprocess
 
@@ -183,18 +184,18 @@ class Siesta(object):
         self.set_necessary_files()
 
     def set_necessary_files(self):
-        self._req_files['cwd'] = os.getcwd()
-        dir_all = os.listdir(self._req_files['cwd'])
-        dir_pp = [f for f in dir_all if os.path.splitext(f)[-1] == '.psf']
+        self._req_files['cwd'] = sys.path[0]
+        dir_all = os.listdir(os.getcwd())
+        dir_pp = [os.getcwd()+os.sep+f for f in dir_all if os.path.splitext(f)[-1] == '.psf']
         self._req_files['pp'] = dir_pp
-        dir_result = [f for f in dir_all if os.path.splitext(f)[-1] == '.TSHS']
-        self._req_files['result'] = dir_result
+        self._req_files['result'] = {}
+        # atoms_pp = self._atoms.get_species()
+        # self._req_files['pp'] = [f"{f}.psf" for f in atoms_pp]
 
     def copy_necessary_files(self):
         cwd = os.getcwd()
         for pp in self._req_files['pp']:
-            original = os.path.join(self._req_files['cwd'], pp)
-            shutil.copy(original, cwd)
+            shutil.copy(pp, cwd)
 
     def read_default_fdf(self):
         import inspect
@@ -352,10 +353,16 @@ class Siesta(object):
         self._inputs[fname] = lines
         self.parse_fdf(fname)
 
+    def read_all_fdf(self):
+        fnames = ['KPT.fdf', 'BASIS.fdf', 'RUN.fdf', 'TS.fdf', 'STRUCT.fdf']
+        for fname in fnames:
+            if fname in os.listdir():
+                self.read_fdf(fname)
+
     def write_fdf(self, filename):
         fname = filename.split(os.sep)[-1]
         if fname == 'STRUCT.fdf':
-            self.write_struct()
+            write_struct(self._atoms)
             return
         self.generate_fdf(fname)
         fd = open(filename, 'w')
@@ -490,13 +497,13 @@ class Siesta(object):
             _, right_elec = self.get_options('TS.Elec.Right')
             for i, line in enumerate(left_elec):
                 if 'HS' in line:
-                    left_elec[i] = f'\tHS {opt["label_L"]}\n'
+                    left_elec[i] = f'\tHS elecL.TSHS\n'
                 if 'used-atoms' in line:
                     left_elec[i] = f'\tused-atoms {opt["n_left"]}\n'
             
             for i, line in enumerate(right_elec):
                 if 'HS' in line:
-                    right_elec[i] = f'\tHS {opt["label_R"]}\n'
+                    right_elec[i] = f'\tHS elecR.TSHS\n'
                 if 'used-atoms' in line:
                     right_elec[i] = f'\tused-atoms {opt["n_right"]}\n'
             
@@ -504,6 +511,20 @@ class Siesta(object):
             self.set_option('TS.Elec.Right', True, right_elec)
 
         def set_tbtrans_option(**opt):
+            _, left_elec = self.get_options('TS.Elec.Left')
+            _, right_elec = self.get_options('TS.Elec.Right')
+            for i, line in enumerate(left_elec):
+                if 'HS' in line:
+                    left_elec[i] = f'\tHS elecL.TSHS\n'
+                if 'used-atoms' in line:
+                    left_elec[i] = f'\tused-atoms {opt["n_left"]}\n'
+            
+            for i, line in enumerate(right_elec):
+                if 'HS' in line:
+                    right_elec[i] = f'\tHS elecR.TSHS\n'
+                if 'used-atoms' in line:
+                    right_elec[i] = f'\tused-atoms {opt["n_right"]}\n'
+
             _, tbt = self.get_options('TBT.Contour.neq')
             for i, line in enumerate(tbt):
                 if 'from' in line:
@@ -512,21 +533,49 @@ class Siesta(object):
                     tbt[i] = f'\tdelta {opt["dE"]}\n'
             
             self.set_option('TBT.Contour.neq', True, tbt)
-            
+            label = self._req_files['result']['scatter'].split(os.sep)[-1]
+            label = label.split('.')[0]
+            self.set_option('SystemLabel', label)
+            self.set_option('SystemName', label)
 
-        if mode == 'elec': 
+        def set_result_files(mode, **opt):
+            cwd = self._req_files['cwd'] + os.sep
+            if mode == 'scatter':
+                keys = ['elecL', 'elecR']
+                for k in keys:
+                    target_dir = cwd + opt[k]+os.sep
+                    flist = os.listdir(target_dir)
+                    dir_result = [f for f in flist if os.path.splitext(f)[-1] == '.TSHS']
+                    assert len(dir_result) == 1
+                    shutil.copy(target_dir + dir_result[0], f'{k}.TSHS')
+                    self._req_files['result'][k] = target_dir + dir_result[0]
+            if mode == 'tbtrans':
+                target_dir = os.listdir(opt['scatter'])
+                dir_result = [f for f in target_dir if os.path.splitext(f)[-1] == '.TSHS']
+                for f in dir_result:
+                    target = opt['scatter'] + os.sep + f
+                    shutil.copy(target, f'{f}')
+                    if f not in ['elecL.TSHS', 'elecR.TSHS']:
+                        self._req_files['result']['scatter'] = target
+
+        if mode == 'siesta':
             exec = siesta_exec
             self.set_option('SolutionMethod', 'Diagon')
-            self.set_option('TS.DE.SAVE', True)
-            self.set_option('TS.HS.SAVE', True)
+
+        elif mode == 'elec': 
+            exec = siesta_exec
+            self.set_option('SolutionMethod', 'Diagon')
+            self.set_option('TS.DE.Save', True)
+            self.set_option('TS.HS.Save', True)
 
         elif mode == 'scatter':
             exec = siesta_exec
             self.set_option('SolutionMethod', 'Transiesta')
             self.set_option('TS.Voltage', option["Voltage"])
             self.set_option('TS.Elecs.Eta', option["ts_eta"])
-            self.set_option('TS.DE.SAVE', None)
-            self.set_option('TS.HS.SAVE', None)
+            self.set_option('TS.DE.Save', None)
+            self.set_option('TS.HS.Save', None)
+            set_result_files(mode, **option)
             set_transiesta_option(**option)
 
         elif mode == 'tbtrans':
@@ -534,7 +583,11 @@ class Siesta(object):
             self.set_option('SolutionMethod', 'Transiesta')
             self.set_option('TBT.Elecs.Eta', option["tbt_eta"])
             self.set_option('TBT.Atoms.Device', True, option["device"])
+            set_result_files(mode, **option)
             set_tbtrans_option(**option)
+        
+        else:
+            raise ValueError("unsupported mode")
 
         # write fdf files
         if not mode == 'POST':
@@ -544,53 +597,12 @@ class Siesta(object):
 
         cmd = f'mpirun -np {nproc}  {exec} < RUN.fdf > stdout.txt'
         result = subprocess.run(cmd, shell=True, check=True)
+
         return result
         
 
-    def write_struct(self, cellparameter=1.0):
-
-        if self._atoms.get_cell() != 'None':
-            cell1 = self._atoms.get_cell()[0]
-            cell2 = self._atoms.get_cell()[1]
-            cell3 = self._atoms.get_cell()[2]
-
-        #---------------STRUCT.fdf----------------
-        fileS = open('STRUCT.fdf', 'w')
-        natm = len(self._atoms)
-        fileS.write("NumberOfAtoms    %d           # Number of atoms\n" % natm)
-        unique_symbs = get_unique_symbs(self._atoms)
-        fileS.write("NumberOfSpecies  %d           # Number of species\n\n" % len(unique_symbs))
-        fileS.write("%block ChemicalSpeciesLabel\n")
-    
-        for symb in unique_symbs:
-            sym = ''.join(re.findall('[a-zA-Z]', symb))
-            fileS.write(" %d %d %s\n" % (unique_symbs.index(symb)+1,atomic_number(sym),symb) )
-        fileS.write("%endblock ChemicalSpeciesLabel\n")
-    
-        #Lattice
-        fileS.write("\n#(3) Lattice, coordinates, k-sampling\n\n")
-        fileS.write("LatticeConstant   %15.9f Ang\n" % cellparameter)
-        fileS.write("%block LatticeVectors\n")
-        if self._atoms.get_cell() != 'None':
-            va, vb, vc = cell1, cell2, cell3
-            fileS.write("%15.9f %15.9f %15.9f\n" % tuple(va))
-            fileS.write("%15.9f %15.9f %15.9f\n" % tuple(vb))
-            fileS.write("%15.9f %15.9f %15.9f\n" % tuple(vc))
-        fileS.write("%endblock LatticeVectors\n\n")
-    
-        #Coordinates
-        fileS.write("AtomicCoordinatesFormat Ang\n")
-        fileS.write("%block AtomicCoordinatesAndAtomicSpecies\n")
-    
-        for atom in self._atoms:
-            x,y,z = atom.get_position(); symb = atom.get_symbol()
-            if atom.get_groupid() != 0:
-                symb = symb + str(atom.get_groupid())
-            fileS.write(" %15.9f %15.9f %15.9f %4d %4d\n" %\
-                       (x,y,z,unique_symbs.index(symb)+1, atom.get_serial()))
-            
-        fileS.write("%endblock AtomicCoordinatesAndAtomicSpecies\n")
-        fileS.close()
+    def write_atoms(self, cellparameter=1.0):
+        write_struct(self._atoms, cellparameter)
 
 
     def save_simulation(self):
@@ -673,6 +685,22 @@ def calc_pldos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi 
     if mpi:
         cmd = 'mpirun -np %i ' % nproc + cmd
     os.system(cmd)
+
+def get_transmission(fname):
+    with open(fname) as f:
+        lines = f.readlines()
+        energy = []; trans = []
+        for line in lines:
+            line = line.replace("#", "# ")
+            data = line.split()
+            if len(data) == 0:
+                continue
+            elif data[0][0] in ['#', '!']:
+                continue
+
+            energy.append(float(data[0]))
+            trans.append(float(data[1]))
+        return np.asarray(energy), np.asarray(trans)
 
 
 def calc_pdos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi = 0, nporc = 1):
@@ -865,8 +893,8 @@ def get_band(simobj, pathfile, label='siesta', rerun=0):
         simobj.run(mode='POST')
 
     # gnuband script
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_band as sub
+    from nanocore.env import siesta_util_location as sul
+    from nanocore.env import siesta_util_band as sub
     os.system('%s/%s < %s.bands > BAND' % (sul, sub, label))
 
     # read band data
@@ -925,7 +953,7 @@ def get_band(simobj, pathfile, label='siesta', rerun=0):
 
 def siesta_xsf2cube(f_in, grid_type):
 
-    from NanoCore.io import ang2bohr
+    from nanocore.io import ang2bohr
 
     # read file
     lines = open(f_in).readlines()
@@ -1196,8 +1224,8 @@ def get_pdos(simobj, emin, emax, by_atom=1, atom_index=[], species=[], broad=0.1
     file_INP.close()
 
     # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_pdos as sup
+    from nanocore.env import siesta_dir as sul
+    from nanocore.env import siesta_util_pdos as sup
     os.system('%s/%s < INP > OUT' % (sul, sup))
     os.system('rm INP OUT')
    
@@ -1266,7 +1294,7 @@ def get_pldos(simobj, emin, emax, broad=0.1, npoints=1001, label='siesta'):
     # get pdos
     Z = []; E = []
     for ind in indice:
-        E1, dos11, dos12 = get_pdos(simobj, emin, emax, by_atom=1, 
+        E1, dos11, dos12 = get_pdos(by_atom=1, 
                                     atom_index=ind, broad=broad, npoints=npoints, label=label)
         E = np.array(E1)
         Z.append(np.array(dos11))
@@ -1289,8 +1317,8 @@ def get_hartree_pot_z(label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_vh as sv
+    from nanocore.env import siesta_dir as sul
+    from nanocore.env import siesta_util_vh as sv
     os.system('%s/%s < macroave.in' % (sul, sv))
     os.system('rm macroave.in')
 
@@ -1321,156 +1349,6 @@ def get_total_energy(output_file='stdout.txt'):
 # OLD SIESTA UTILS
 #
 bohr2ang = 1./ang2bohr
-
-def read_struct(file_name):
-    vec_block = []; atoms_block = []; abc_cell_block = []
-    atoms_length = 0; species = []
-    n_of_species = 0; name = ''; atoms = []; cell = []; cell_scale = ''
-    lattice_constant = 0.
-    _is_ang_scale = 0; _is_bohr_scale = 0; _is_scaled_ang_scale = 0
-    _is_fraction_scale = 0
-
-    f = open(file_name)
-    lines = f.readlines()
-
-    i = 0
-    for line in lines:
-        #print i
-        
-        line_s = line.split(); keyword = ''
-
-        if line_s:
-            keyword = line_s[0].lower()
-            #print keyword
-
-        if keyword == "systemlabel":
-            name = line_s[1]
-
-        elif keyword == "latticeconstant":
-            lattice_constant = float(line_s[1])
-            #print lattice_constant
-            try:
-                cell_scale = line_s[2]
-            except:
-                cell_scale = 'Ang'
-
-        elif keyword == "atomiccoordinatesformat":
-            if line_s[1].lower() == 'ang':
-                _is_ang_scale = 1
-            elif line_s[1].lower() == 'bohr':
-                _is_bohr_scale = 1
-            elif line_s[1].lower() == 'scaledcartesian':
-                #print "ON"
-                _is_scaled_ang_scale = 1
-            elif line_s[1].lower() == 'fractional':
-                _is_fraction_scale = 1
-            else:
-                #print 'Warning : Default atomic scale, "Ang".\n'
-                pass
-
-        elif keyword == "numberofatoms":
-            atoms_length = int(line_s[1])
-            #print "natms", atoms_length
-
-        elif keyword == "numberofspecies":
-            n_of_species = int(line_s[1])
-            #print "nspec", n_of_species
-
-        elif keyword =="%block":
-            keyword_ = line_s[1].lower()
-            #print keyword_
-            
-            if keyword_ == "latticeparameters":
-                abc_cell_block = lines[i+1].split()
-
-            elif keyword_ == "latticevectors":
-                vec_block = lines[i+1:i+4]
-
-            elif keyword_ == "atomiccoordinatesandatomicspecies":
-                atoms_block = lines[i+1:i+1+atoms_length]
-                #print "atoms_block", atoms_block
-
-            elif keyword_ == "chemicalspecieslabel":
-                temp = lines[i+1:i+1+n_of_species]
-                for spec in temp:
-                    species.append(spec.split()[2])
-                #print species
-        i +=1
-
-    # cell converting
-    va = 0; vb = 0; vc = 0
-    if (not abc_cell_block) and vec_block:
-        a1, a2, a3 = vec_block[0].split()
-        a1 = float(a1); a2 = float(a2); a3 = float(a3)
-        b1, b2, b3 = vec_block[1].split()
-        b1 = float(b1); b2 = float(b2); b3 = float(b3)
-        c1, c2, c3 = vec_block[2].split()
-        c1 = float(c1); c2 = float(c2); c3 = float(c3)
-        va = np.array([a1, a2, a3])
-        vb = np.array([b1, b2, b3])
-        vc = np.array([c1, c2, c3])
-        if cell_scale == 'Ang':
-            va = lattice_constant * va
-            vb = lattice_constant * vb
-            vc = lattice_constant * vc
-        elif cell_scale == 'Bohr':
-            va = lattice_constant * bohr2ang * va
-            vb = lattice_constant * bohr2ang * vb
-            vc = lattice_constant * bohr2ang * vc
-        else:
-            #print "Can`t find cell scale"
-            pass
-
-        #a, b, c, alpha, beta, gamma = convert_xyz2abc(va, vb, vc)
-        cell = np.array([va,vb,vc])
-
-    elif abc_cell_block and (not vec_block):
-        a, b, c, alpha, beta, gamma = abc_cell_block.split()
-        a = float(a); b = float(b); c = float(c)
-        alpha = float(alpha); beta = float(beta); gamma = float(gamma)
-        cell = [a, b, c, alpha, beta, gamma]
-
-    # atoms
-    for atm in atoms_block:
-
-        if len(atm.split()) == 4:
-            x, y, z, spec = atm.split()
-        elif len(atm.split()) == 5:
-            x, y, z, spec, serial = atm.split()
-
-        x = float(x); y = float(y); z = float(z); spec = int(spec)
-
-        if _is_ang_scale:
-            pass
-        elif _is_bohr_scale:
-            x = bohr2ang * x; y = bohr2ang * y; z = bohr2ang * z
-
-        elif _is_scaled_ang_scale:
-            #if vec_cell:
-            x = lattice_constant*x
-            y = lattice_constant*y
-            z = lattice_constant*z
-            #elif not vec_cell:
-            #    print "Can`t guess cell scale and type\n"
-#        elif _is_fraction_scale:
-        
-        group = re.findall('\d', species[spec-1])
-        sym = ''.join(re.findall('[a-zA-Z]', species[spec-1]))
-        if group:
-            group = int(''.join(group))
-        else:
-            group = None
-        
-        atom = Atom(sym, (x, y, z), groupid=group)
-        atoms.append(atom)
-
-    if cell.shape == (3,3):
-        #XYZ.write_xyz(file_name.replace('fdf','xyz'), atoms, cell)
-        return AtomsSystem(atoms, cell=cell)
-    else:
-        #XYZ.write_xyz(file_name.replace('fdf','xyz'), atoms)
-        return AtomsSystem(atoms, cell=None)
-
 
 def read_struct_out(file_name):
     f = open(file_name)

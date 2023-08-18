@@ -1,7 +1,0 @@
-
-#(1) Basis definition
-
-PAO.BasisSize     SZ
-#PAO.BasisType     split
-#PAO.EnergyShift   100 meV
-#PAO.SplitNorm     0.15
