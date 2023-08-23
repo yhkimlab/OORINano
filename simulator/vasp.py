@@ -1,13 +1,15 @@
 from ..atoms import *
-from .. import io
-from ..io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
+from .. import io_1
+from ..io_1 import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
 from ..units import ang2bohr
 from glob import glob
 import os, math
 import numpy as np
 from ..thermo import *
+### import io.read, io.write inside Vasp class
 
-#
+#from ..io_1 import read_poscar, write_poscar
+
 # VASP Simulation Object
 # made by Noh           2021. 8.
 # modified by J. Park   2021.10. class Vasp, PDOS[nonmag]
@@ -19,7 +21,12 @@ class Vasp(object):
     Vasp(atoms)
 
     Class for management of VASP simulation
-
+    class varible
+        nitem
+        cpfiles     for copy after running simulator
+        mvfiles     for mv after running simulator
+        checkfile   to check whether checkfile exists for running simulator
+        optfile     opt file to be read for vib calculation
     Parameters
     ----------
     symbol  : AtomsSystem
@@ -29,7 +36,10 @@ class Vasp(object):
     -------------------
     """
     nitem = 0
-    savefile = ['POSCAR', 'CONTCAR', 'KPOINTS', 'INCAR', 'OUTCAR']
+    cpfiles = ['POSCAR', 'CONTCAR', 'OSZICAR']
+    mvfiles = ['OUTCAR', 'XDATCAR']
+    checkfile = 'OUTCAR'
+    optfile = 'CONTCAR'
 
     def __init__(self, atoms):
         self.__class__.nitem += 1
@@ -131,6 +141,8 @@ class Vasp(object):
             self._params[key] = v
         return 0
 
+    def set_atoms(self, contcar):
+        self.atoms = read_poscar(contcar)
 
     def write_POSCAR(self, file_name='POSCAR', mode='cartesian', fix=None):
         components = self.atoms.get_contents().items()
@@ -188,6 +200,8 @@ class Vasp(object):
                     fout.write(str(lines[i]) + "   T   T   T \n")
         fout.close()
     
+    
+
     def write_KPOINTS(self):
         #-------------KPOINTS-------------------        
         p = self._params
@@ -343,6 +357,16 @@ class Vasp(object):
         self.write_POTCAR()
         
         os.system(cmd)
+    
+    def save_files(self, fsuffix=None):
+        for f in self.__class__.cpfiles:
+            os.system(f'cp {f} {f}_{fsuffix}')
+        for f in self.__class__.mvfiles:
+            os.system(f'mv {f} {f}_{fsuffix}')
+        return 0
+    
+    def save_checkfile(self, fsuffix=None):
+        os.system(f'mv {self.__class__.checkfile} {self.__class__.checkfile}_{fsuffix}')
 
     def get_total_energy(self, output_name='OUTCAR'):
         
@@ -474,6 +498,92 @@ class Vasp(object):
             plt.savefig('VDOS.png', format='png', dpi=600, bbox_inches='tight')
         else:
             pass
+
+### functions inside module vasp
+def read_poscar(file_name):
+    f = open(file_name)
+    lines = f.readlines()
+
+    # system info.
+    line_title = lines[0]
+    line_cell_unit = float(lines[1].split()[0])
+    line_cell1 = lines[2].split()
+    line_cell2 = lines[3].split()
+    line_cell3 = lines[4].split()
+    line_symb  = lines[5].split()
+    line_numb  =lines[6].split()
+
+    # number of atoms
+    n_system = 0
+    for n in line_numb:
+        n_system += int(n)
+
+    # symbol list
+    list_symb = []; index = 0
+    for symb in line_symb:
+        list_symb += [symb]*int(line_numb[index])
+        index += 1
+
+    # cell info.
+    cell1 = []; cell2 = []; cell3 = []
+    for v1 in line_cell1:
+        cell1.append(line_cell_unit*float(v1))   
+    for v2 in line_cell2:
+        cell2.append(line_cell_unit*float(v2))    
+    for v3 in line_cell3:
+        cell3.append(line_cell_unit*float(v3))   
+    cell = [cell1, cell2, cell3]
+
+    # Constraint
+    line_atoms = ''
+
+    if lines[7].lower()[:9] == 'selective':
+        line_atoms = lines[8:]
+    else:
+        line_atoms = lines[7:]
+
+    i = 0
+    for line in line_atoms:
+        atoms = []
+        i += 1
+
+        # Cartesian        
+        if line.split()[0][0:1].lower() == 'c':
+            line_coord = line_atoms[i:i+n_system]
+            j = 0
+            for coord in line_coord:
+                x ,y ,z = coord.split()[0], coord.split()[1], coord.split()[2]
+                x = float(x); y = float(y); z = float(z)
+                symb = list_symb[j]
+                atoms.append(Atom(symb,(x,y,z)))
+                j += 1
+                #print x,y,z 
+            atoms_obj = AtomsSystem(atoms)
+            atoms_obj.set_cell(cell)
+            #name = 'POSCAR.xyz'
+            #io.write_xyz(name, atoms_obj)
+            return atoms_obj
+
+        # Factional            
+        elif line.split()[0][0:1].lower() == 'd':
+            line_coord = line_atoms[i:i+n_system]
+            j = 0
+            for coord in line_coord:
+                xf,yf,zf = coord.split()[0], coord.split()[1], coord.split()[2]
+                xf = float(xf); yf = float(yf); zf = float(zf)
+                new_coord = xf*Vector(cell[0])+\
+                            yf*Vector(cell[1])+\
+                            zf*Vector(cell[2])
+                x,y,z = new_coord[0], new_coord[1], new_coord[2]
+                symb = list_symb[j]
+                atoms.append(Atom(symb,(x,y,z)))
+                j += 1
+            atoms_obj = AtomsSystem(atoms)
+            atoms_obj.set_cell(cell)
+            #name = 'POSCAR.xyz'
+            #io.write_xyz(name, atoms_obj)
+            return atoms_obj
+
 
 def get_atoms_4pos(pos='POSCAR'):
     with open(pos, 'r') as f:

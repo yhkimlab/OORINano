@@ -1,7 +1,7 @@
 import argparse
 import os
 import sys
-from nanocore import io
+from . import io_1
 from nanocore import catalysis
 from nanocore.simulator.vasp import Vasp
 from nanocore import surflab
@@ -29,7 +29,7 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, mode, Lvib, nnode, nproc, n
     ### Belows are present examples for ORR and HER
     ### this part is required for job = 'run' & 'incar'
     if cat_kind == 'orr' and os.path.isfile('POSCAR'):
-        atoms = io.read_poscar('POSCAR')
+        atoms = io_1.read_poscar('POSCAR')
         ### default: nproc=24, npar=4, mode='opt', kpoints=[4,4,1], vib=1, label='test'
         sim_params  = dict(npar=npar, kpoints=[2,2,1], nproc=nproc, ediff=0.0001, ediffg=-0.05, encut=400)
     elif cat_kind == 'her':
