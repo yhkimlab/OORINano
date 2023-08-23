@@ -322,7 +322,7 @@ class Vasp(object):
         """
         p = self._params
         
-        if p['server'] == 'kisti':
+        if p['SERVER'] == 'kisti':
             from nanocore.env.env_kisti import vasp_calculator as executable
         else:
             from nanocore.env import vasp_calculator as executable
