@@ -48,6 +48,7 @@ class Vasp(object):
             # 1. Name and basic options       
             'SYSTEM'    :     'vasp',       # text, system name
             'NPAR'      :          1,       # integer, number of bands
+            'NCORE'     :          0,       # integer, number of cores
             'IBRION'    :          2,       # 2=CG/Default, 5=Hessian 
             'LWAVE'     :        'F',       # boolean, write WAVECAR
             'LCHARG'    :        'F',       # boolean, write CHGCAR
@@ -82,6 +83,8 @@ class Vasp(object):
             'LMAXMIX'   :          4,       # Density Mixer handles quantumNumber upto (4: d-elements, 6: f-elements)
             'ISPIN'     :          1,       # 1 = Spin-restricted, 2 = spin-unrestricted
             'MAGMOM'    :         None,       # can be in or use default
+            # 4. ENV params
+            'SERVER'    :       None,
               }
 
     def get_options(self):
@@ -260,8 +263,13 @@ class Vasp(object):
         #print(f"in writing INCAR {p['NPAR']}")
         INCAR = open('INCAR', 'w')
         INCAR.write("# VASP general descriptors \n\n")
-        INCAR.write("SYSTEM        =   %s\n" % p['SYSTEM'])
-        INCAR.write("NPAR          =   %i\n" % int(p['NPAR']))
+        INCAR.write("SYSTEM         =   %s\n" % p['SYSTEM'])
+        ### use NCORE (KISTI), NPAR
+        if p['SERVER'] == 'kisti':
+            INCAR.write(f"{'NCORE':<15}={p['NCORE']:5d}\n")
+        else:
+            INCAR.write(f"{'NPAR':<15}={p['NPAR']:5d}\n")
+        del p['SERVER']
         INCAR.write("IBRION        =   %i\n" % int(p['IBRION']))
         INCAR.write("LWAVE         =   %s\n" % p['LWAVE']) 
         INCAR.write("LCHARG        =   %s\n" % p['LCHARG']) 
@@ -312,9 +320,13 @@ class Vasp(object):
                 vib for calc of vibrational frequency
         fix     atom index (starts from 1) to be fixed for vibration calc      
         """
-        from nanocore.env import vasp_calculator as executable
-
         p = self._params
+        
+        if p['server'] == 'kisti':
+            from nanocore.env.env_kisti import vasp_calculator as executable
+        else:
+            from nanocore.env import vasp_calculator as executable
+
 
         ### obtain non-INCAR params
         if not 'KPOINTS' in p.keys():

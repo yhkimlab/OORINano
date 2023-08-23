@@ -1,12 +1,13 @@
 import argparse
 import os
+import re
 import sys
 from nanocore import io
 from nanocore import catalysis
 from nanocore.simulator.vasp import Vasp
 from nanocore import surflab
 
-def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, nproc, npar):
+def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, nproc, sparallel):
     '''
     job         [ORR(default=orr), HER, OER]
     subjob      [VASP run, show INCAR, plot Gibbs]
@@ -40,11 +41,22 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, 
     else:
         atoms = None
 
+
     ### 2. Set params 
+    ## npar vs ncore exclusive
+    if re.match('c', sparallel):
+        ncore=int(sparallel[1:])
+    else:
+        npar=int(sparallel[1:])
+
     if cat_kind == 'orr':
         ### INCAR params: 
         ###     magmom = dict or list: ispin=2, magmom=['N',2]
-        incar_params = dict(npar=npar, kpoints=[1,1,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
+        if 'npar' in locals():
+            incar_params = dict(npar=npar, kpoints=[1,1,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2, server='slurm')
+        else:
+            incar_params = dict(ncore=ncore, kpoints=[1,1,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2, server='kisti')
+
         sim_params   = dict(nproc=nproc)
         sim_params.update(incar_params)
     elif cat_kind == 'her':
@@ -74,7 +86,7 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, 
     elif job == 'plot':
         ## To plot: get values of totE, zpe, TS and plot
         # 1. get DFT values
-        totE, zpe, TS = catalysis.runORR(at, nproc=24, npar=4, mode='opt', kpoints=[4,4,1], vib=1, label='test')
+        totE, zpe, TS = catalysis.runORR(at, label='test')
         print(totE)
         print(zpe)
         print(TS)
@@ -103,7 +115,9 @@ def main():
     group_sys   = parser.add_argument_group(title='System-dependent inputs')
     group_sys.add_argument('-N', '--nnode', default=1, type=int, help='number of nodes: if needed')
     group_sys.add_argument('-np', '--nproc', type=int, default=24, help='number of process for mpirun')
-    group_sys.add_argument('--npar', type=int, default=4, help='value in INCAR')
+    parallel = group_sys.add_mutually_exclusive_group()
+    parallel.add_argument('--npar', type=int, default=4, help='npar value in INCAR')
+    parallel.add_argument('--ncore', type=int, default=10, help='ncore value in INCAR for KISTI')
     parser.add_argument('-u', '--usage', action='store_true', help='explains how to run.')
 
     args = parser.parse_args()
@@ -113,13 +127,17 @@ def main():
                 \n\tRun sbatch with jobname, partition, nnode, nproc with variables\
                 \n\t    sbatch -J test -p X3 -N 1 -n 20 --export=job='{args.cat_kind}' slurm_sbatch_nc.sh\
                 \n\trun_catalysis.py is run inside job script\
-                \n\t    run_catalysis.py -j orr -sj run -N {args.nnode} -np {args.nproc} --npar $npar\
+                \n\t    run_catalysis.py -j orr -sj run -N {args.nnode} -np {args.nproc} [--npar $npar|--ncore $ncore]\
                 \n\tjob is running in work dir(jobname) & logfile is written in submit dir\
                 \n\t    mpirun -np {args.nproc} VASP_EXC # in work dir\
                 \n\tAfter job finished: jobid.jobname.log -> jobid.jobname.out\
             ")
         sys.exit(0)
-    run_catalysis(args.job, args.cat_kind, args.flabel, args.overwrite, args.poscar, args.mode, args.novib, args.nnode, args.nproc, args.npar)
+    if args.ncore:
+        nparallel='c'+str(args.ncore)
+    else:
+        nparallel='p'+str(args.npar)
+    run_catalysis(args.job, args.cat_kind, args.flabel, args.overwrite, args.poscar, args.mode, args.novib, args.nnode, args.nproc, nparallel)
 
 if __name__ == "__main__":
     main()
