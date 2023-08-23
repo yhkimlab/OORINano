@@ -217,10 +217,17 @@ class Vasp(object):
         KPOINTS.close()
 
     def write_POTCAR(self, xc='PBE'):
-        #-------------POTCAR--------------------         
-        from nanocore.env import vasp_POTCAR_LDA  as LDA_path
-        from nanocore.env import vasp_POTCAR_PBE  as PBE_path
-        from nanocore.env import vasp_POTCAR_PW91 as PW91_path
+        #-------------POTCAR--------------------
+        p = self._params
+        if p['SERVER'] == 'kisti':
+            from nanocore.env.env_kisti import vasp_POTCAR_LDA  as LDA_path
+            from nanocore.env.env_kisti import vasp_POTCAR_PBE  as PBE_path
+            from nanocore.env.env_kisti import vasp_POTCAR_PW91 as PW91_path
+        else:
+            from nanocore.env import vasp_POTCAR_LDA  as LDA_path
+            from nanocore.env import vasp_POTCAR_PBE  as PBE_path
+            from nanocore.env import vasp_POTCAR_PW91 as PW91_path
+
         if xc == 'PBE':
             POTCAR_PATH = PBE_path
         elif xc == 'LDA':
@@ -365,8 +372,8 @@ class Vasp(object):
         self.write_POSCAR(fix=fix)
         self.write_KPOINTS()
         del p['KPOINTS']        # remove params not in INCAR
-        self.write_INCAR()
-        self.write_POTCAR()
+        self.write_POTCAR() 
+        self.write_INCAR()      # remove p['SERVER']
         
         os.system(cmd)
     

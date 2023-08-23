@@ -16,6 +16,9 @@ vasp_POTCAR_LDA  = vaspini + '1.POTPAW.LDA.54.RECOMMEND'
 vasp_POTCAR_PBE  = vaspini + '2.POTPAW.PBE.54.RECOMMEND'
 vasp_POTCAR_PW91 = vaspini + '2.POTPAW.PBE.54.RECOMMEND'        # connect to correct directory
 
+__all__ = ['vasp_calculator', 'vasp_POTCAR_LDA', 'vasp_POTCAR_PBE', 'vasp_POTCAR_PW91']
+
+
 #
 # SIESTA
 #
