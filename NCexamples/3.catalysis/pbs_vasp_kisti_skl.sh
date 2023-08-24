@@ -16,6 +16,12 @@ wdir=$jobname
 logfile=$log_dir/$jobname.log
 outfile=$log_dir/$jobname.out
 
+### set env file here
+ncpackage=$HOME/NanoCore/nanocore/
+env_dir=$ncpackage/etc
+rm $env_dir/env.py
+ln -s $env_dir/env_kisti.py env.py
+
 echo $jobname > $logfile
 NPROC=`wc -l < $PBS_NODEFILE`
 echo "NPROC = $NPROC" >> $logfile
@@ -38,6 +44,7 @@ else
 #    exit 1
 fi
 
+
 cd $log_dir/$wdir
 
 str="../$jobfile -j run -c $cat_kind -p Pt 111 3 -np $NPROC --ncore 10"
@@ -46,6 +53,6 @@ python3 $str >> $logfile
 echo `date` >> $logfile
 echo "end" >> $logfile
 
-mv $logfile $outfile
+mv $logfile $jobfile
 
 
