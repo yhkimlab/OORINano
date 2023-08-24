@@ -14,14 +14,13 @@ log_dir=$PBS_O_WORKDIR
 jobname=$PBS_JOBNAME
 wdir=$jobname
 logfile=$log_dir/$jobname.log
+outfile=$log_dir/$jobname.out
 
 echo $jobname > $logfile
 NPROC=`wc -l < $PBS_NODEFILE`
 echo "NPROC = $NPROC" >> $logfile
 echo start >> $logfile
 date >> $logfile
-
-EXEC="$HOME/bin/vasp_std"
 
 cat='orr'
 cat_kind=${catkind:-$cat}     # select [ORR|HER]
@@ -39,7 +38,6 @@ else
 #    exit 1
 fi
 
-
 cd $log_dir/$wdir
 
 str="../$jobfile -j run -c $cat_kind -p Pt 111 3 -np $NPROC --ncore 10"
@@ -48,6 +46,6 @@ python3 $str >> $logfile
 echo `date` >> $logfile
 echo "end" >> $logfile
 
-mv $logfile $log_dir/$jobname.out 
+mv $logfile $outfile
 
 

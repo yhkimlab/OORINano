@@ -59,7 +59,6 @@ echo `date` > $logfile
 cd $wdir
 echo " Partition : $SLURM_JOB_PARTITION" >> $logfile
 echo "python3 $jobfile running | vasp running" >> $logfile
-#str="../$jobfile -j run -c $cat_kind -N $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
 str="../$jobfile -j run -c $cat_kind -p Pt 111 3 -N $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
 echo "python3  $str " >> $logfile
 python3 $str >> $logfile

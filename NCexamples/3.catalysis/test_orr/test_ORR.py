@@ -1,7 +1,7 @@
-from nanocore import io
+from . import io_1
 from nanocore import catalysis     
 
-at = io.read_poscar('POSCAR')
+at = io_1.read_poscar('POSCAR')
 
 catalysis.runORR(at, nproc=24, npar=4, mode='opt', kpoints=[4,4,1], vib=1, label='test')
 

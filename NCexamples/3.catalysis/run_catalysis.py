@@ -53,9 +53,9 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, 
         ### INCAR params: 
         ###     magmom = dict or list: ispin=2, magmom=['N',2]
         if 'npar' in locals():
-            incar_params = dict(npar=npar, kpoints=[1,1,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2, server='slurm')
+            incar_params = dict(npar=npar, kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
         else:
-            incar_params = dict(ncore=ncore, kpoints=[1,1,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2, server='kisti')
+            incar_params = dict(ncore=ncore, kpoints=[1,1,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
 
         sim_params   = dict(nproc=nproc)
         sim_params.update(incar_params)
@@ -117,7 +117,7 @@ def main():
     group_sys.add_argument('-np', '--nproc', type=int, default=24, help='number of process for mpirun')
     parallel = group_sys.add_mutually_exclusive_group()
     parallel.add_argument('--npar', type=int, default=4, help='npar value in INCAR')
-    parallel.add_argument('--ncore', type=int, default=10, help='ncore value in INCAR for KISTI')
+    parallel.add_argument('--ncore', type=int, help='ncore value in INCAR for KISTI')
     parser.add_argument('-u', '--usage', action='store_true', help='explains how to run.')
 
     args = parser.parse_args()

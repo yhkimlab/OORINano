@@ -83,9 +83,7 @@ class Vasp(object):
             'LMAXMIX'   :          4,       # Density Mixer handles quantumNumber upto (4: d-elements, 6: f-elements)
             'ISPIN'     :          1,       # 1 = Spin-restricted, 2 = spin-unrestricted
             'MAGMOM'    :         None,       # can be in or use default
-            # 4. ENV params
-            'SERVER'    :       None,
-              }
+            }
 
     def get_options(self):
         """
@@ -219,14 +217,9 @@ class Vasp(object):
     def write_POTCAR(self, xc='PBE'):
         #-------------POTCAR--------------------
         p = self._params
-        if p['SERVER'] == 'kisti':
-            from nanocore.env.env_kisti import vasp_POTCAR_LDA  as LDA_path
-            from nanocore.env.env_kisti import vasp_POTCAR_PBE  as PBE_path
-            from nanocore.env.env_kisti import vasp_POTCAR_PW91 as PW91_path
-        else:
-            from nanocore.env import vasp_POTCAR_LDA  as LDA_path
-            from nanocore.env import vasp_POTCAR_PBE  as PBE_path
-            from nanocore.env import vasp_POTCAR_PW91 as PW91_path
+        from nanocore.etc.env import vasp_POTCAR_LDA  as LDA_path
+        from nanocore.etc.env import vasp_POTCAR_PBE  as PBE_path
+        from nanocore.etc.env import vasp_POTCAR_PW91 as PW91_path
 
         if xc == 'PBE':
             POTCAR_PATH = PBE_path
@@ -269,23 +262,24 @@ class Vasp(object):
         p = self._params
         #print(f"in writing INCAR {p['NPAR']}")
         INCAR = open('INCAR', 'w')
-        INCAR.write("# VASP general descriptors \n\n")
-        INCAR.write("SYSTEM         =   %s\n" % p['SYSTEM'])
-        ### use NCORE (KISTI), NPAR
-        if p['SERVER'] == 'kisti':
-            INCAR.write(f"{'NCORE':<15}={p['NCORE']:5d}\n")
-        else:
-            INCAR.write(f"{'NPAR':<15}={p['NPAR']:5d}\n")
-        del p['SERVER']
-        INCAR.write("IBRION        =   %i\n" % int(p['IBRION']))
-        INCAR.write("LWAVE         =   %s\n" % p['LWAVE']) 
-        INCAR.write("LCHARG        =   %s\n" % p['LCHARG']) 
-        INCAR.write("NSW           =   %i\n" % p['NSW']) 
-        INCAR.write("PREC          =   %s\n" % p['PREC']) 
-        INCAR.write("ALGO          =   %s\n" % p['ALGO'])
+        INCAR.write("# VASP basic control parameters\n\n")
+        INCAR.write("SYSTEM        =   %s\n" % p['SYSTEM'])
         INCAR.write("ISTART        =   %i\n" % p['ISTART']) 
         INCAR.write("ICHARG        =   %i\n" % p['ICHARG']) 
         INCAR.write("ISIF          =   %i\n\n" % p['ISIF']) 
+        INCAR.write("IBRION        =   %i\n" % int(p['IBRION']))
+        INCAR.write("NSW           =   %i\n" % p['NSW']) 
+        INCAR.write("PREC          =   %s\n" % p['PREC']) 
+        INCAR.write("ALGO          =   %s\n" % p['ALGO'])
+
+        if p['NCORE'] :
+            INCAR.write(f"{'NCORE':<15}={p['NCORE']:5d}\n")
+        else:
+            INCAR.write(f"{'NPAR':<15}={p['NPAR']:5d}\n")
+        
+        INCAR.write("LWAVE         =   %s\n" % p['LWAVE']) 
+        INCAR.write("LCHARG        =   %s\n" % p['LCHARG']) 
+
         INCAR.write("# VASP convergence parameters \n\n")
         INCAR.write("ENCUT         =   %f\n" % float(p['ENCUT']))
         INCAR.write("ISMEAR        =   %i\n" % p['ISMEAR'])
@@ -329,10 +323,10 @@ class Vasp(object):
         """
         p = self._params
         
-        if p['SERVER'] == 'kisti':
-            from nanocore.env.env_kisti import vasp_calculator as executable
-        else:
-            from nanocore.env import vasp_calculator as executable
+        #if p['SERVER'] == 'kisti':
+        #    from nanocore.env.env_kisti import vasp_calculator as executable
+        #else:
+        from nanocore.etc.env import vasp_calculator as executable
 
 
         ### obtain non-INCAR params
