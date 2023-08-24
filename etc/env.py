@@ -1,1 +1,1 @@
-env_slurm.py
+env_kisti.py

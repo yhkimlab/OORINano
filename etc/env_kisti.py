@@ -1,19 +1,19 @@
 '''
-executable environment: KISTI
+executable environment: in KISTI
 '''
 
 import os
-
 home = os.environ['HOME']
-
 #
-###### VASP
-vasp_calculator  = f"{home}/skl_i18.0.3.2022.7_vasp_std" 
+#  VASP
+#
+###     HOME
+### VASP executable
+vasp_calculator  = f"{home}/bin/skl_i18.0.3.2022.7_vasp_std" 
 
 ### supply POTCAR directory
 vaspini = f"{home}/sandbox/pyvasp/vasppot/"
 
-### supply VASP executable directory
 vasp_POTCAR_LDA  = vaspini + '1.POTPAW.LDA.54.RECOMMEND'
 vasp_POTCAR_PBE  = vaspini + '2.POTPAW.PBE.54.RECOMMEND'
 vasp_POTCAR_PW91 = vaspini + '2.POTPAW.PBE.54.RECOMMEND'        # connect to correct directory
