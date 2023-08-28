@@ -515,37 +515,34 @@ class AtomsSystem(object):
                 
         self._selected = selected
 
-    def select_pivot(self, cond='cat'):
+    def select_pivot(self, site='center'):
         """
         select pivot atoms
         for catalysis: top layer in z, center for xy plane
         select atoms: do not sort to get the original index
         """
         # using atom index -> fails
-        """
-        if cond == 'cat':
-            xl, xh  = self.get_gminmax(0, gid)  # 0 for x
-            yl, yh  = self.get_gminmax(1, gid)  # 1 for y
-            ztop    = self.get_zmax()
-        xave = xl + (xh-xl)/2.
-        yave = yl + (yh -yl)/2.
-        """
+        
         gids = self.get_gids()
         gid = max(gids)
-        diagon = self.get_cell()[0] + self.get_cell()[1]
-        xcenter = diagon[0]/2
-        ycenter = diagon[1]/2
+        if site == 'center':
+            diagon = self.get_cell()[0] + self.get_cell()[1]
+        xsite = diagon[0]/2
+        ysite = diagon[1]/2
         zmax    = self.get_zmax()
-        pcoord = (xcenter, ycenter, zmax)
-        print(f"pivot center: {pcoord}")
+        pcoord = (xsite, ysite, zmax)
+        print(f"pivot site: {pcoord} gid {gid}")
+        print(f"self {self}")
         ipivot = self.select_nearest(pcoord, gid)
         return ipivot
     
     def select_nearest(self, coord, gid=None):
         '''
-        select nearest atom among group
+        select nearest atom from coord among group
+        coord   reference position
+        gid     group to be searched
         '''
-        dmax = 10000.  # max distance
+        dmin = 10000.  # max distance
         for atom in self._atoms:
             #print(f"max gid {gid} and atom gid: {atom.get_groupid()}")
             if gid and atom.get_groupid() == gid:
@@ -553,16 +550,16 @@ class AtomsSystem(object):
                 ydist = abs(atom.get_position()[1] - coord[1])
                 dist = sqrt(xdist*xdist + ydist*ydist)
                 #print(f"{i}-th: {dist} ? {dmax}")
-                if dist < dmax:
+                if dist < dmin:
                     ipivot = atom.get_serial()
-                    dmax = dist
+                    dmin = dist
         return ipivot
     
     def getatom_byserial(self, iserial, out='position'):
         '''
         obtain atom information from serial number
         '''
-        for i, atom in enumerate(self.atoms):
+        for i, atom in enumerate(self._atoms):
             if atom.get_serial() == iserial:
                 if out == 'position':
                     return atom.get_position()

@@ -14,6 +14,14 @@ from ...io_1 import read_poscar
 import operator
 import sys
 
+### auxiliary functions
+def fix_atoms(atoms, fix):
+    if fix == 'b1L':
+        fixed = atoms.select_atoms("gid", 0)
+    elif type(fix) == list:
+        fixed = fix
+    return fixed
+
 ### Workflow for the calculation of catalysis
 
 def runHER(calc, sim_params, mode='opt', fix=None, pivot=None, vib=1, label='test'):
@@ -72,11 +80,19 @@ def run_series_HER(calc, sim_params, read_geo, mode, fix, pivot, vib, label):
     simulator = calc.__class__
     ### Model: substrate
     natoms = len(calc.atoms)
+    
+    ### fixed start from 0 ?
+    ngroup = calc.atoms.make_groups()
+    if fix:
+        fixed_atoms = fix_atoms(calc.atoms, fix)
+    else:
+        fixed_atoms = None
+        
     ### skip if there is calc.checkfile
     fsuffix     = f"{label}_cat"
     outfile     = f"{simulator.checkfile}_{fsuffix}"
     if not os.path.isfile(outfile):
-        calc.run_catalysis(mode=mode, fix=fix)
+        calc.run_catalysis(mode=mode, fix=fixed_atoms)
         calc.save_files(fsuffix)
     totE_cat    = calc.get_total_energy(output_name=outfile)
     #print(f"totE_cat {totE_cat}")
@@ -84,14 +100,18 @@ def run_series_HER(calc, sim_params, read_geo, mode, fix, pivot, vib, label):
     fsuffix     = f"{label}_catH"
     outfile     = f"{simulator.checkfile}_{fsuffix}"
    
+    if not pivot:
+        pivot = calc.atoms.select_pivot(site='center')
+    print(f"pivot {pivot}")
+
     catalyst_opt = read_geo(calc.optfile)
-    her_model = Catmodeling(catalyst_opt) 
+    her_model = Catmodels(catalyst_opt) 
     atomsH = her_model.HER_transition_gen(pivot=pivot)
     
     calc = simulator(atomsH)
     calc.set_options(**sim_params)
     if not os.path.isfile(outfile):
-        calc.run_catalysis(mode=mode, fix=fix)
+        calc.run_catalysis(mode=mode, fix=fixed_atoms)
         calc.save_files(fsuffix)
         
     totE_catH = calc.get_total_energy(output_name=outfile)
@@ -138,28 +158,26 @@ def run_series_ORR(calc, sim_params, read_geo, mode, fix, pivot, vib, label):
     natoms      = len(calc.atoms._atoms)
 
     ### fixed start from 0
-    if fix == 'b1L':
-        ngroup = calc.atoms.make_groups()
-        calc.atoms.select_atoms("gid", 0)
-        fixed = calc.atoms._selected
-    elif type(fix) == list:
-        fixed = fixed
+    ngroup = calc.atoms.make_groups()
+    if fix:
+        fixed_atoms = fix_atoms(calc.atoms, fix)
     else:
-        fixed = None
+        fixed_atoms = None
+    
     ### Skip run_catalysis if there is __outfile of the simulator
     fsuffix     = f"{label}_{irc}_cat"
     outfile     = f"{simulator.checkfile}_{fsuffix}"
     if not os.path.isfile(outfile):
-        calc.run_catalysis(mode=mode, fix=fixed)
+        calc.run_catalysis(mode=mode, fix=fixed_atoms)
         calc.save_files(fsuffix)
     totE_cat    = calc.get_total_energy(output_name=outfile)
 
     ### No vib cal for pure catalyst: vib for only adsorbate                                          
 
     ###### Make Intermediates geometry
-    ### if no pivot atom, find pivot
+    ### pivot is fixed here before atoms are disturbed
     if not pivot:
-        pivot = calc.atoms.select_pivot()
+        pivot = calc.atoms.select_pivot(site='center')
     print(f"pivot {pivot}")
     interm_fnames   = ['O2', 'OOH', 'O', 'OH']
     catalyst_opt    = read_geo(calc.optfile)
@@ -189,7 +207,7 @@ def run_series_ORR(calc, sim_params, read_geo, mode, fix, pivot, vib, label):
         fsuffix = f"{label}_{i+1}_cat{interm_fnames[i]}"
         outfile = f"{simulator.checkfile}_{fsuffix}"
         if not os.path.isfile(outfile):
-            calc.run_catalysis(mode=mode, fix=fixed)
+            calc.run_catalysis(mode=mode, fix=fixed_atoms)
             calc.save_files(fsuffix)
         E  = calc.get_total_energy(output_name=outfile)
         
