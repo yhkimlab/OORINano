@@ -3,11 +3,11 @@ import os, sys, glob, math
 from ...atoms import *
 
 '''
-only class Catmodeling
+only class Catmodels
 '''
 
 
-class Catmodeling:
+class Catmodels:
 
     def __init__(self, atoms):
         self.atoms = atoms
@@ -21,72 +21,81 @@ class Catmodeling:
         maxindex = z_axis.index(max(z_axis))
         return maxindex
 
-    def HER_transition_gen(self, active=None, dist=1.5):
+    def HER_transition_gen(self, pivot=None, dist=1.5):
         """
         specify hydrogen atomic position on the catalyst
 
         Parameters
         ----------
-        active = list
+        pivot = list
         dist   = 1.5
             assign the position [A] of adsorbed hydrogen [x, y, z]
-            Ex. active = [1.2, 1.35, 23.75]
-            if active is None, the atomic position is automatically assigned
+            Ex. pivot = [1.2, 1.35, 23.75]
+            if pivot is None, the atomic position is automatically assigned
             along to highest z-axis position (ontop site) with specific distance (dist=1.5)
         """
         atoms = self.atoms
 
-        if active is None:
+        if pivot is None:
            top_index = self.get_zmax_index()
            top_x, top_y, top_z = atoms[top_index][0], atoms[top_index][1], atoms[top_index][2]
            atomsH = atoms + Atom('H', (top_x, top_y, top_z+dist))
         else:
-           H_x, H_y, H_z = active[0], active[1], active[2]
+           H_x, H_y, H_z = pivot[0], pivot[1], pivot[2]
            atomsH = atoms + Atom('H', (H_x, H_y, H_z))
 
         return atomsH
 
-    def four_electron_transition_gen(self, active=None, dist=1.5, mode='ORR'):
+    def four_electron_transition_gen(self, pivot=None, zdist=1.5, mode='ORR'):
         """
         specify initial atomic position on the catalyst
 
         Parameters
         ----------
-        active = list
-        dist   = 1.5
-            assign the position [A] of adsorbed hydrogen [x, y, z]
-            Ex. active = [1.2, 1.35, 23.75]
-            if active is None, the atomic position is automatically assigned
-            along to highest z-axis position (ontop site) with specific distance (dist=1.5)
-        
-        mode = 'ORR' or 'OER'
-        active = list
+        pivot = int (pivot id), list
             same as HER_transition_gen
+            assign the position [A] of adsorbed hydrogen [x, y, z]
+            Ex. pivot = [1.2, 1.35, 23.75]
+            if pivot is None, the atomic position is automatically assigned
+            along to highest z-axis position (ontop site) with specific distance (dist=1.5)
+        dist   = 1.5
+        vdist   vector distance
+        mode = 'ORR' or 'OER'
+        
         return 4 atoms images
         """
         atoms = self.atoms
+        vO1dist     = Vector(  0.,      0.,     zdist)
+        vO2dist     = Vector(-1.0,      0.4,    zdist + 0.6 )
+        vO2Hdist    = Vector(-0.403,    1.054,  zdist + 0.733)
+        vHdist      = Vector(-1.350,    1.196,  zdist + 0.480) 
+        vH2dist     = Vector(   0.,     0.,     zdist+0.971)   
         
-        if active is None:
-           top_index = self.get_zmax_index()
-           top_x, top_y, top_z = atoms[top_index][0], atoms[top_index][1], atoms[top_index][2]
-           active_position = (top_x, top_y, top_z+dist)
+        if pivot is None:
+            top_index = self.get_zmax_index()
+            top_x, top_y, top_z = atoms[top_index][0], atoms[top_index][1], atoms[top_index][2]
+            pivot_position = (top_x, top_y, top_z+dist)
         else:
-           active_position = (active[0], active[1], active[2])
+            if type(pivot) is int:
+                pivot_position = atoms[pivot-1].get_position()
+                print(f"pivot_position: {pivot_position}")
+            else:
+                pivot_position = (pivot[0], pivot[1], pivot[2])
 
         atomsO2  = atoms \
-                   + Atom('O', (active_position[0], active_position[1], active_position[2])) \
-                   + Atom('O', (active_position[0]-1.000, active_position[1]+0.400, active_position[2]+0.600)) 
+                   + Atom('O', pivot_position+vO1dist) \
+                   + Atom('O', pivot_position+vO2dist) 
 
         atomsOOH = atoms \
-                   + Atom('O', (active_position[0], active_position[1], active_position[2])) \
-                   + Atom('O', (active_position[0]-0.403, active_position[1]+1.054, active_position[2]+0.733)) \
-                   + Atom('H', (active_position[0]-1.350, active_position[1]+1.196, active_position[2]+0.480))
+                   + Atom('O', pivot_position+vO1dist) \
+                   + Atom('O', pivot_position+vO2Hdist) \
+                   + Atom('H', pivot_position+vHdist)
         atomsO   = atoms \
-                   + Atom('O', (active_position[0], active_position[1], active_position[2])) 
+                   + Atom('O', pivot_position+vO1dist) 
 
         atomsOH  = atoms \
-                   + Atom('O', (active_position[0], active_position[1], active_position[2])) \
-                   + Atom('H', (active_position[0], active_position[1], active_position[2]+0.971))
+                   + Atom('O', pivot_position+vO1dist) \
+                   + Atom('H', pivot_position+vH2dist)
 
         if mode == 'ORR':
             return atomsO2, atomsOOH, atomsO, atomsOH 

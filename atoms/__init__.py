@@ -12,6 +12,7 @@ from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
 import copy     # added by SH
 import os
+import sys
 
 ## Class Atom, AtomsSystem, Vector, Trajectory ##
 class Atom(object):
@@ -45,7 +46,7 @@ class Atom(object):
 
     __slots__ = ['_groupid', '_symbol', '_position','_serial',
                  '_mass', '_charge', '_fftype','_connectivity',
-                 '_iconnectivity']
+                 '_iconnectivity', '_ngroup']
 
     def __init__(self, symbol, position, serial=1, groupid=None, mass=None,
                  charge=None, fftype=None, connectivity=None,
@@ -366,6 +367,16 @@ class AtomsSystem(object):
     def get_pbc(self):return copy.copy(self._pbc)
     def get_selected(self): return copy.copy(self._selected)
 
+    def get_gids(self):
+        '''
+        if gid is set, get all the gids
+        '''
+        gids=[]
+        for atom in self._atoms:
+            if atom.get_groupid not in gids:
+                gids.append(atom.get_groupid())
+        return gids
+
     def get_serials(self):
         serials = []
         for atom in self._atoms:
@@ -504,6 +515,60 @@ class AtomsSystem(object):
                 
         self._selected = selected
 
+    def select_pivot(self, cond='cat'):
+        """
+        select pivot atoms
+        for catalysis: top layer in z, center for xy plane
+        select atoms: do not sort to get the original index
+        """
+        # using atom index -> fails
+        """
+        if cond == 'cat':
+            xl, xh  = self.get_gminmax(0, gid)  # 0 for x
+            yl, yh  = self.get_gminmax(1, gid)  # 1 for y
+            ztop    = self.get_zmax()
+        xave = xl + (xh-xl)/2.
+        yave = yl + (yh -yl)/2.
+        """
+        gids = self.get_gids()
+        gid = max(gids)
+        diagon = self.get_cell()[0] + self.get_cell()[1]
+        xcenter = diagon[0]/2
+        ycenter = diagon[1]/2
+        zmax    = self.get_zmax()
+        pcoord = (xcenter, ycenter, zmax)
+        print(f"pivot center: {pcoord}")
+        ipivot = self.select_nearest(pcoord, gid)
+        return ipivot
+    
+    def select_nearest(self, coord, gid=None):
+        '''
+        select nearest atom among group
+        '''
+        dmax = 10000.  # max distance
+        for atom in self._atoms:
+            #print(f"max gid {gid} and atom gid: {atom.get_groupid()}")
+            if gid and atom.get_groupid() == gid:
+                xdist = abs(atom.get_position()[0] - coord[0])
+                ydist = abs(atom.get_position()[1] - coord[1])
+                dist = sqrt(xdist*xdist + ydist*ydist)
+                #print(f"{i}-th: {dist} ? {dmax}")
+                if dist < dmax:
+                    ipivot = atom.get_serial()
+                    dmax = dist
+        return ipivot
+    
+    def getatom_byserial(self, iserial, out='position'):
+        '''
+        obtain atom information from serial number
+        '''
+        for i, atom in enumerate(self.atoms):
+            if atom.get_serial() == iserial:
+                if out == 'position':
+                    return atom.get_position()
+                elif out == 'atom_index':
+                    return i
+ 
     def select_reverse(self):
         """
         Select all the other atoms not in current selected atom numbers.
@@ -1282,6 +1347,20 @@ class AtomsSystem(object):
         at2.select_all()
         at2.sort('x'); at2.set_serials(1)
         return at2[-1][0]
+                
+    def get_gminmax(self, axis, gid):
+        xmin = 10000
+        xmax = -10000
+        for atom in self._atoms:
+            if atom.get_groupid() == gid:
+                print(f"atom in group: {atom.get_groupid()} {atom.get_position()}")
+                if atom.get_position()[axis] < xmin:
+                    xmin = atom.get_position()[axis]
+                if xmax < atom.get_position()[axis]:
+                    xmax = atom.get_position()[axis]
+        print(f"in group xmin, xmax w. gid = {xmin} {xmax} {gid}")
+        return xmin, xmax
+        
 
     def get_ymax(self):
         at2 = self.copy()
@@ -1289,11 +1368,13 @@ class AtomsSystem(object):
         at2.sort('y'); at2.set_serials(1)
         return at2[-1][1]
 
+    
     def get_zmax(self):
         at2 = self.copy()
         at2.select_all()
         at2.sort('z'); at2.set_serials(1)
         return at2[-1][2]
+        
 	### added by SH
     def get_zmin(self):
         at2 = self.copy()

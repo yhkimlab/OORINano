@@ -6,7 +6,7 @@ solver catalysis module
 run ORR, HER, and OER
 '''
 import os 
-from .catmodels import Catmodeling
+from .catmodels import Catmodels
 from .analysis import *
 from .gibbsplot import *
 from ...io_1 import read_poscar
@@ -16,14 +16,14 @@ import sys
 
 ### Workflow for the calculation of catalysis
 
-def runHER(calc, sim_params, mode='opt', fix=None, active=None, vib=1, label='test'):
+def runHER(calc, sim_params, mode='opt', fix=None, pivot=None, vib=1, label='test'):
     if calc.__module__.split('.')[-1] == 'vasp':
         read_geo = read_poscar
     else:
         print(f"read function error in simulator {calc.__module__}")
         sys.exit(11)
     ### 1. Run HER for a given system: generate several structures then calculate (opt & zpe)
-    totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, read_geo, mode, fix, active, vib, label)
+    totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, read_geo, mode, fix, pivot, vib, label)
     print(f"total energy: {totE_sys} {totE_sysH}\nZPE: {zpe}\nEntropy: {TS}")
     ### 2. Gibbs energy calculation by reading OUTCAR
     Gibbs_novib = gibbs_HER([totE_sys], [totE_sysH])
@@ -37,7 +37,7 @@ def runHER(calc, sim_params, mode='opt', fix=None, active=None, vib=1, label='te
 
     return 0
 
-def runORR(calc, sim_param , mode='opt', fix=None, active=None, vib=1, label='test'):
+def runORR(calc, sim_param , mode='opt', fix=None, pivot=None, vib=1, label='test'):
     ### define input function name depending on calc
     if calc.__module__.split('.')[-1] == 'vasp':
         read_geo = read_poscar
@@ -46,7 +46,7 @@ def runORR(calc, sim_param , mode='opt', fix=None, active=None, vib=1, label='te
         sys.exit(11)
     print(sim_param)
     ### 1. Run ORR for a given system: generate several structures then calculate (opt & zpe)
-    totE, zpe, TS = run_series_ORR(calc, sim_param, read_geo, mode, fix, active, vib, label)
+    totE, zpe, TS = run_series_ORR(calc, sim_param, read_geo, mode, fix, pivot, vib, label)
     print(f"total energy: {totE}\nZPE: {zpe}\nEntropy: {TS}")
     ### 2. Gibbs energy calculation by reading OUTCAR: import analysis
     Gibbs_novib    = gibbs_ORR_4e(totE=totE, pH=0)
@@ -59,7 +59,7 @@ def runORR(calc, sim_param , mode='opt', fix=None, active=None, vib=1, label='te
     plot_ORR_4e_acid(Gibbs_vib, U=pot_onset, legend=['U=1.23V', f'U={pot_onset:5.2f}V', 'U=0.00V'])
     return 0
 
-def run_series_HER(calc, sim_params, read_geo, mode, fix, active, vib, label):
+def run_series_HER(calc, sim_params, read_geo, mode, fix, pivot, vib, label):
     '''
     read_geo    read function is required depending on simulator
     mode        opt (default)
@@ -67,7 +67,7 @@ def run_series_HER(calc, sim_params, read_geo, mode, fix, active, vib, label):
                 b1L  fixed bottom 1 layer in case of slab
     vib
     label  
-    active      passed to 
+    pivot      passed to 
     '''
     simulator = calc.__class__
     ### Model: substrate
@@ -86,7 +86,7 @@ def run_series_HER(calc, sim_params, read_geo, mode, fix, active, vib, label):
    
     catalyst_opt = read_geo(calc.optfile)
     her_model = Catmodeling(catalyst_opt) 
-    atomsH = her_model.HER_transition_gen(active=active)
+    atomsH = her_model.HER_transition_gen(pivot=pivot)
     
     calc = simulator(atomsH)
     calc.set_options(**sim_params)
@@ -122,7 +122,7 @@ def run_series_HER(calc, sim_params, read_geo, mode, fix, active, vib, label):
     else:
         return float(totE_cat), float(totE_catH)
 
-def run_series_ORR(calc, sim_params, read_geo, mode, fix, active, vib, label):
+def run_series_ORR(calc, sim_params, read_geo, mode, fix, pivot, vib, label):
     '''
     read_geo    read function is required depending on simulator
     mode        opt (default)
@@ -130,7 +130,7 @@ def run_series_ORR(calc, sim_params, read_geo, mode, fix, active, vib, label):
                 b1L  fixed bottom 1 layer in case of slab
     vib
     label  
-    active      passed to 
+    pivot      passed to 
     '''
     simulator = calc.__class__
     #print(f"in run_series_ORR: {sim_params}")
@@ -157,11 +157,15 @@ def run_series_ORR(calc, sim_params, read_geo, mode, fix, active, vib, label):
     ### No vib cal for pure catalyst: vib for only adsorbate                                          
 
     ###### Make Intermediates geometry
+    ### if no pivot atom, find pivot
+    if not pivot:
+        pivot = calc.atoms.select_pivot()
+    print(f"pivot {pivot}")
     interm_fnames   = ['O2', 'OOH', 'O', 'OH']
     catalyst_opt    = read_geo(calc.optfile)
-    orr_model       = Catmodeling(catalyst_opt)
+    orr_model       = Catmodels(catalyst_opt)
 
-    interm_models   = orr_model.four_electron_transition_gen(mode='ORR', active=active)
+    interm_models   = orr_model.four_electron_transition_gen(mode='ORR', pivot=pivot)
         
     ### list for data
     ltotE       = [totE_cat]
