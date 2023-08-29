@@ -4,6 +4,9 @@ Units   eV
 Future
     DFT functional dependance can be included
 '''
+### Control parameter
+T           = 298.15
+
 
 ### PBE
 Etot_H2O    = -14.236           # H2O(g) in VASP

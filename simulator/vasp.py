@@ -1,6 +1,5 @@
 from ..atoms import *
-from .. import io_1
-from ..io_1 import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
+from ..ncio import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
 from ..units import ang2bohr
 from glob import glob
 import os, math
@@ -397,7 +396,7 @@ class Vasp(object):
 
         return min_E 
 
-    def get_vibration_energy(self, output_name='OUTCAR', Temp=298.15):
+    def get_vibration_energy(self, output_name='OUTCAR', Temp=T):
         """
         Example:
         --------
@@ -430,7 +429,7 @@ class Vasp(object):
 
             #E_TS   = kT * (v1 + v2)
             E_TS   = kT * v2
-            print(f"Eentropy: freq {energy*1000:10.5f} : {kT*v1:10.5f} {kT*v2:10.5f}")
+            #print(f"Eentropy: freq {energy*1000:10.5f} : {kT*v1:10.5f} {kT*v2:10.5f}")
             ZPE = ZPE + 0.5*energy
             TS  = TS  + E_TS
         
@@ -440,8 +439,8 @@ class Vasp(object):
         """
         Example:
         --------
-        from nanocore import io       
-        at = io.read_poscar('POSCAR')
+        from nanocore import ncio       
+        at = ncio.read_poscar('POSCAR')
         at2 = vasp2.Vasp(at)
         at2.get_vibration_specctrum(output_name='OUTCAR_imag', matplot=1, start=-2000, end=6000)
         """
@@ -596,6 +595,55 @@ def read_poscar(file_name):
             #name = 'POSCAR.xyz'
             #io.write_xyz(name, atoms_obj)
             return atoms_obj
+
+def write_poscar(atoms, file_name='POSCAR_xxyz', mode='cartesian', constraint=None):
+    POSCAR = open(file_name, 'w')
+    POSCAR.write('%s\n' % params['title'])
+    if atoms.get_cell() is not None:
+        va,vb,vc = atoms.get_cell()
+        va = Vector(va); vb = Vector(vb); vc = Vector(vc)
+    else:
+        raise ValueError("Cell info. is necessary.")
+    POSCAR.write('1.000 # fixed lattice parameter unit\n')
+    POSCAR.write("%15.9f %15.9f %15.9f\n" % tuple(va))
+    POSCAR.write("%15.9f %15.9f %15.9f\n" % tuple(vb))
+    POSCAR.write("%15.9f %15.9f %15.9f\n" % tuple(vc))
+    contents = atoms.get_contents()
+    print (contents)
+    atm_line = ''; len_line = ''
+    lines = []
+    for sym, num in contents.items():
+        atoms.select_elements(sym)
+        atoms1 = atoms.copy_atoms()
+        atm_line = atm_line + sym      + '  '
+        len_line = len_line + str(num) + '  '
+        for atom in atoms1:
+            x = 0,; y = 0.; z = 0.
+            if mode == 'cartesian':
+                x,y,z = Vector(atom.get_position())
+            elif mode == 'direct':
+                x,y,z = Vector(atom.get_position())
+                x= x/(va[0]+va[1]+va[2])
+                y= y/(vb[0]+vb[1]+vb[2])
+                z= z/(vc[0]+vc[1]+vc[2])
+            #constraints?
+            
+            lines.append("%15.9f %15.9f %15.9f T T T\n" % (x,y,z))
+            
+            #lines.append("%15.9f %15.9f %15.9f\n" % (x,y,z))
+    atm_line += '\n'; len_line += '\n'
+    POSCAR.write(atm_line)
+    POSCAR.write(len_line)
+    POSCAR.write("Selective Dynamics # constraints enabled\n")
+
+    if mode == 'cartesian':
+        POSCAR.write("Cartesian # direct lattice\n")
+    elif mode == 'direct':
+        POSCAR.write("Direct # direct lattice\n")
+
+    for line in lines:
+        POSCAR.write(line)
+    POSCAR.close()
 
 
 def get_atoms_4pos(pos='POSCAR'):

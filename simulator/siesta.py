@@ -1,7 +1,7 @@
 from __future__ import print_function
 from ..atoms import *
-from .. import io
-from ..io import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
+from .. import ncio
+from ..ncio import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
 from ..units import ang2bohr
 from glob import glob
 
@@ -831,7 +831,7 @@ def get_band(simobj, pathfile, label='siesta', rerun=0):
 
 def siesta_xsf2cube(f_in, grid_type):
 
-    from nanocore.io import ang2bohr
+    from io_1 import ang2bohr
 
     # read file
     lines = open(f_in).readlines()
@@ -891,7 +891,7 @@ def siesta_xsf2cube(f_in, grid_type):
                 atoms = AtomsSystem(atoms, cell=cell)
                 if grid_type =='LDOS':  filename_out = 'LDOS_%i.xsf' % i_data
                 elif grid_type =='RHO': filename_out = 'RHO_%i.xsf' % i_data 
-                io.write_xsf(filename_out, atoms)
+                io_1.write_xsf(filename_out, atoms)
 
                 # grid data
                 npoints = mesh_size[0] * mesh_size[1] * mesh_size[2]

@@ -13,6 +13,7 @@ import numpy as np
 import copy     # added by SH
 import os
 import sys
+from .. import ncio
 
 ## Class Atom, AtomsSystem, Vector, Trajectory ##
 class Atom(object):
@@ -288,7 +289,7 @@ class AtomsSystem(object):
         if cell_vector.shape == (3,3):
             self._cell = cell_vector
         elif cell_vector.shape == (6,):
-            self._cell = convert_abc2xyz(*cell_vector)
+            self._cell = ncio.convert_abc2xyz(*cell_vector)
             print ("WARNGING: v3 along z, v2 in xy plane.")
         else: raise ValueError()
 
@@ -480,7 +481,7 @@ class AtomsSystem(object):
         # Check whether the atom #s are valid.
         for i in selected:
             if i not in self.get_serials():
-                raise ValueError('Index is out of range. # of atoms=%d' % natm)
+                raise ValueError('Index is out of range. # of atoms=%d' % natom)
         self._selected = selected
 
     def select_elements(self, symbs):
@@ -524,16 +525,22 @@ class AtomsSystem(object):
         # using atom index -> fails
         
         gids = self.get_gids()
-        gid = max(gids)
+        maxgid = max(gids)
+        self.select_bygroup(maxgid)
+
+        if len(self._selected) == 1:
+            ipivot = self._selected[0]
+            return ipivot
+        
         if site == 'center':
             diagon = self.get_cell()[0] + self.get_cell()[1]
         xsite = diagon[0]/2
         ysite = diagon[1]/2
         zmax    = self.get_zmax()
         pcoord = (xsite, ysite, zmax)
-        print(f"pivot site: {pcoord} gid {gid}")
+        print(f"pivot site: {pcoord} maxgid {maxgid}")
         print(f"self {self}")
-        ipivot = self.select_nearest(pcoord, gid)
+        ipivot = self.select_nearest(pcoord, maxgid)
         return ipivot
     
     def select_nearest(self, coord, gid=None):
@@ -690,7 +697,7 @@ class AtomsSystem(object):
                 if det > 0: selected.append(atom.get_serial())
         self._selected = selected
 
-    def select_group(self, id):
+    def select_bygroup(self, id):
         selected = []
         for atom in self._atoms:
             if atom.get_groupid() == id: selected.append(atom.get_serial())
@@ -1414,10 +1421,10 @@ class AtomsSystem(object):
 
     def get_fractional_coordinate_system2(self):
 
-        import io
+        #import io
 
         v1, v2, v3 = self.get_cell()
-        a,b,c,alpha,beta,gamma = io.convert_xyz2abc(v1,v2,v3)
+        a,b,c,alpha,beta,gamma = ncio.convert_xyz2abc(v1,v2,v3)
         #print a,b,c,alpha,beta,gamma
 
         alpha = np.pi/180.0 * alpha
@@ -1467,10 +1474,8 @@ class AtomsSystem(object):
 
     def get_cartesian_coordinate_system2(self):
 
-        import io
-
         v1, v2, v3 = self.get_cell()
-        a,b,c,alpha,beta,gamma = io.convert_xyz2abc(v1,v2,v3)
+        a,b,c,alpha,beta,gamma = ncio.convert_xyz2abc(v1,v2,v3)
         #print a,b,c,alpha,beta,gamma
 
         alpha = np.pi/180.0 * alpha
@@ -1566,51 +1571,6 @@ class AtomsSystem(object):
         else: raise ValueError("Invaild plane type: plane = xy, yz, or zx")
         atoms4 = atoms3.get_cartesian_coordinate_system()
         return atoms4
-
-
-def convert_abc2xyz(a,b,c,alpha,beta,gamma):
-    """Convert to cartesian lattice vectors.
-    Taken from the routine 
-       /biodesign/v330/common/code/source/xtlgraf_batch/celori.f"""
-    from math import sin, cos, sqrt
-    from units import degrad
-    s1 = sin(alpha*degrad)
-    s2 = sin(beta*degrad)
-    s3 = sin(gamma*degrad)
-    c1 = cos(alpha*degrad)
-    c2 = cos(beta*degrad)
-    c3 = cos(gamma*degrad)
-    c3bar = (-c1*c2 + c3)/(s1*s2)
-    sqrtarg = 1.0 - c3bar*c3bar
-    if (sqrtarg <= 0):
-        print ("Negative argument to SQRT")
-        print (sqrtarg, alpha, beta, gamma)
-        sqrtarg = 0.0
-    s3bar = sqrt(sqrtarg)
-    # The general transformation from scaled to XYZ coordinates is now:
-    # x = or1 * xabc
-    # y = or2 * xabc + or3 * yabc
-    # z = or4 * xabc + or5 * yabc + or6 * zabc
-    or1 = a*s2*s3bar
-    or2 = a*s2*c3bar
-    or3 = b*s1
-    or4 = a*c2
-    or5 = b*c1
-    or6 = c
-    # Compute Cartesian vectors for a, b, and c
-    va = or1, or2, or4
-    vb = 0, or3, or5
-    vc = 0, 0, or6
-    return va,vb,vc
-
-def convert_xyz2abc(va, vb, vc):
-    va = Vector(va); vb = Vector(vb); vc = Vector(vc)
-    a = va.length(); b = vb.length(); c = vc.length()
-    alpha = vb.angle(vc) / pi * 180.
-    beta  = vc.angle(va) / pi * 180.
-    gamma = va.angle(vb) / pi * 180.
-    return [a, b, c, alpha, beta, gamma]
-
 
 class Vector(object):
     """
@@ -1737,14 +1697,14 @@ class Trajectory(object):
     __slots__ = ['_snapshots']
 
     def __init__(self, atoms_s):
-        import io
+        
         self._snapshots = []
 
         for atoms in atoms_s:
             if isinstance(atoms, AtomsSystem):
                 self._snapshots.append(atoms)
             elif isinstance(atoms, str):
-                self._snapshots.append(io.read_xyz(atoms))
+                self._snapshots.append(ncio.read_xyz(atoms))
             else: raise TypeError("Not an AtomsSystem instance")
 
     def __len__(self): return len(self._snapshots)
