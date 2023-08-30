@@ -11,6 +11,7 @@ from .catmodels import Catmodels
 from .calgibbs import *
 from .gibbsplot import *
 import importlib
+from ...thermo import T         # T is imported here from thermo.py
 
 ### auxiliary functions
 def fix_atoms(atoms, fix):
@@ -22,38 +23,38 @@ def fix_atoms(atoms, fix):
 
 ### Workflow for the calculation of catalysis
 
-def runHER(calc, sim_params, mode='opt', fix=None, pivot=None, vib=1, label='test'):
-  
+def runHER(calc, sim_params, mode='opt', fix=None, pivot=None, vib=1, label='test', pH=0):
+    
     ### 1. Run HER for a given system: generate several structures then calculate (opt & zpe)
-    totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, mode, fix, pivot, vib, label)
+    totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, mode, fix, pivot, vib, label, pH, T)
     print(f"total energy: {totE_sys} {totE_sysH}\nZPE: {zpe}\nEntropy: {TS}")
     ### 2. Gibbs energy calculation by reading OUTCAR
-    Gibbs_novib = calc_gibbs_HER([totE_sys], [totE_sysH])
-    Gibbs_vib   = calc_gibbs_HER([totE_sys], [totE_sysH], [zpe], [TS])
+    Gibbs_novib = calc_gibbs_HER([totE_sys], [totE_sysH], pH=pH, Temp=T)
+    Gibbs_vib   = calc_gibbs_HER([totE_sys], [totE_sysH], [zpe], [TS], pH=pH, Temp=T)
     print(f"G_HER: {Gibbs_novib}\nG_HER_vib : {Gibbs_vib}")
     ### 3. Plot Gibbs energy for the series of structures
     G_H_legend = ['noVib', 'Vib']
     G_H        = Gibbs_novib + Gibbs_vib
 
-    plot_HER(G_H, G_H_legend)
+    plot_HER(G_H, G_H_legend, pH=pH, Temp=T)
 
     return 0
 
 def runORR(calc, sim_param , mode='opt', fix=None, pivot=None, vib=1, label='test', pH=0):
     
     ### 1. Run ORR for a given system: generate several structures then calculate (opt & zpe)
-    totE, zpe, TS = run_series_ORR(calc, sim_param, mode, fix, pivot, vib, label)
+    totE, zpe, TS = run_series_ORR(calc, sim_param, mode, fix, pivot, vib, label, pH, T)
     print(f"total energy: {totE}\nZPE: {zpe}\nEntropy: {TS}")
     ### 2. Gibbs energy calculation by reading OUTCAR: import analysis
-    Gibbs_novib, G_pH    = calc_gibbs_ORR_4e(totE=totE, pH=pH)
-    Gibbs_vib, G_pH      = calc_gibbs_ORR_4e(totE=totE, ZPE=zpe, TS=TS, pH=pH)
+    Gibbs_novib = calc_gibbs_ORR_4e(totE=totE, pH=pH, Temp=T)
+    Gibbs_vib   = calc_gibbs_ORR_4e(totE=totE, ZPE=zpe, TS=TS, pH=pH, Temp=T)
     print(f"G_ORR: {Gibbs_novib}\nG_ORR_vib : {Gibbs_vib}")
     
     ### 3. Plot Gibbs energy for the series of structures: import gibbsplot
-    plot_ORR_4e(Gibbs_vib, label=f'ORR_4e_pH{pH}',G_pH=G_pH)
+    plot_ORR_4e(Gibbs_vib, label=f'ORR_4e_pH{pH}', pH=pH, T=T)
     return totE, zpe, TS
     
-def run_series_HER(calc, sim_params, mode, fix, pivot, vib, label):
+def run_series_HER(calc, sim_params, mode, fix, pivot, vib, label, pH, Temp):
     '''
     mode        opt (default)
     fix         None (default)
@@ -121,13 +122,13 @@ def run_series_HER(calc, sim_params, mode, fix, pivot, vib, label):
             calc.run_catalysis(mode='vib', fix=fix_vib)
             calc.save_checkfile(fsuffix)
         
-        zpe, TS = calc.get_vibration_energy(output_name=outfile)
+        zpe, TS = calc.get_vibration_energy(output_name=outfile, Temp=Temp)
 
         return float(totE_cat), float(totE_catH), float(zpe), float(TS)
     else:
         return float(totE_cat), float(totE_catH)
 
-def run_series_ORR(calc, sim_params, mode, fix, pivot, vib, label):
+def run_series_ORR(calc, sim_params, mode, fix, pivot, vib, label, pH, Temp):
     '''
     mode        opt (default)
     fix         None (default)
@@ -210,7 +211,7 @@ def run_series_ORR(calc, sim_params, mode, fix, pivot, vib, label):
                 calc.run_catalysis(mode='vib', fix=fix_vib)
                 calc.save_checkfile(fsuffix)
                 
-            zpe, TS = calc.get_vibration_energy(output_name=f'{outfile}')
+            zpe, TS = calc.get_vibration_energy(output_name=f'{outfile}', Temp=Temp)
             lzpe.append(zpe)
             lTS.append(TS)
     if vib:

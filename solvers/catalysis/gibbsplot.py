@@ -9,7 +9,7 @@
 
 import os, sys, glob, math, operator
 from ...atoms import *
-from ...thermo import R, T
+from .calgibbs import pH_free_energy
 
 
 def plot_HER(Gibbs_H, legend=None, ymin=-1, ymax=1, label="HER", y_ticks=[-1.0, -0.5, 0, 0.5, 1.0], dpi=600):
@@ -69,8 +69,8 @@ def plot_HER(Gibbs_H, legend=None, ymin=-1, ymax=1, label="HER", y_ticks=[-1.0, 
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={"size":15}, frameon=False)
     plt.savefig('%s.png' % label, format='png', dpi=dpi, bbox_inches = 'tight')
 
-def plot_ORR_4e(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="ORR_4e", y_ticks=[-2, 0, 2, 4, 6], dpi=600, G_cal=0, G_pH=0):
-    global R, T
+def plot_ORR_4e(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="ORR_4e", y_ticks=[-2, 0, 2, 4, 6], dpi=600, G_cal=0, pH=0, T=298.15):
+    #global R, T
     X        = [-1, 0, 1, 2, 3, 4, 5, 6]
     # ymin=-2
     # ymax=6
@@ -83,8 +83,9 @@ def plot_ORR_4e(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="ORR_4
     print(pot_onset)
 
     # Gibbs free energy with applied potential
+    G_pH = pH_free_energy(pH=pH, T=T)
     U_eq = 1.23 - G_pH
-    print(f"Equilibrium pot at pH {U_eq}")
+    print(f"Equilibrium pot at pH{pH:2d} = {U_eq} with onset potential {pot_onset:.2f}, overpotential {U_eq-pot_onset:.2f}")
 
     applied_U = [0.00, pot_onset, U_eq]
     

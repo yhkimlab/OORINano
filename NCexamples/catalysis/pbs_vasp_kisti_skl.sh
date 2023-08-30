@@ -28,26 +28,25 @@ echo "NPROC = $NPROC" >> $logfile
 echo start >> $logfile
 date >> $logfile
 
-cat='orr'
-cat_kind=${catkind:-$cat}     # select [ORR|HER]
-
-jobfile="run_catalysis.py"
-### copy files to $wdir
-#if [ $cat_kind == 'orr' ]; then
-#    cp CONTCAR_Pt-SAC $wdir/POSCAR
-#fi
-
 if [ ! -f "$wdir" ]; then
     mkdir $wdir
 else
     echo "there exists $wdir"
-#    exit 1
 fi
 
+jobfile="run_catalysis.py"
+catkind=${cat:-"orr"}     # select [ORR|HER]
+poscar=${pos:-"cp"}
+
+if [ $poscar == 'cp' ]; then
+    cp CONTCAR_Pt-SAC $wdir/POSCAR
+	str="../$jobfile -j run -c $catkind -p POSCAR -np $NPROC --ncore 10"
+else
+	str="../$jobfile -j run -c $catkind -p Pt 111 3 -np $NPROC --ncore 10"
+fi
 
 cd $log_dir/$wdir
 
-str="../$jobfile -j run -c $cat_kind -p Pt 111 3 -np $NPROC --ncore 10"
 echo "python3  $str " >> $logfile
 python3 $str >> $logfile
 echo `date` >> $logfile

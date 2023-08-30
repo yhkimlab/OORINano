@@ -4,10 +4,8 @@ from ..units import ang2bohr
 from glob import glob
 import os, math
 import numpy as np
-from ..thermo import *
+from ..thermo import R 
 ### import io.read, io.write inside Vasp class
-
-#from ..io_1 import read_poscar, write_poscar
 
 # VASP Simulation Object
 # made by Noh           2021. 8.
@@ -396,19 +394,18 @@ class Vasp(object):
 
         return min_E 
 
-    def get_vibration_energy(self, output_name='OUTCAR', Temp=T):
+    def get_vibration_energy(self, output_name='OUTCAR', Temp=298.15):
         """
         Example:
         --------
         from nanocore import vasp    
         ZPE, TS = vasp.get_vibration_energy(Temp=300)
         """
-        global kB
+        
         line_info, word_info = Vasp.file_read(output_name)
 
         ZPE = 0.0; TS = 0.0
-        #kB  = 0.0000861733576020577 # eV K-1
-        kT  = kB * Temp
+        RT  = R * Temp
 
         vib_vasp = []
         with open(output_name, "r") as fp:
@@ -422,13 +419,13 @@ class Vasp(object):
         
         for i in range(len(vib_vasp)):
             energy  = vib_vasp[i]
-            x       = energy / kT
+            x       = energy / RT
             v1      = x / (math.exp(x) - 1)
             vlog    = 1 - math.exp(-x)
             v2      = -math.log(vlog)
 
-            #E_TS   = kT * (v1 + v2)
-            E_TS   = kT * v2
+            #E_TS   = RT * (v1 + v2)
+            E_TS   = RT * v2
             #print(f"Eentropy: freq {energy*1000:10.5f} : {kT*v1:10.5f} {kT*v2:10.5f}")
             ZPE = ZPE + 0.5*energy
             TS  = TS  + E_TS
