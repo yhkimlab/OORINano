@@ -10,13 +10,13 @@ import os, sys, glob, math
 from ...atoms import *
 from ...thermo import R, p0, Etot_H2O, zpe_H2O, S_H2O, Etot_H2, zpe_H2, S_H2
 
-def pH_free_energy(pH=0, T=298.15):
+def pH_free_energy(pH=0, Temp=298.15):
      
-    G_pH    = R * T * np.log(10) * pH
+    G_pH    = R * Temp * np.log(10) * pH
     return G_pH
 
 
-def mol_free_energies(T=298.15, pH=0, p=0.035, sol=0):
+def mol_free_energies(Temp=298.15, pH=0, p=0.035, sol=0):
     '''
     Absolute Gibbs energy calculation for molecule and water
     '''
@@ -25,14 +25,14 @@ def mol_free_energies(T=298.15, pH=0, p=0.035, sol=0):
     #if sol == 1:
     #    Etot_H2O -= 0.310
     #    Etot_H2 += 0.056
-    G_H2O_g = Etot_H2O + zpe_H2O - T*S_H2O
+    G_H2O_g = Etot_H2O + zpe_H2O - Temp * S_H2O
     
-    G_H2_g  = Etot_H2  + zpe_H2  - T*S_H2           # Gas phase calculation
+    G_H2_g  = Etot_H2  + zpe_H2  - Temp * S_H2           # Gas phase calculation
     
-    G_pH    = pH_free_energy(pH=0, T=298.15)        # RT ln10 = 0.05916
+    G_pH    = pH_free_energy(pH=pH, Temp=Temp)        # RT ln10 = 0.05916
     
     ### Gibbs correction for H2O(l) from H2O(g, DFT)
-    G_H2O_l = G_H2O_g + R*T*np.log(p/p0) # only available for around p=0.035,(0.0313?) T=298.15K
+    G_H2O_l = G_H2O_g + R*Temp*np.log(p/p0) # only available for around p=0.035,(0.0313?) T=298.15K
 
     # O2
     G_O2_g    = 2 * G_H2O_l - 2 * G_H2_g + 4.92     # O2(g) from O2 + 2H2 -> 2H2O
@@ -115,7 +115,7 @@ def calc_gibbs_ORR_4e(totE, ZPE=None, TS=None, Temp=298.15, pH=0, p=0.035, sol=0
         print("TS:", len(TS))
     ### Gibbs for adsorbates 
     print("get Gibbs enegy for molecules")
-    G_H2O_l, G_O2_g, G_H_ion, G_OH_ion = mol_free_energies(T=Temp, pH=pH, p=p, sol=sol)
+    G_H2O_l, G_O2_g, G_H_ion, G_OH_ion = mol_free_energies(Temp=Temp, pH=pH, p=p, sol=sol)
     ### Gibbs through ORR
     print("calculate gibbs")
     G_Sys     = totE[0] + ZPE[0] - TS[0] + 4 * G_H_ion + 0 * G_H2O_l + 1 * G_O2_g
@@ -128,7 +128,7 @@ def calc_gibbs_ORR_4e(totE, ZPE=None, TS=None, Temp=298.15, pH=0, p=0.035, sol=0
 
     return Gibbs_E
 
-def calc_gibbs_ORR_4e_alkaline(TE, ZPE=None, TS=None, T=298.15, pH=14, p=0.035, sol=0):
+def calc_gibbs_ORR_4e_alkaline(TE, ZPE=None, TS=None, Temp=298.15, pH=14, p=0.035, sol=0):
     
     n_component = len(TE)  
     # TE (DFT total energy) must contain a series of energies
@@ -155,7 +155,7 @@ def calc_gibbs_ORR_4e_alkaline(TE, ZPE=None, TS=None, T=298.15, pH=14, p=0.035, 
         print("ZPE:", len(ZPE))
         print("TS:", len(TS))
     
-    G_H2O_l, O2_g, H_ion, OH_ion, G_pH = mol_free_energies(T=T, pH=pH, p=p, sol=sol)
+    G_H2O_l, O2_g, H_ion, OH_ion, G_pH = mol_free_energies(Temp=Temp, pH=pH, p=p, sol=sol)
     G_Sys     = TE[0] + ZPE[0] - TS[0] + 0 * OH_ion + 2 * G_H2O_l + 1 * O2_g
     G_SysO2   = TE[1] + ZPE[1] - TS[1] + 0 * OH_ion + 2 * G_H2O_l
     G_SysOOH  = TE[2] + ZPE[2] - TS[2] + 1 * OH_ion + 1 * G_H2O_l
@@ -166,7 +166,7 @@ def calc_gibbs_ORR_4e_alkaline(TE, ZPE=None, TS=None, T=298.15, pH=14, p=0.035, 
     
     return Gibbs_E, G_pH
 
-def calc_gibbs_OER_4e_acid(TE, ZPE=None, TS=None, T=298.15, pH=0, p=0.035):
+def calc_gibbs_OER_4e_acid(TE, ZPE=None, TS=None, Temp=298.15, pH=0, p=0.035):
     
     n_component = len(TE)  
     # TE (DFT total energy) must contain a series of energies
@@ -193,7 +193,7 @@ def calc_gibbs_OER_4e_acid(TE, ZPE=None, TS=None, T=298.15, pH=0, p=0.035):
         print("ZPE:", len(ZPE))
         print("TS:", len(TS))
      
-    G_H2O_l, O2_g, H_ion, OH_ion, G_pH = mol_free_energies(T=T, pH=pH, p=p)
+    G_H2O_l, O2_g, H_ion, OH_ion, G_pH = mol_free_energies(Temp=Temp, pH=pH, p=p)
     G_Sys     = TE[0] + ZPE[0] - TS[0] + 0 * H_ion + 2 * G_H2O_l 
     G_SysOH   = TE[1] + ZPE[1] - TS[1] + 1 * H_ion + 1 * G_H2O_l
     G_SysO    = TE[2] + ZPE[2] - TS[2] + 2 * H_ion + 1 * G_H2O_l

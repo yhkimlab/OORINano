@@ -142,6 +142,7 @@ class Vasp(object):
     def set_atoms(self, contcar):
         self.atoms = read_poscar(contcar)
 
+    ### might be redundant with vasp.write_poscar
     def write_POSCAR(self, file_name='POSCAR', mode='cartesian', fix=None):
         components = self.atoms.get_contents().items()
         message  = ' '
@@ -426,7 +427,7 @@ class Vasp(object):
 
             #E_TS   = RT * (v1 + v2)
             E_TS   = RT * v2
-            #print(f"Eentropy: freq {energy*1000:10.5f} : {kT*v1:10.5f} {kT*v2:10.5f}")
+            #print(f"Eentropy: freq {energy*1000:10.5f} : {RT*v1:10.5f} {RT*v2:10.5f}")
             ZPE = ZPE + 0.5*energy
             TS  = TS  + E_TS
         
@@ -593,9 +594,11 @@ def read_poscar(file_name):
             #io.write_xyz(name, atoms_obj)
             return atoms_obj
 
+
 def write_poscar(atoms, file_name='POSCAR_xxyz', mode='cartesian', constraint=None):
     POSCAR = open(file_name, 'w')
-    POSCAR.write('%s\n' % params['title'])
+    #POSCAR.write('%s\n' % params['title'])
+    POSCAR.write('%s\n' % 'title')
     if atoms.get_cell() is not None:
         va,vb,vc = atoms.get_cell()
         va = Vector(va); vb = Vector(vb); vc = Vector(vc)
