@@ -29,7 +29,7 @@ SCF.H.Tolerance          5.d-3  eV       # Default: 1.d-4
 DM.UseSaveDM          .true.        # because of the bug
 SCFMustConverge       .true.
 NeglNonOverlapInt     F             # Default: F
-SpinPolarized         yes
+SpinPolarized         F
 #DM.MixSCF1            T
 #TS.CalcGF             F             # Default: T
 %block DM.InitSpin

@@ -44,6 +44,8 @@ run_keys = [
     'Diag.ParallelOverK',
     'BandLinesScale',
     'SlabDipoleCorrection',
+    'SpinPolarized',
+    'DM.InitSpin'
 
     #output option
     'WriteCoorInitial',
@@ -102,6 +104,7 @@ TS_keys = [
     'TS.Contour.t-Right',
     'TS.Contours.nEq',
     'TS.Contour.nEq.neq',
+    'TS.Atoms.Buffer',
     'TBT.Elecs.Eta',
     'TBT.Contours',
     'TBT.Contour.neq',
@@ -116,6 +119,7 @@ block_keys =[
     'kgrid_Monkhorst_Pack',
     'PDOS.kgrid_Monkhorst_Pack',
     'ProjectedDensityOfStates',
+    'DM.InitSpin',
     'TS.ChemPots',
     'TS.ChemPot.Left',
     'TS.ChemPot.Right',
@@ -128,6 +132,7 @@ block_keys =[
     'TS.Contour.t-Right',
     'TS.Contours.nEq',
     'TS.Contour.nEq.neq',
+    'TS.Atoms.Buffer',
     'TBT.Contours',
     'TBT.Contour.neq',
     'TBT.Atoms.Device',
@@ -573,6 +578,7 @@ class Siesta(object):
             self.set_option('SolutionMethod', 'Transiesta')
             self.set_option('TS.Voltage', option["Voltage"])
             self.set_option('TS.Elecs.Eta', option["ts_eta"])
+            self.set_option('TS.Atoms.Buffer', True, option["buffer"])
             self.set_option('TS.DE.Save', None)
             self.set_option('TS.HS.Save', None)
             set_result_files(mode, **option)
