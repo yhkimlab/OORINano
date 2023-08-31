@@ -13,8 +13,8 @@ import json
 import re
 import sys
 import argparse
-from common import whereami
-from ... import atoms as ncatoms
+#from common import whereami
+from .. import atoms as ncatoms
 
 ### VASP ini & outfiles
 vasf_default=['CHG','CHGCAR','CONTCAR','DOSCAR','EIGENVAL','IBZKPT','OSZICAR','OUTCAR','PCDAT','REPORT','vasprun.xml','WAVECAR',  'XDATCAR']
