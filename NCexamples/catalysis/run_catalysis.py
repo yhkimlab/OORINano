@@ -54,7 +54,7 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, 
         ### INCAR params: 
         ###     magmom = dict or list: ispin=2, magmom=['N',2]
         if 'npar' in locals():
-            incar_params = dict(npar=npar, kpoints=[1,1,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=1)
+            incar_params = dict(npar=npar, kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
         else:
             incar_params = dict(ncore=ncore, kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
 
@@ -76,9 +76,9 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, 
     ### 4. Run VASP | Show INCAR | Plot
     if job == 'run':
         if cat_kind == 'orr':
-            catalysis.runORR(calc, sim_params, mode='sp', vib=True, fix=None, label=flabel)    #pivot = 24 (atom index)
+            catalysis.runORR(calc, sim_params, mode=mode, vib=True, fix=None, label=flabel)    #pivot = 24 (atom index)
         elif cat_kind == 'her':
-            catalysis.runHER(calc, sim_params, mode='sp', vib=False, fix='b1L', label=flabel)
+            catalysis.runHER(calc, sim_params, mode=mode, vib=False, fix='b1L', label=flabel)
     elif job == 'incar':
         for k, v in calc.get_options():
             print(f"{k:>10}\t{v}")

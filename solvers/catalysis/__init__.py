@@ -51,7 +51,7 @@ def runORR(calc, sim_param , mode='opt', fix=None, pivot=None, vib=1, label='tes
     print(f"G_ORR: {Gibbs_novib}\nG_ORR_vib : {Gibbs_vib}")
     
     ### 3. Plot Gibbs energy for the series of structures: import gibbsplot
-    plot_ORR_4e(Gibbs_vib, label=f'ORR_4e_pH{pH}', pH=pH, T=T)
+    plot_ORR_4e(Gibbs_vib, label=f'ORR_4e_pH{pH}', pH=pH, Temp=T)
     return totE, zpe, TS
     
 def run_series_HER(calc, sim_params, mode, fix, pivot, vib, label, pH, Temp):
