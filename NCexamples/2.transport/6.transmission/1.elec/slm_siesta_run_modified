@@ -29,7 +29,7 @@ INP_DIR="local"
 OUT_DIR="OUT"
 # RUN_FDF="RUN.fdf"
 
-RUNBIN="python ${SLURM_SUBMIT_DIR}/1.elec_calc.py"
+RUNBIN="python ${SLURM_SUBMIT_DIR}/1.elec_calc.py -n ${SLURM_NTASKS}"
 #RUNBIN="$HOME/bin/siesta-v4.1-b4"
 
 #Remove scratch (YES/NO)

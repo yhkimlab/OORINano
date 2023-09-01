@@ -105,7 +105,9 @@ TBT.Elecs.Eta    0.0001000000 eV
      method mid-rule
 %endblock TBT.Contour.neq
 
-TBT.DOS.A        .true.
+TBT.DOS.Gf        .true.
+TBT.DOS.A.All        .true.
+TBT.DM.A        .true.
 TBT.T.Out        .true.
  
 # It is adviced to define a device region of

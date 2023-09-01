@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --nodes=1
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=12    # Cores per node
 #SBATCH --partition=X2      # Queue Name
 ##
@@ -29,7 +29,7 @@ INP_DIR="local"
 OUT_DIR="OUT"
 # RUN_FDF="RUN.fdf"
 
-RUNBIN="python ${SLURM_SUBMIT_DIR}/3.scatter.py"
+RUNBIN="python ${SLURM_SUBMIT_DIR}/3.scatter.py -n ${SLURM_NTASKS}"
 #RUNBIN="$HOME/bin/siesta-v4.1-b4"
 
 #Remove scratch (YES/NO)

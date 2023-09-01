@@ -2,13 +2,22 @@ import nanocore as nc
 from nanocore.models import carbonlab
 from nanocore.simulator.siesta import Siesta
 from nanocore.io import convert_xyz2abc, write_struct, read_struct
+import argparse
 
-elecL = read_struct("initial/elecL.fdf")
-elecR = read_struct("initial/elecR.fdf")
+parser = argparse.ArgumentParser()
+parser.add_argument("-M", "--max", dest="max_unit", action="store", type=int, default=12)
+parser.add_argument("-m", "--min", dest="min_unit", action="store", type=int, default=3)
+parser.add_argument("-d", "--dist", dest="dist", action="store", type=float, default=1.96)
+parser.add_argument("-l", "--left", dest="left", action="store", type=str, default="initial/elecL.fdf")
+parser.add_argument("-r", "--right", dest="right", action="store", type=str, default="initial/elecR.fdf")
+args = parser.parse_args()
 
-max_unit = 12
-min_unit = 3
-junction_distance = 1.96 # given parameter
+elecL = read_struct(args.left)
+elecR = read_struct(args.right)
+
+max_unit = args.max_unit
+min_unit = args.min_unit
+junction_distance = args.dist # given parameter
 for i in range(min_unit, max_unit, 1):
     cnt = carbonlab.grp_rect(2,i)
     cnt.select_all()
@@ -33,7 +42,7 @@ for i in range(min_unit, max_unit, 1):
     new = new + elecR
     elecL_cell[2][2] = new.get_zmax() - new.get_zmin()
     new.set_cell(elecL_cell)
-    new.set_vacuum(20.0)
+    new.set_vacuum(2.306)
 
     new_cell = new.get_cell()
     new_zavg = (new.get_zmin()+new.get_zmax())/2

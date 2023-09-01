@@ -4,7 +4,6 @@ from .. import io
 from .. io import write_struct, cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr, read_struct
 from .. units import ang2bohr
 from glob import glob
-import yaml
 import re, sys
 import shutil
 import subprocess
@@ -109,6 +108,10 @@ TS_keys = [
     'TBT.Contours',
     'TBT.Contour.neq',
     'TBT.DOS.A',
+    'TBT.DOS.A.All',
+    'TBT.DOS.Gf',
+    'TBT.DM.A',
+    'TBT.DM.Gf',
     'TBT.T.Out',
     'TBT.Atoms.Device',
 ]
@@ -184,8 +187,9 @@ class Siesta(object):
         for key in block_keys:
             self._block_params[key] = None
         
+        self.mode = None
         self._req_files = {}
-        self.read_default_fdf()
+        self._read_default_fdf()
         self.set_necessary_files()
 
     def set_necessary_files(self):
@@ -202,14 +206,29 @@ class Siesta(object):
         for pp in self._req_files['pp']:
             shutil.copy(pp, cwd)
 
-    def read_default_fdf(self):
+    def _read_default_fdf(self):
         import inspect
         import nanocore
-        files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf', 'KPT.fdf']
-        rpath = ['simulator', 'siesta_default']
+        if not self.mode:
+            self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf', 'KPT.fdf']
+            rpath = ['simulator', 'siesta_default']
+        elif self.mode == 'siesta':
+            self._files = ['RUN.fdf', 'BASIS.fdf', 'KPT.fdf']
+            rpath = ['simulator', 'siesta_default']
+        elif self.mode == 'elec':
+            self._files = ['RUN.fdf', 'BASIS.fdf', 'KPT.fdf']
+            rpath = ['simulator', 'siesta_default', 'transmission', 'elec']
+        elif self.mode == 'scatter':
+            self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf','KPT.fdf']
+            rpath = ['simulator', 'siesta_default', 'transmission', 'scatter']
+        elif self.mode == 'tbtrans':
+            self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf', 'KPT.fdf']
+            rpath = ['simulator', 'siesta_default', 'transmission', 'scatter']
+        else:
+            raise ValueError("mode not supported")
         module_path = inspect.getfile(nanocore)
         default_path = os.sep.join(module_path.split(os.sep)[:-1]+rpath)
-        for f in files:
+        for f in self._files:
             self.read_fdf(default_path+os.sep+f)
 
     def set_atoms(self, atom: AtomsSystem):
@@ -220,6 +239,10 @@ class Siesta(object):
             return copy.deepcopy(self._atoms)
         else:
             raise ValueError("AtomsSystem is not defined in this class")
+        
+    def set_mode(self, mode):
+        self.mode = mode
+        self._read_default_fdf()
 
     def get_options(self, key):
 
@@ -270,58 +293,6 @@ class Siesta(object):
 
         available key and default values
         --------------------------------
-
-        #1. Name and basic options
-        _params = {'Name'       :'siesta',  # text
-                  'Label'      :'siesta',  # text
-                  'Optimization' :0,       # integer
-                  'MD'           :0,       # integer
-                  'Run'          :'CG',    # CG or MD
-                  'cell_relax'   :0,       # integer
-                  'CGsteps'      :100,     # integer
-                  'ForceTol'     :0.04,    # float
-                  'MDsteps'      :100,     # integer
-                  'MDTimeStep'   :1.0,     # float
-                  'MDInitTemp'   :0.0,     # float
-                  'MDTargTemp'   :300,     # float
-                  'WriteCoorStep':'.false.', # bool
-         
-        #2. SCF/kgrid/functional parameters
-                  'kgrid'      :[1,1,1],       # 3-vector
-                  'kshift'     :[0,0,0],       # 3-vector
-                  'BasisType'  :'split',       # split, splitgauss, nodes, nonodes
-                  'BasisSize'  :'SZ',          # SZ or MINIMAL, DZ, SZP, DZP or STANDARD
-                  'EnergyShift':100,           # default: 0.02 Ry
-                  'Splitnorm'  :0.15,          # default: 0.15
-                  'XCfunc'     :'GGA',         # GGA or LDA
-                  'XCauthor'   :'PBE',         # PBE or CA
-                  'MeshCutoff' :100.0,         # float
-                  'Solution'   :'Diagon',      # Diagon or OrderN
-                  'MaxIt'      :300,           # integer
-                  'MixingWt'   :0.2,           # float
-                  'Npulay'     :0,             # integer
-                  'Temp'       :300.0,         # float
-         
-        #3. Option for post=process
-                  'LDOS'    :0,
-                  'LDOSE'   :(-0.10, 0.1),
-                  'Denchar' :0,
-                  'PDOS'    :0,
-                  'PDOSE'   :(-5,5,0.1,1001),
-                  'DOS'     :0,
-                  'DOSE'    :(-5,5),
-                  'RHO'     :0,
-                 }
-
-        Parameters
-        ----------
-        key : str
-            option name
-        value : (various)
-            option value
- 
-        Optional parameters
-        -------------------
  
         Example
         --------
@@ -373,6 +344,10 @@ class Siesta(object):
         fd = open(filename, 'w')
         fd.writelines(self._inputs[fname])
         fd.close()
+
+    def write_all_fdf(self):
+        for f in self._files:
+            self.write_fdf(f)
 
     def parse_fdf(self, fname):
         dict_input = {'KPT.fdf' : (kpt_keys,self._kpt_params) , 'BASIS.fdf' : (basis_keys,self._basis_params), 'RUN.fdf' : (run_keys,self._run_params), 'TS.fdf':(TS_keys,self._TS_params)}
@@ -459,17 +434,15 @@ class Siesta(object):
             if key == 'SystemLabel':
                 if self._atoms:
                     lines.append("%include STRUCT.fdf\n")
-                if any(item is not None for item in self._basis_params.values()):
-                    lines.append("%include BASIS.fdf\n")
-                if any(item is not None for item in self._kpt_params.values()):
-                    lines.append("%include KPT.fdf\n")
-                if any(item is not None for item in self._TS_params.values()):
-                    lines.append("%include TS.fdf\n")
+                for f in self._files:
+                    if f == 'RUN.fdf':
+                        continue
+                    lines.append(f"%include {f}\n")
         
         self._inputs[fname] = lines
         return lines
 
-    def run(self, mode, nproc, **option):
+    def run(self, nproc, **option):
 
         """
         Run a simulation based on the information saved in this simulation object
@@ -543,9 +516,9 @@ class Siesta(object):
             self.set_option('SystemLabel', label)
             self.set_option('SystemName', label)
 
-        def set_result_files(mode, **opt):
+        def set_result_files(**opt):
             cwd = self._req_files['cwd'] + os.sep
-            if mode == 'scatter':
+            if self.mode == 'scatter':
                 keys = ['elecL', 'elecR']
                 for k in keys:
                     target_dir = cwd + opt[k]+os.sep
@@ -554,7 +527,7 @@ class Siesta(object):
                     assert len(dir_result) == 1
                     shutil.copy(target_dir + dir_result[0], f'{k}.TSHS')
                     self._req_files['result'][k] = target_dir + dir_result[0]
-            if mode == 'tbtrans':
+            if self.mode == 'tbtrans':
                 target_dir = os.listdir(opt['scatter'])
                 dir_result = [f for f in target_dir if os.path.splitext(f)[-1] == '.TSHS']
                 for f in dir_result:
@@ -563,17 +536,17 @@ class Siesta(object):
                     if f not in ['elecL.TSHS', 'elecR.TSHS']:
                         self._req_files['result']['scatter'] = target
 
-        if mode == 'siesta':
+        if self.mode == 'siesta':
             exec = siesta_exec
             self.set_option('SolutionMethod', 'Diagon')
 
-        elif mode == 'elec': 
+        elif self.mode == 'elec': 
             exec = siesta_exec
             self.set_option('SolutionMethod', 'Diagon')
             self.set_option('TS.DE.Save', True)
             self.set_option('TS.HS.Save', True)
 
-        elif mode == 'scatter':
+        elif self.mode == 'scatter':
             exec = siesta_exec
             self.set_option('SolutionMethod', 'Transiesta')
             self.set_option('TS.Voltage', option["Voltage"])
@@ -581,25 +554,22 @@ class Siesta(object):
             self.set_option('TS.Atoms.Buffer', True, option["buffer"])
             self.set_option('TS.DE.Save', None)
             self.set_option('TS.HS.Save', None)
-            set_result_files(mode, **option)
+            set_result_files(**option)
             set_transiesta_option(**option)
 
-        elif mode == 'tbtrans':
+        elif self.mode == 'tbtrans':
             exec = tbtrans
             self.set_option('SolutionMethod', 'Transiesta')
             self.set_option('TBT.Elecs.Eta', option["tbt_eta"])
             self.set_option('TBT.Atoms.Device', True, option["device"])
-            set_result_files(mode, **option)
+            set_result_files(**option)
             set_tbtrans_option(**option)
         
         else:
             raise ValueError("unsupported mode")
 
         # write fdf files
-        if not mode == 'POST':
-            files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf', 'STRUCT.fdf', 'KPT.fdf']
-            for f in files:
-                self.write_fdf(f)
+        self.write_all_fdf()
 
         cmd = f'mpirun -np {nproc}  {exec} < RUN.fdf > stdout.txt'
         result = subprocess.run(cmd, shell=True, check=True)
@@ -609,7 +579,6 @@ class Siesta(object):
 
     def write_atoms(self, cellparameter=1.0):
         write_struct(self._atoms, cellparameter)
-
 
     def save_simulation(self):
 
@@ -1054,7 +1023,7 @@ def siesta_xsf2cube(f_in, grid_type):
 #end def
 
 
-def get_ldos(v1, v2, v3, origin, nmesh, label='siesta'):
+def get_ldos(cell, origin, nmesh, label='siesta'):
 
     """
     Interface to rho2xsf of siesta utils: LDOS
@@ -1093,9 +1062,9 @@ def get_ldos(v1, v2, v3, origin, nmesh, label='siesta'):
     file_INP.write('%s\n' % label)                           # 1.label
     file_INP.write('A\n')                                    # 2.unit: Ang
     file_INP.write('%-8.4f %-8.4f %-8.4f\n' % tuple(origin)) # 3.origin point
-    file_INP.write('%-8.4f %-8.4f %-8.4f\n' % tuple(v1))     # 4.spaning vector1
-    file_INP.write('%-8.4f %-8.4f %-8.4f\n' % tuple(v2))     # 5.spaning vector2
-    file_INP.write('%-8.4f %-8.4f %-8.4f\n' % tuple(v3))     # 6.spaning vector3
+    file_INP.write('%-8.4f %-8.4f %-8.4f\n' % tuple(cell[0]))     # 4.spaning vector1
+    file_INP.write('%-8.4f %-8.4f %-8.4f\n' % tuple(cell[1]))     # 5.spaning vector2
+    file_INP.write('%-8.4f %-8.4f %-8.4f\n' % tuple(cell[2]))     # 6.spaning vector3
     file_INP.write('%-5i %-5i %-5i\n' % tuple(nmesh))        # 7.grid points
     file_INP.write('LDOS\n')                                 # 8-1.LDOS
     file_INP.write('BYE\n')
@@ -1110,6 +1079,68 @@ def get_ldos(v1, v2, v3, origin, nmesh, label='siesta'):
     os.system('rm INP')
     os.system('mv %s.XSF LDOS.XSF' % label)
     #siesta_xsf2cube('siesta.XSF', grid_type)
+
+def get_tbtrans_ldos(ofile, erange, shape = [50,50,200], spectral = 'Left', **option):
+
+    import sisl
+    interval = float(option['dE'].split()[0])
+    emin = min(erange)+interval/2
+    emax = max(erange)-interval/2
+    energy = np.linspace(emin,emax,int((emax-emin)/interval)+1)
+
+    os.chdir(option['scatter'])
+    for f in os.listdir():
+        if f.split('.')[-1] == 'nc' and f.split('.')[-2] == 'ion':
+            shutil.copy(f, option['tbtrans'])
+    os.chdir(option['tbtrans'])
+    sim = Siesta()
+    sim.read_all_fdf()
+    label = sim.get_options('SystemLabel')
+    tbt = sisl.get_sile(f"{option['tbtrans']}/{label}.TBT.nc")
+    geom = sisl.get_sile(f"{option['tbtrans']}/RUN.fdf").read_geometry()
+    ldos_grid = sisl.Grid(shape, geometry=geom)
+    ldos = tbt.Adensity_matrix(spectral, energy[0], geometry=geom)
+    for E in energy[1:]:
+        ldos += tbt.Adensity_matrix(spectral, E, geometry=geom)
+
+    ldos.density(ldos_grid, eta=True)
+    ldos_grid.write(ofile)
+
+def get_tbtrans_pldos(**option):
+    import sisl
+    atom_index = list(map(int, re.findall(r'\d+', option['device'])))
+    assert len(atom_index) == 2
+    os.chdir(option['tbtrans'])
+    sim = Siesta()
+    sim.read_all_fdf()
+    atoms = sim.get_atoms()
+    atoms.select_all()
+    atoms.sort(option = 'z')
+    atoms.set_serials(0)
+    z_coords = []; indice = []
+    for atom in atoms[atom_index[0]-1:atom_index[1]]:
+        test = True
+        for i, z in enumerate(z_coords):
+            if abs(z-atom[2]) < 0.01:
+                indice[i].append(atom.get_serial())
+                test = False
+        if test:
+            z_coords.append(atom[2])
+            indice.append([atom.get_serial()])
+        
+
+    label = sim.get_options('SystemLabel')
+    geom = sisl.get_sile(f"{option['tbtrans']}/RUN.fdf").read_geometry()
+    tbt = sisl.get_sile(f"{option['tbtrans']}/{label}.TBT.nc", geom = geom)
+    dos = []
+    for ind in indice:
+        dos.append(tbt.ADOS(0, atoms=ind) + tbt.ADOS(1, atoms=ind))
+
+    energy = tbt.E
+    dos = np.asarray(dos)
+    logDOS=np.log10(np.abs(dos)+1e-7)
+        
+    return np.asarray(z_coords), np.asarray(energy), logDOS.T
 
 
 def get_rho(v1, v2, v3, origin, nmesh, label='siesta'):
