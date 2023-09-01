@@ -29,11 +29,12 @@ if voltage not in os.listdir():
 os.chdir(voltage)
 cwdv = os.getcwd()
 
-shutil.copytree('../input', 'TSHS')
+# shutil.copytree('../input', 'TSHS')
 os.chdir('TSHS')
 sim.set_mode('scatter')
+sim.read_all_fdf()
 sim.set_option('TS.Elecs.Neglect.Principal', True)
-sim.run(args.node, **option)
+# sim.run(args.node, **option)
 option['scatter'] = os.getcwd()
 os.chdir(cwdv)
 

@@ -1,4 +1,4 @@
-Voltage: 0.2 eV
+Voltage: 0.0 eV
 elecL : ../1.elec/Au_left/OUT
 elecR : ../1.elec/Au_right/OUT
 n_left : 36
@@ -9,8 +9,6 @@ tbt_eta: 0.0001 eV
 Emin: -0.6 eV
 Emax: 0.6 eV
 dE: 0.01 eV
-device: "atom [49 -- 92]\n"
-buffer: |
-        atom [37 -- 48]
-        atom [93 -- 104]
+device: "atom [37 -- 104]\n"
+buffer: Null
 tbtrans:

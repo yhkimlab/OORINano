@@ -91,10 +91,6 @@ TS.Contours.Eq.Pole    2.50000 eV
 	method mid-rule
 %endblock TS.Contour.nEq.neq
 
-%block TS.Atoms.Buffer
-atom [37 -- 48]
-atom [93 -- 104]
-%endblock TS.Atoms.Buffer
 TBT.Elecs.Eta    0.0001 eV
 
 %block TBT.Contours
@@ -113,5 +109,5 @@ TBT.DM.A    T
 TBT.T.Out    T
 
 %block TBT.Atoms.Device
-atom [49 -- 92]
+atom [37 -- 104]
 %endblock TBT.Atoms.Device

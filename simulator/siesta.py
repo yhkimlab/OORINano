@@ -551,7 +551,10 @@ class Siesta(object):
             self.set_option('SolutionMethod', 'Transiesta')
             self.set_option('TS.Voltage', option["Voltage"])
             self.set_option('TS.Elecs.Eta', option["ts_eta"])
-            self.set_option('TS.Atoms.Buffer', True, option["buffer"])
+            if option["buffer"]:
+                self.set_option('TS.Atoms.Buffer', True, option["buffer"])
+            else:
+                self.set_option('TS.Atoms.Buffer', None)
             self.set_option('TS.DE.Save', None)
             self.set_option('TS.HS.Save', None)
             set_result_files(**option)
@@ -561,7 +564,10 @@ class Siesta(object):
             exec = tbtrans
             self.set_option('SolutionMethod', 'Transiesta')
             self.set_option('TBT.Elecs.Eta', option["tbt_eta"])
-            self.set_option('TBT.Atoms.Device', True, option["device"])
+            if option["buffer"]:
+                self.set_option('TBT.Atoms.Device', True, option["device"])
+            else:
+                self.set_option('TBT.Atoms.Device', None)
             set_result_files(**option)
             set_tbtrans_option(**option)
         
