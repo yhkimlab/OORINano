@@ -1,8 +1,7 @@
 from __future__ import print_function
-from ..atoms import *
-from .. import ncio
-from ..ncio import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
-from ..units import ang2bohr
+from ...atoms import *
+from ...ncio import cleansymb, get_unique_symbs, convert_xyz2abc, write_xsf
+from ...units import ang2bohr
 from glob import glob
 
 
@@ -891,7 +890,7 @@ def siesta_xsf2cube(f_in, grid_type):
                 atoms = AtomsSystem(atoms, cell=cell)
                 if grid_type =='LDOS':  filename_out = 'LDOS_%i.xsf' % i_data
                 elif grid_type =='RHO': filename_out = 'RHO_%i.xsf' % i_data 
-                ncio.write_xsf(filename_out, atoms)
+                write_xsf(filename_out, atoms)
 
                 # grid data
                 npoints = mesh_size[0] * mesh_size[1] * mesh_size[2]

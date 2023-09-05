@@ -11,7 +11,7 @@ from .catmodels import Catmodels
 from .calgibbs import *
 from .gibbsplot import *
 import importlib
-from ...thermo import T         # T is imported here from thermo.py
+from ...units import T         # T is imported here from thermo.py
 
 ### auxiliary functions
 def fix_atoms(atoms, fix):

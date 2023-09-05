@@ -8,7 +8,7 @@
 
 import os, sys, glob, math
 from ...atoms import *
-from ...thermo import R, p0, Etot_H2O, zpe_H2O, S_H2O, Etot_H2, zpe_H2, S_H2
+from ...units import R, p0, Etot_H2O, zpe_H2O, S_H2O, Etot_H2, zpe_H2, S_H2
 
 def pH_free_energy(pH=0, Temp=298.15):
      

@@ -1,10 +1,10 @@
-from ..atoms import *
-from ..ncio import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
-from ..units import ang2bohr
+from ...atoms import *
+from ...ncio import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
+from ...units import ang2bohr, R
 from glob import glob
 import os, math
 import numpy as np
-from ..thermo import R 
+ 
 ### import io.read, io.write inside Vasp class
 
 # VASP Simulation Object
@@ -215,9 +215,9 @@ class Vasp(object):
     def write_POTCAR(self, xc='PBE'):
         #-------------POTCAR--------------------
         p = self._params
-        from nanocore.etc.env import vasp_POTCAR_LDA  as LDA_path
-        from nanocore.etc.env import vasp_POTCAR_PBE  as PBE_path
-        from nanocore.etc.env import vasp_POTCAR_PW91 as PW91_path
+        from ...aux.env import vasp_POTCAR_LDA  as LDA_path
+        from ...aux.env import vasp_POTCAR_PBE  as PBE_path
+        from ...aux.env import vasp_POTCAR_PW91 as PW91_path
 
         if xc == 'PBE':
             POTCAR_PATH = PBE_path
@@ -324,7 +324,7 @@ class Vasp(object):
         #if p['SERVER'] == 'kisti':
         #    from nanocore.env.env_kisti import vasp_calculator as executable
         #else:
-        from nanocore.etc.env import vasp_calculator as executable
+        from ...aux.env import vasp_calculator as executable
 
 
         ### obtain non-INCAR params
