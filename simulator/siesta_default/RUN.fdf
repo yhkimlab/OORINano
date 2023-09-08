@@ -1,0 +1,131 @@
+#(1) General system descriptors
+
+SystemName           Device   # Descriptive name of the system
+SystemLabel          Device   # Short name for naming files
+
+%include STRUCT.fdf
+%include KPT.fdf
+%include BASIS.fdf
+%include TS_new.fdf 
+
+#(4) DFT, Grid, SCF
+
+XC.functional         GGA           # LDA or GGA (default = LDA)
+XC.authors            PBE           # CA (Ceperley-Aldr) = PZ
+                                    #    (Perdew-Zunger) - LDA - Default
+                                    # PW92 (Perdew-Wang-92) - LDA
+                                    # PBE (Perdew-Burke-Ernzerhof) - GGA
+MeshCutoff            300.00 Ry     # Default: 50.0 Ry ~ 0.444 Bohr
+                                    #         100.0 Ry ~ 0.314 Bohr
+MaxSCFIterations      400           # Default: 50
+DM.MixingWeight       0.05          # Default: 0.25
+DM.NumberPulay        10            # Default: 0
+DM.PulayOnFile        F             # SystemLabel.P1, SystemLabel.P2
+SCF.DM.Converge          true         # Default: 1.d-4
+SCF.DM.Tolerance          2.d-4         # Default: 1.d-4
+SCF.H.Converge           true         # Default: 1.d-4
+SCF.H.Tolerance          5.d-3  eV       # Default: 1.d-4
+
+DM.UseSaveDM          .true.        # because of the bug
+SCFMustConverge       .true.
+NeglNonOverlapInt     F             # Default: F
+SpinPolarized         F
+#DM.MixSCF1            T
+#TS.CalcGF             F             # Default: T
+%block DM.InitSpin
+ 198 -
+ 199 -
+ 200 -
+ 201 -
+ 157 +
+ 158 +
+ 159 +
+ 160 +
+%endblock DM.InitSpin
+#(5) Eigenvalue problem: order-N or diagonalization
+
+SolutionMethod        Transiesta      # or Transiesta
+ElectronicTemperature 300.0 K       # Default: 300.0 K
+
+
+#(6) Molecular dynamics and relaxations
+
+MD.TypeOfRun          CG            # Type of dynamics: CG, Bryoden
+MD.VariableCell       F
+MD.NumCGsteps         0             # 0 for single-point / 100 for gopt
+MD.MaxCGDispl         0.2 Bohr      # Default: 0.2 Bohr
+MD.MaxForceTol        0.02 eV/Ang   # Default: 0.04 eV/Ang
+MD.MaxStressTol       1.0 GPa       # Default: 1.0 GPa
+
+# Geometry Constraints
+#%block GeometryConstraints
+#	position from 1 to 1
+#%endblock GeometryConstraints
+
+# Band Structure
+#Diag.ParallelOverK .true.
+#BandLinesScale ReciprocalLatticeVectors
+#WFS.Write.For.Bands .true.
+#%block BandLines
+#  1  0.0000 0.0000 0.0000 \Gamma
+#101  0.0000 0.0000 0.5000 Z
+#%endblock BandLines
+#  1  0.0000 0.0000 0.0000 \Gamma
+# 20  1.1547 0.0000 0.0000 M
+# 20  1.1547 0.6667 0.0000 K
+# 20  0.0000 0.0000 0.0000 \Gamma
+#%endblock BandLines
+
+#%block MM.Potentials
+#   1 1 Grimme 7.255 2.684
+#   1 2 Grimme 3.244 2.343
+#   1 3 Grimme 26.344 3.058
+#   1 4 Grimme 11.471 2.794
+#   2 1 Grimme 3.244 2.343
+#   2 2 Grimme 1.451 2.002
+#   2 3 Grimme 11.781 2.717
+#   2 4 Grimme 5.130 2.453
+#   3 1 Grimme 26.344 3.058
+#   3 2 Grimme 11.781 2.717
+#   3 3 Grimme 95.661 3.432
+#   3 4 Grimme 41.653 3.168
+#   4 1 Grimme 11.471 2.794
+#   4 2 Grimme 5.130 2.453
+#   4 3 Grimme 41.653 3.168
+#   4 4 Grimme 18.137 2.904
+#%endblock MM.Potentials
+#MM.Grimme.S6  0.75
+
+# LDOS option
+#%block LocalDensityOfStates
+#-0.05 0.05 eV                # Around E_F
+#%endblock LocalDensityOfStates
+# Check the output first, and find out where E_F is located.
+# Then, put small window around E_F above.
+
+#SlabDipoleCorrection .true.
+
+
+#(9) Output options
+#WriteCoorInitial      T      # SystemLabel.out
+#WriteKpoints          T      # SystemLabel.out
+WriteEigenvalues      T      # SystemLabel.out [otherwise ~.EIG]
+#WriteKbands           T      # SystemLabel.out, band structure
+#WriteBands            T      # SystemLabel.bands, band structure
+#WriteDM.NetCDF        T      # for Eigenchannel analysis later...
+#WriteDMHS.NetCDF      T      # for Eigenchannel analysis later...
+AllocReportLevel      0      # SystemLabel.alloc, Default: 0
+#WriteMullikenPop      1      # Mulliken population analysis,
+#Default : 0 ; 0=None, 1=atomic and orbital charges, 2=1+atomic overlap pop, 3=2+orbital overlap pop
+
+
+#(10) Options for saving/reading information
+
+SaveHS                F      # SystemLabel.HS
+SaveRho               T      # SystemLabel.RHO, rho2xsf(3D),macroave-charge dendity(1D)
+SaveDeltaRho          T      # SystemLabel.DRHO
+SaveElectrostaticPotential T # SystemLabel.VH , macroave-potential
+SaveTotalPotential    T      # SystemLabel.VT
+WriteMDXmol           F      # SystemLabel.ANI, optimization
+WriteCoorXmol         F  # SystemLavel.xyz
+WriteCoorStep         F  # SystemLabel.XV , rho2xsf
