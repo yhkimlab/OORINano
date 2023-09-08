@@ -7,10 +7,13 @@
 from __future__ import print_function
 #from .atomic_data import atomic_weight, atomic_symbol, atomic_number, covalent_radii 
 from .atomic_data import *
+from .atoms_aux import *
 from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
 import copy     # added by SH
 import os
+import sys
+from .. import ncio
 
 ## Class Atom, AtomsSystem, Vector, Trajectory ##
 class Atom(object):
@@ -44,7 +47,7 @@ class Atom(object):
 
     __slots__ = ['_groupid', '_symbol', '_position','_serial',
                  '_mass', '_charge', '_fftype','_connectivity',
-                 '_iconnectivity']
+                 '_iconnectivity', '_ngroup']
 
     def __init__(self, symbol, position, serial=1, groupid=None, mass=None,
                  charge=None, fftype=None, connectivity=None,
@@ -205,7 +208,7 @@ class AtomsSystem(object):
     __slots__ = ['_atoms', '_cell', '_pbc', '_selected', '_constraints',
                  '_pointer', '_bonds']
 
-    def __init__(self, atoms, cell='None', pbc=[False,False,False], i_serial=1,
+    def __init__(self, atoms, cell=None, pbc=[False,False,False], i_serial=1,
                  bonds=None):
 
         if not atoms: # 110924 empty AtomsSystem is allowed.
@@ -268,7 +271,7 @@ class AtomsSystem(object):
 
     def reset_serials(self): self.set_serials(1)
 
-    def set_cell(self, cell_vector='None'):
+    def set_cell(self, cell_vector=None):
         """
         Define lattice vectors
         
@@ -280,13 +283,13 @@ class AtomsSystem(object):
         >>> atoms.set_cell(cell)
         >>> 
         """
-        if cell_vector == 'None':
-            self._cell = 'None'; return
+        if cell_vector is None:
+            self._cell = None; return
         cell_vector = np.array(cell_vector)
         if cell_vector.shape == (3,3):
             self._cell = cell_vector
         elif cell_vector.shape == (6,):
-            self._cell = convert_abc2xyz(*cell_vector)
+            self._cell = ncio.convert_abc2xyz(*cell_vector)
             print ("WARNGING: v3 along z, v2 in xy plane.")
         else: raise ValueError()
 
@@ -322,7 +325,7 @@ class AtomsSystem(object):
                [ -1.22464680e-16,  -1.22464680e-16,   2.00000000e+00]])
         >>>
         """
-        if self._cell == 'None': return
+        if self._cell == None: return
         from math import pi
         a1 = Vector(self._cell[0])
         a2 = Vector(self._cell[1])
@@ -365,6 +368,16 @@ class AtomsSystem(object):
     def get_pbc(self):return copy.copy(self._pbc)
     def get_selected(self): return copy.copy(self._selected)
 
+    def get_gids(self):
+        '''
+        if gid is set, get all the gids
+        '''
+        gids=[]
+        for atom in self._atoms:
+            if atom.get_groupid not in gids:
+                gids.append(atom.get_groupid())
+        return gids
+
     def get_serials(self):
         serials = []
         for atom in self._atoms:
@@ -399,7 +412,26 @@ class AtomsSystem(object):
         for atom in self._atoms:
             contents[atom.get_symbol()] = contents.get(atom.get_symbol(),0)+1
         return contents
-    
+    ### make groups by layers through z-axis
+    def make_groups(self, Lsort = True, kind = 'z'):
+        '''
+        If already sorted, use the atom.get_position()
+        divide group by z-position with dz
+        '''
+        delta = 0.1
+        gid = 0
+        zpivot = self._atoms[0].get_position()[2]
+        
+        for atom in self._atoms:
+            if abs(atom.get_position()[2] - zpivot) <= delta:
+                atom.set_groupid(gid)
+            else:
+                gid += 1
+                atom.set_groupid(gid)
+                zpivot = atom.get_position()[2]
+        ngroup = gid + 1
+        return ngroup
+
     ## from old XYZ module - select ##
     def _select_rngnbs(self, astr):
         """
@@ -453,7 +485,7 @@ class AtomsSystem(object):
         # Check whether the atom #s are valid.
         for i in selected:
             if i not in self.get_serials():
-                raise ValueError('Index is out of range. # of atoms=%d' % natm)
+                raise ValueError('Index is out of range. # of atoms=%d' % natom)
         self._selected = selected
 
     def select_elements(self, symbs):
@@ -468,6 +500,83 @@ class AtomsSystem(object):
                 selected.append(i)
         self._selected = selected
 
+    def select_atoms(self, byref, tag):
+        """
+        Select the atoms by
+            gid     group id
+            symbol  symbol names
+        """
+        import re
+        selected = []
+        if byref == "symbol":
+            spcs = re.findall(r'\w+', tag)
+            for i in self.get_serials():
+                if self._atoms[i-1].get_symbol() in spcs:
+                    selected.append(i)
+        elif byref == "gid":
+            for atom in self._atoms:
+                if atom._groupid == tag:
+                    selected.append(atom._serial)
+                
+        self._selected = selected
+
+    def select_pivot(self, site='center'):
+        """
+        select pivot atoms
+        for catalysis: top layer in z, center for xy plane
+        select atoms: do not sort to get the original index
+        """
+        # using atom index -> fails
+        
+        gids = self.get_gids()
+        maxgid = max(gids)
+        self.select_bygroup(maxgid)
+
+        if len(self._selected) == 1:
+            ipivot = self._selected[0]
+            return ipivot
+        
+        if site == 'center':
+            diagon = self.get_cell()[0] + self.get_cell()[1]
+        xsite = diagon[0]/2
+        ysite = diagon[1]/2
+        zmax    = self.get_zmax()
+        pcoord = (xsite, ysite, zmax)
+        print(f"pivot site: {pcoord} maxgid {maxgid}")
+        print(f"self {self}")
+        ipivot = self.select_nearest(pcoord, maxgid)
+        return ipivot
+    
+    def select_nearest(self, coord, gid=None):
+        '''
+        select nearest atom from coord among group
+        coord   reference position
+        gid     group to be searched
+        '''
+        dmin = 10000.  # max distance
+        for atom in self._atoms:
+            #print(f"max gid {gid} and atom gid: {atom.get_groupid()}")
+            if gid and atom.get_groupid() == gid:
+                xdist = abs(atom.get_position()[0] - coord[0])
+                ydist = abs(atom.get_position()[1] - coord[1])
+                dist = sqrt(xdist*xdist + ydist*ydist)
+                #print(f"{i}-th: {dist} ? {dmax}")
+                if dist < dmin:
+                    ipivot = atom.get_serial()
+                    dmin = dist
+        return ipivot
+    
+    def getatom_byserial(self, iserial, out='position'):
+        '''
+        obtain atom information from serial number
+        '''
+        for i, atom in enumerate(self._atoms):
+            if atom.get_serial() == iserial:
+                if out == 'position':
+                    return atom.get_position()
+                elif out == 'atom_index':
+                    return i
+ 
     def select_reverse(self):
         """
         Select all the other atoms not in current selected atom numbers.
@@ -592,7 +701,7 @@ class AtomsSystem(object):
                 if det > 0: selected.append(atom.get_serial())
         self._selected = selected
 
-    def select_group(self, id):
+    def select_bygroup(self, id):
         selected = []
         for atom in self._atoms:
             if atom.get_groupid() == id: selected.append(atom.get_serial())
@@ -992,7 +1101,7 @@ class AtomsSystem(object):
 
     # connectivity across cell boundaries (X)
     def __mul__(self, other):
-        if self.get_cell() == 'None':
+        if self.get_cell() is None:
             raise ValueError("Can`t expand this system without cell vectors.")
         v1, v2, v3 = self.get_cell(); i_serial=1
         loop_1 = 0; loop_2 = 0; loop_3 = 0
@@ -1267,6 +1376,20 @@ class AtomsSystem(object):
         at2.select_all()
         at2.sort('x'); at2.set_serials(1)
         return at2[-1][0]
+                
+    def get_gminmax(self, axis, gid):
+        xmin = 10000
+        xmax = -10000
+        for atom in self._atoms:
+            if atom.get_groupid() == gid:
+                print(f"atom in group: {atom.get_groupid()} {atom.get_position()}")
+                if atom.get_position()[axis] < xmin:
+                    xmin = atom.get_position()[axis]
+                if xmax < atom.get_position()[axis]:
+                    xmax = atom.get_position()[axis]
+        print(f"in group xmin, xmax w. gid = {xmin} {xmax} {gid}")
+        return xmin, xmax
+        
 
     def get_ymax(self):
         at2 = self.copy()
@@ -1274,11 +1397,13 @@ class AtomsSystem(object):
         at2.sort('y'); at2.set_serials(1)
         return at2[-1][1]
 
+    
     def get_zmax(self):
         at2 = self.copy()
         at2.select_all()
         at2.sort('z'); at2.set_serials(1)
         return at2[-1][2]
+        
 	### added by SH
     def get_zmin(self):
         at2 = self.copy()
@@ -1321,10 +1446,10 @@ class AtomsSystem(object):
 
     def get_fractional_coordinate_system2(self):
 
-        import io
+        #import io
 
         v1, v2, v3 = self.get_cell()
-        a,b,c,alpha,beta,gamma = io.convert_xyz2abc(v1,v2,v3)
+        a,b,c,alpha,beta,gamma = ncio.convert_xyz2abc(v1,v2,v3)
         #print a,b,c,alpha,beta,gamma
 
         alpha = np.pi/180.0 * alpha
@@ -1374,10 +1499,8 @@ class AtomsSystem(object):
 
     def get_cartesian_coordinate_system2(self):
 
-        import io
-
         v1, v2, v3 = self.get_cell()
-        a,b,c,alpha,beta,gamma = io.convert_xyz2abc(v1,v2,v3)
+        a,b,c,alpha,beta,gamma = ncio.convert_xyz2abc(v1,v2,v3)
         #print a,b,c,alpha,beta,gamma
 
         alpha = np.pi/180.0 * alpha
@@ -1407,7 +1530,7 @@ class AtomsSystem(object):
 
         return AtomsSystem(atoms2, cell=self.get_cell())
 
-
+    
     def get_in_cell_system(self):
 
         # get fractional coordinates
@@ -1473,51 +1596,6 @@ class AtomsSystem(object):
         else: raise ValueError("Invaild plane type: plane = xy, yz, or zx")
         atoms4 = atoms3.get_cartesian_coordinate_system()
         self._atoms = atoms4
-
-
-def convert_abc2xyz(a,b,c,alpha,beta,gamma):
-    """Convert to cartesian lattice vectors.
-    Taken from the routine 
-       /biodesign/v330/common/code/source/xtlgraf_batch/celori.f"""
-    from math import sin, cos, sqrt
-    from units import degrad
-    s1 = sin(alpha*degrad)
-    s2 = sin(beta*degrad)
-    s3 = sin(gamma*degrad)
-    c1 = cos(alpha*degrad)
-    c2 = cos(beta*degrad)
-    c3 = cos(gamma*degrad)
-    c3bar = (-c1*c2 + c3)/(s1*s2)
-    sqrtarg = 1.0 - c3bar*c3bar
-    if (sqrtarg <= 0):
-        print ("Negative argument to SQRT")
-        print (sqrtarg, alpha, beta, gamma)
-        sqrtarg = 0.0
-    s3bar = sqrt(sqrtarg)
-    # The general transformation from scaled to XYZ coordinates is now:
-    # x = or1 * xabc
-    # y = or2 * xabc + or3 * yabc
-    # z = or4 * xabc + or5 * yabc + or6 * zabc
-    or1 = a*s2*s3bar
-    or2 = a*s2*c3bar
-    or3 = b*s1
-    or4 = a*c2
-    or5 = b*c1
-    or6 = c
-    # Compute Cartesian vectors for a, b, and c
-    va = or1, or2, or4
-    vb = 0, or3, or5
-    vc = 0, 0, or6
-    return va,vb,vc
-
-def convert_xyz2abc(va, vb, vc):
-    va = Vector(va); vb = Vector(vb); vc = Vector(vc)
-    a = va.length(); b = vb.length(); c = vc.length()
-    alpha = vb.angle(vc) / pi * 180.
-    beta  = vc.angle(va) / pi * 180.
-    gamma = va.angle(vb) / pi * 180.
-    return [a, b, c, alpha, beta, gamma]
-
 
 class Vector(object):
     """
@@ -1644,14 +1722,14 @@ class Trajectory(object):
     __slots__ = ['_snapshots']
 
     def __init__(self, atoms_s):
-        import io
+        
         self._snapshots = []
 
         for atoms in atoms_s:
             if isinstance(atoms, AtomsSystem):
                 self._snapshots.append(atoms)
             elif isinstance(atoms, str):
-                self._snapshots.append(io.read_xyz(atoms))
+                self._snapshots.append(ncio.read_xyz(atoms))
             else: raise TypeError("Not an AtomsSystem instance")
 
     def __len__(self): return len(self._snapshots)

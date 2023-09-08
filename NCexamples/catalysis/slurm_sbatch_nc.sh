@@ -46,19 +46,22 @@ else
 #    exit 1
 fi
 
-cat='orr'
-cat_kind=${catkind:-$cat}     # select [ORR|HER]
-
 jobfile="run_catalysis.py"
-### copy files to $wdir
-if [ $cat_kind == 'orr' ]; then
+catkind=${cat:-"orr"}     # select [ORR|HER]
+poscar=${pos:-"cp"}
+
+if [ $poscar == 'cp' ]; then
     cp CONTCAR_Pt-SAC $wdir/POSCAR
+    str="../$jobfile -j run -c $catkind -p POSCAR -N $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
+else
+    str="../$jobfile -j run -c $catkind -p Pt 111 3 -N $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
 fi
 
 echo `date` > $logfile
+echo HOME is $HOME >> $logfile
 cd $wdir
+echo " Partition : $SLURM_JOB_PARTITION" >> $logfile
 echo "python3 $jobfile running | vasp running" >> $logfile
-str="../$jobfile -j run -c $cat_kind -N $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
 echo "python3  $str " >> $logfile
 python3 $str >> $logfile
 echo `date` >> $logfile

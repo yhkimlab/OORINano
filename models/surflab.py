@@ -3,7 +3,7 @@
 from __future__ import print_function
 from ..atoms import atomic_symbol, atomic_number, reference_states
 from .surface_data import *
-from ..io import convert_abc2xyz
+from ..ncio import convert_abc2xyz
 from math import sin, cos, sqrt, pi
 import numpy as np
 
@@ -102,6 +102,7 @@ def fccsurfaces(symb, plane_index, size, vac):
         fcc111_cell[2][2] += vac
         surf.set_cell(fcc111_cell)
         surf.select_all(); surf.sort('z')
+        surf.reset_serials()
         return surf
     elif plane_index =='110':
         N, M = divmod(size[-1], 2)
@@ -160,7 +161,7 @@ def bccsurfaces(symb, plane_index, size, vac):
                            pbc=(True,True,False))
         surf = unit * (size[0], size[1], N)
         if M:
-            unit2 = AtomsSystem(bcc_half_basis, cell=bcc110_cell)
+            unit2 = AtomsSystem(bcc100_half_basis, cell=bcc100_cell)
             surf2 = unit2 * (size[0],size[1],1)
             surf2.select_all()
             surf2.translate(*surf.get_cell()[2])
@@ -185,7 +186,7 @@ def bccsurfaces(symb, plane_index, size, vac):
                         (symb, v1[0], v1[1], v1[2]),
                         (symb, 0.0, sqrt(2)*a*sin(pi/6.), 2*d)]
         bcc111_basis1 = [(symb, v1[0], v1[1], v1[2])]
-        bcc111_basis1 = [(symb, 0.0, sqrt(2)*a*sin(pi/6.), 2*d)]
+        bcc111_basis2 = [(symb, 0.0, sqrt(2)*a*sin(pi/6.), 2*d)]
         # expend basic cell
         unit = AtomsSystem(bcc111_basis, cell=bcc111_cell,
                            pbc=(True,True,False))

@@ -1,5 +1,5 @@
 import os, glob, re
-from .io import write_xsf, write_pdb
+from .ncio import write_xsf, write_pdb
 
 def show_xcrysden(atoms, reset=False, **options):
     
