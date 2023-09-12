@@ -25,8 +25,9 @@ vasp_POTCAR_PW91 = vaspini + '2.POTPAW.PBE.54.RECOMMEND'        # connect to cor
 # SIESTA
 #
 
+siesta_dir = '/home2/littleyu/opt/siesta-v4.1-b4'
 # Siesta calculator location
-siesta_calculator = '[siesta-installed-location]/siesta-4.1-b3/Obj/siesta'
+siesta_calculator = siesta_dir + '/Obj/siesta'
 
 # Pseudopentiential files location
 siesta_psf_location = ''
@@ -37,10 +38,10 @@ temporary_location  = os.getcwd()
 siesta_pyprojection = temporary_location + '/pyprojection/pyprojection.py'
 
 # Siesta utilities location
-siesta_util_location = '[siesta-installed-location]/siesta-4.1-b3/Util'
-siesta_util_band = 'Bands/gnubands'
-siesta_util_dos  = 'Eig2DOS/Eig2DOS'
-siesta_util_pdos = 'Contrib/APostnikov/fmpdos'
-siesta_util_rho  = 'Contrib/APostnikov/rho2xsf'
-siesta_util_vh   = 'Macroave/Src/macroave'
+siesta_util_tbtrans = siesta_dir + '/Util/TS/TBtrans/tbtrans'
+siesta_util_band = 'Util/Bands/gnubands'
+siesta_util_dos  = 'Util/Eig2DOS/Eig2DOS'
+siesta_util_pdos = 'Util/Contrib/APostnikov/fmpdos'
+siesta_util_rho  = 'Util/Contrib/APostnikov/rho2xsf'
+siesta_util_vh   = 'Util/Macroave/Src/macroave'
 

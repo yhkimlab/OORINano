@@ -1,0 +1,4 @@
+PAO.BasisType     split
+PAO.BasisSize     DZP
+PAO.EnergyShift   200 meV
+PAO.SplitNorm     0.15

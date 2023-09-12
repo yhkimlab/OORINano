@@ -78,7 +78,8 @@ class Atom(object):
             if symbol not in atomic_symbol.values():
                 if symbol == 'X': self._symbol = 'X'
 #                elif symbol == 'H_HER': self._symbol = 'H'  # NMJ update
-                else: raise ValueError("Unknown species, %s" % symbol)
+                else: 
+                    raise ValueError("Unknown species, %s" % symbol)
             else:
                 self._symbol = symbol
         elif isinstance(symbol, int):
@@ -87,8 +88,7 @@ class Atom(object):
             raise ValueError()
 
     def set_position(self, position):
-        if len(position) == 3 and (isinstance(position, list) or
-                                   isinstance(position, tuple)):
+        if len(position) == 3 and not isinstance(position, Vector):
             self._position = Vector(position)
         elif len(position) == 3 and (isinstance(position, Vector)):
             self._position = position # 110330 for old Scientific
@@ -117,7 +117,7 @@ class Atom(object):
         else: self._connectivity = connectivity
 
     def set_groupid(self, groupid):
-        if groupid == None: self._groupid = 1
+        if groupid == None: self._groupid = 0
         elif type(groupid) == str or type(groupid) == int:
             self._groupid = groupid
         else: raise ValueError("A group id should be a string or integer.")
@@ -389,6 +389,10 @@ class AtomsSystem(object):
         for atom in self._atoms:
             positions.append(atom.get_position())
         return positions
+    
+    def set_positions(self, positions):
+        for i, atom in enumerate(self._atoms):
+            atom.set_position(positions[i])
 
     def get_symbols(self):
         symbols = []
@@ -762,6 +766,21 @@ class AtomsSystem(object):
             cell2.append(new_cellv)
         self.set_cell(cell2)
 
+    def wrap_positions(self):
+
+        positions = self.get_positions()
+
+        cell = self.get_cell()
+
+        fractional = np.linalg.solve(cell.T,
+                                    np.asarray(positions).T).T
+
+        for i in range(3):
+            fractional[:, i] %= 1.0
+
+        new_positions = np.dot(fractional, cell)
+        self.set_positions(new_positions)
+
     def translate(self, dx=None, dy=None, dz=None):
         """
         Translate the coord. of \"selected\" \"atoms\" by \"(dx,dy,dz)\".
@@ -903,7 +922,7 @@ class AtomsSystem(object):
         atom2 = self._atoms[self._selected[1]-1].get_position()
         return (atom1-atom2).length()
 
-    def distance2(self, atom_index):        
+    def distance3(self, atom_index):        
         distances = []
         i = 1
         p1 = self._atoms[atom_index-1].get_position()
@@ -1033,7 +1052,7 @@ class AtomsSystem(object):
                     x_sum += m*x; y_sum += m*y; z_sum += m*z; m_sum += m
                 i += 1
             xyz_sum = (x_sum, y_sum, z_sum)
-            com_xyz = map(lambda x: x/m_sum, xyz_sum)
+            com_xyz = list(map(lambda x: x/m_sum, xyz_sum))
             return Vector(com_xyz)
 	
         # Case No.2 : centroid
@@ -1046,7 +1065,7 @@ class AtomsSystem(object):
                     x_sum += x; y_sum += y; z_sum += z
                 i += 1
             xyz_sum = (x_sum, y_sum, z_sum)
-            com_xyz = map(lambda x: x/len(self._selected), xyz_sum)
+            com_xyz = list(map(lambda x: x/len(self._selected), xyz_sum))
             return Vector(com_xyz)
     
         # Case No.3 : Error for mode
@@ -1310,7 +1329,12 @@ class AtomsSystem(object):
 
 
     def get_cell_match(self, other, v_self='x', v_other='x', max_unit=5):
-
+        #최소공배수 찾기
+        def GCD(x,y):
+            while(y): #y가 참일 동안 = 자연수일 때 =   a%b!=0
+                x,y=y,x%y
+            return x
+        
         # to be generalized
         v1 = Vector(0,0,0); v2 = Vector(0,0,0)
         if v_self == 'x': v_self = 0
@@ -1327,23 +1351,24 @@ class AtomsSystem(object):
         i_min = 0
         j_min = 0
         
-        i = 0
-        while i < max_unit:
-            j = 0
-            while j < max_unit:
-                err = abs(v1[i]-v2[j])
+        for i, v1c in enumerate(v1):
+            for j, v2c in enumerate(v2):
+                err = abs(v1c-v2c)
+                mismatch = err/ v1c
                 #print "structure 1", i+1, "unit,",  "structure 2", j+1, "unit", "diff. =", err
-                if min_error > err:
-                    min_error = err
+                if min_error > mismatch:
+                    min_error = mismatch
                     i_min = i; j_min = j
-                j += 1
-            i += 1
+            
+        gcd = GCD(i_min+1, j_min+1)
+        i_res = (i_min+1) // gcd
+        j_res = (j_min+1) // gcd
         
-        print (i_min+1,"cell(s) for structure 1,")
-        print (j_min+1, "cell(s) for structure 2.")
-        print ("Error (in %) =", min_error/v1[0]*100, '\n')
+        print (i_res,"cell(s) for structure 1,")
+        print (j_res, "cell(s) for structure 2.")
+        print ("Error (in %) =", min_error*100, '\n')
 
-        return i_min+1, j_min+1
+        return i_res, j_res
 
 
     def get_xmax(self):
@@ -1570,7 +1595,7 @@ class AtomsSystem(object):
         elif plane == 'zx': atoms3.translate(0,1,0)
         else: raise ValueError("Invaild plane type: plane = xy, yz, or zx")
         atoms4 = atoms3.get_cartesian_coordinate_system()
-        return atoms4
+        self._atoms = atoms4
 
 class Vector(object):
     """

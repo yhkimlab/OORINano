@@ -36,7 +36,7 @@ fi
 echo `date` > $logfile
 cd $wdir
 
-python3 ./test_ORR.py
+python3 ./test_HER.py
 echo `date` >> $logfile
 
 cd $pdir

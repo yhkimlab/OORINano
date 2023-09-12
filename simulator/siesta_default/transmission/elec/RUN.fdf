@@ -1,0 +1,56 @@
+#(1) General system descriptors
+
+SystemName       Au_left            # Descriptive name of the system
+SystemLabel      Au_left            # Short name for naming files
+%include STRUCT.fdf
+%include KPT.fdf
+%include BASIS.fdf
+
+################################# EDIT ###################################################
+
+#(4) DFT, Grid, SCF
+
+XC.functional         LDA           # LDA or GGA (default = LDA)
+XC.authors            CA            # CA (Ceperley-Aldr) = PZ
+                                    #    (Perdew-Zunger) - LDA - Default
+                                    # PW92 (Perdew-Wang-92) - LDA
+                                    # PBE (Perdew-Burke-Ernzerhof) - GGA
+MeshCutoff            200 Ry        # Default: 50.0 Ry ~ 0.444 Bohr
+                                    #         100.0 Ry ~ 0.314 Bohr
+MaxSCFIterations      800           # Default: 50
+DM.MixingWeight       0.05          # Default: 0.25
+DM.NumberPulay        10            # Default: 0
+DM.PulayOnFile        F             # SystemLabel.P1, SystemLabel.P2
+DM.Tolerance          1.d-4         # Default: 1.d-4
+DM.UseSaveDM          .true.        # because of the bug
+SCFMustConverge       .false.
+NeglNonOverlapInt     F             # Default: F
+
+#(5) Eigenvalue problem: order-N or diagonalization
+
+SolutionMethod        diagon
+ElectronicTemperature 300.0 K       # Default: 300.0 K
+
+#########################################################################################
+
+
+#(9) Output options
+
+WriteCoorInitial      F      # SystemLabel.out
+WriteKpoints          F      # SystemLabel.out
+WriteEigenvalues      F      # SystemLabel.out [otherwise ~.EIG]
+WriteKbands           F      # SystemLabel.out, band structure
+WriteBands            F      # SystemLabel.bands, band structure
+WriteMDXmol           F      # SystemLabel.ANI
+WriteCoorXmol        .true.
+WriteDM.NetCDF        F
+WriteDMHS.NetCDF      F
+AllocReportLevel      0      # SystemLabel.alloc, Default: 0
+
+#(10) Options for saving/reading information
+
+SaveHS                F      # SystemLabel.HS
+SaveRho               F      # SystemLabel.RHO
+SaveDeltaRho          F      # SystemLabel.DRHO
+SaveElectrostaticPotential F # SystemLabel.VH
+SaveTotalPotential    F      # SystemLabel.VT
