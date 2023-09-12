@@ -6,8 +6,8 @@ from __future__ import print_function
 import re, sys
 from math import sin, cos, sqrt, pi
 from .units import ang2bohr, degrad
-#from .atoms import atomic_weight, atomic_symbol, atomic_number
-from .atoms import *
+from .atoms import atomic_weight, atomic_symbol, atomic_number, Atom
+#from .atoms import *
 
 def write_struct(atoms, cellparameter=1.0, fname = "STRUCT.fdf"):
 
