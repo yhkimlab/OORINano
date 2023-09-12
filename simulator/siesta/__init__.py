@@ -1,15 +1,7 @@
-<<<<<<< HEAD:simulator/siesta/__init__.py
-from __future__ import print_function
+#from __future__ import print_function
 from ...atoms import *
 from ...ncio import cleansymb, get_unique_symbs, convert_xyz2abc, write_xsf
 from ...units import ang2bohr
-=======
-#from __future__ import print_function
-from ..atoms import *
-from .. import io
-from .. io import write_struct, cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr, read_struct
-from .. units import ang2bohr
->>>>>>> SHYu:simulator/siesta.py
 from glob import glob
 import re, sys
 import shutil
