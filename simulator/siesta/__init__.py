@@ -467,8 +467,8 @@ class Siesta(object):
         """
 
         # get the location of executable
-        from nanocore.env import siesta_calculator as siesta_exec
-        from nanocore.env import siesta_util_tbtrans as tbtrans
+        from ...aux.env import siesta_calculator as siesta_exec
+        from ...aux.env import siesta_util_tbtrans as tbtrans
 
         def set_transiesta_option(**opt):
             _, left_elec = self.get_options('TS.Elec.Left')
@@ -518,13 +518,14 @@ class Siesta(object):
 
         def set_result_files(**opt):
             cwd = self._req_files['cwd'] + os.sep
+            print(f"opt in set_result_files {opt} in cwd {cwd}")
             if self.mode == 'scatter':
                 keys = ['elecL', 'elecR']
                 for k in keys:
                     target_dir = cwd + opt[k]+os.sep
                     flist = os.listdir(target_dir)
                     dir_result = [f for f in flist if os.path.splitext(f)[-1] == '.TSHS']
-                    assert len(dir_result) == 1
+                    assert len(dir_result) == 1, f"dir_result = {dir_result}"
                     shutil.copy(target_dir + dir_result[0], f'{k}.TSHS')
                     self._req_files['result'][k] = target_dir + dir_result[0]
             if self.mode == 'tbtrans':
