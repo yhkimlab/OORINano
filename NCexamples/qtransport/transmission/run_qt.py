@@ -9,14 +9,16 @@ def runQuantumTransport(nproc):
     os.chdir('1.elec')
     cmd = f'python ../1elec_calc.py -n {nproc}'
     result = subprocess.run(cmd, shell=True, check=True)
+    print("Complete electrode calculation.")
     os.chdir(cwd)
     os.chdir('2.model')
     cmd = f'python ../2generate_model.py'
     result = subprocess.run(cmd, shell=True, check=True)
     os.chdir(cwd)
-    os.chdir('3.scatter+tbtrans')
+    os.chdir('3.scatter_tbtrans')
     cmd = f'python ../3scatter.py -n {nproc}'
     result = subprocess.run(cmd, shell=True, check=True)
+    print("Complete quantum transport calculation")
     shutil.copy("output.yaml", '../4.post_processing')
     os.chdir(cwd)
     os.chdir('4.post_processing')

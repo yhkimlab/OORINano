@@ -1,8 +1,9 @@
-cpnc:
-	cp scripts/* $${NCHOME}/NCexamples/qtransport/transmission/scripts
-
 cp:
 	cp *py Makefile readme.txt scripts/
+
+cp2nc:
+	cp scripts/* $${NCHOME}/NCexamples/qtransport/transmission/scripts
+
 
 clean3:
 	rm -r   3.scatter+tbtrans/0*

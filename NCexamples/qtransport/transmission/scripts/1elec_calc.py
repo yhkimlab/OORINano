@@ -17,7 +17,7 @@ def run_electrode(nproc):
                 shutil.copytree('input', 'OUT')
                 os.chdir('OUT')
                 sim.read_all_fdf()
-                sim.run(nproc)
+                sim.run_qt(nproc)
             os.chdir(cwd)
     return 0            
 
