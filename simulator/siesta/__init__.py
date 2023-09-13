@@ -8,6 +8,8 @@ import re, sys
 import shutil
 import subprocess
 
+#from ...aux.env import siesta_dir as sul
+#from ...aux.env import siesta_util_vh as sv
 #
 # SIESTA Simulation Object
 #
@@ -442,10 +444,10 @@ class Siesta(object):
         self._inputs[fname] = lines
         return lines
 
-    def run(self, nproc, **option):
+    def run_qt(self, nproc, **option):
 
         """
-        Run a simulation based on the information saved in this simulation object
+        Run a quantum transport simulation based on the information saved in this simulation object
  
         Parameters
         ----------
@@ -518,7 +520,7 @@ class Siesta(object):
 
         def set_result_files(**opt):
             cwd = self._req_files['cwd'] + os.sep
-            print(f"opt in set_result_files {opt} in cwd {cwd}")
+            #print(f"in set_result_files cwd {cwd}")
             if self.mode == 'scatter':
                 keys = ['elecL', 'elecR']
                 for k in keys:
@@ -875,8 +877,8 @@ def get_band(simobj, pathfile, label='siesta', rerun=0):
         simobj.run(mode='POST')
 
     # gnuband script
-    from nanocore.env import siesta_util_location as sul
-    from nanocore.env import siesta_util_band as sub
+    from ...aux.env import siesta_util_location as sul
+    from ...aux.env import siesta_util_band as sub
     os.system('%s/%s < %s.bands > BAND' % (sul, sub, label))
 
     # read band data
@@ -1078,8 +1080,8 @@ def get_ldos(cell, origin, nmesh, label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from nanocore.env import siesta_dir as sul
-    from nanocore.env import siesta_util_rho as sur
+    from ...aux.env import siesta_dir as sul
+    from ...aux.env import siesta_util_rho as sur
     os.system('%s/%s < INP' % (sul, sur))
 
     # convert 
@@ -1196,8 +1198,8 @@ def get_rho(v1, v2, v3, origin, nmesh, label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from nanocore.env import siesta_dir as sul
-    from nanocore.env import siesta_util_rho as sur
+    from ...aux.env import siesta_dir as sul
+    from ...aux.env import siesta_util_rho as sur
     os.system('%s/%s < INP > OUT' % (sul, sur))
 
     # convert 
@@ -1268,8 +1270,8 @@ def get_pdos(simobj, emin, emax, by_atom=1, atom_index=[], species=[], broad=0.1
     file_INP.close()
 
     # run rho2xsf
-    from nanocore.env import siesta_dir as sul
-    from nanocore.env import siesta_util_pdos as sup
+    from ...aux.env import siesta_dir as sul
+    from ...aux.env import siesta_util_pdos as sup
     os.system('%s/%s < INP > OUT' % (sul, sup))
     os.system('rm INP OUT')
    
@@ -1361,8 +1363,8 @@ def get_hartree_pot_z(label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from nanocore.env import siesta_dir as sul
-    from nanocore.env import siesta_util_vh as sv
+    from ...aux.env import siesta_dir as sul
+    from ...aux.env import siesta_util_vh as sv
     os.system('%s/%s < macroave.in' % (sul, sv))
     os.system('rm macroave.in')
 

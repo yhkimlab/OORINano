@@ -1,6 +1,6 @@
 Voltage: 0.0 eV
-elecL : ../1.elec/Au_left/OUT
-elecR : ../1.elec/Au_right/OUT
+elecL : 1.elec/Au_left/OUT
+elecR : 1.elec/Au_right/OUT
 n_left : 36
 n_right: 36
 ts_eta:

@@ -6,8 +6,9 @@ from __future__ import print_function
 import re, sys
 from math import sin, cos, sqrt, pi
 from .units import ang2bohr, degrad
-from .atoms import atomic_weight, atomic_symbol, atomic_number, Atom
-#from .atoms import *
+#from .atoms import atomic_weight, atomic_symbol, atomic_number
+from .atoms import *
+from .aux.convert import convert_abc2xyz, convert_xyz2abc, read_xyz
 
 def write_struct(atoms, cellparameter=1.0, fname = "STRUCT.fdf"):
 
@@ -202,47 +203,6 @@ def read_struct(file_name):
     else:
         #XYZ.write_xyz(file_name.replace('fdf','xyz'), atoms)
         return AtomsSystem(atoms, cell=None)
-
-def convert_abc2xyz(a,b,c,alpha,beta,gamma):
-    """Convert to cartesian lattice vectors.
-       Taken from the routine 
-       /biodesign/v330/common/code/source/xtlgraf_batch/celori.f"""
-    s1 = sin(alpha*degrad)
-    s2 = sin(beta*degrad)
-    s3 = sin(gamma*degrad)
-    c1 = cos(alpha*degrad)
-    c2 = cos(beta*degrad)
-    c3 = cos(gamma*degrad)
-    c3bar = (-c1*c2 + c3)/(s1*s2)
-    sqrtarg = 1.0 - c3bar*c3bar
-    if (sqrtarg <= 0):
-        print ("Negative argument to SQRT")
-        print (sqrtarg, alpha, beta, gamma)
-        sqrtarg = 0.0
-    s3bar = sqrt(sqrtarg)
-    # The general transformation from scaled to XYZ coordinates is now:
-    # x = or1 * xabc
-    # y = or2 * xabc + or3 * yabc
-    # z = or4 * xabc + or5 * yabc + or6 * zabc
-    or1 = a*s2*s3bar
-    or2 = a*s2*c3bar
-    or3 = b*s1
-    or4 = a*c2
-    or5 = b*c1
-    or6 = c
-    # Compute Cartesian vectors for a, b, and c
-    va = or1, or2, or4
-    vb = 0, or3, or5
-    vc = 0, 0, or6
-    return va,vb,vc
-
-def convert_xyz2abc(va, vb, vc):
-    va = Vector(va); vb = Vector(vb); vc = Vector(vc)
-    a = va.length(); b = vb.length(); c = vc.length()
-    alpha = vb.angle(vc) / pi * 180.
-    beta = vc.angle(va) / pi * 180.
-    gamma = va.angle(vb) / pi * 180.
-    return [a, b, c, alpha, beta, gamma]
 
 def cleansymb(s):
     """
