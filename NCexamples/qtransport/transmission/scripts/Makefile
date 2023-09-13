@@ -1,3 +1,6 @@
+cpnc:
+	cp scripts/* $${NCHOME}/NCexamples/qtransport/transmission/scripts
+
 cp:
 	cp *py Makefile readme.txt scripts/
 
