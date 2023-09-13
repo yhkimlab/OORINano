@@ -2,6 +2,7 @@ import subprocess
 import os, shutil
 import argparse
 import sys
+import time
 
 def runQuantumTransport(nproc):
     cwd = os.getcwd()
@@ -41,7 +42,12 @@ def main():
 			")
         sys.exit(0)
 
-    runQuantumTransport(args.nproc)			
+    start = time.time()
+    runQuantumTransport(args.nproc)
+    end  = time.time()
+    fname = f"lapset{args.nproc}.log"
+    with opoen(fname, 'w') as f:
+        f.write(end-start)
     return 0
 
 if __name__ == "__main__":
