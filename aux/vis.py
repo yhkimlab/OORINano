@@ -1,5 +1,5 @@
 import os, glob, re
-from .ncio import write_xsf, write_pdb
+from ..ncio import write_xsf, write_pdb
 
 def show_xcrysden(atoms, reset=False, **options):
     
@@ -24,7 +24,7 @@ def show_xcrysden(atoms, reset=False, **options):
     else:
         n2 = []
         for i in files:
-            n1 = re.findall('\d+', i)
+            n1 = re.findall(r'\d+', i)
             n2 += n1
         n2.sort(reverse=True, key=int)
         n= int(n2[0])
