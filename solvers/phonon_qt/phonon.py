@@ -1,13 +1,13 @@
 from __future__ import print_function
 from nanocore import *
 import numpy as np
-from nanocore.solvers.phonon_qt.trans_io import DM
+from .trans_io import DM
 from . import trans_io as m_io
 from . import transmission as m_t
 from . import thermal_post as thp
 from . import trans_post as trp
-from .unit import *
-from nanocore.io import read_poscar
+from ...units import *
+from ...simulator.vasp import read_poscar
 
 import os, sys
 import pickle

@@ -12,7 +12,7 @@ from .aux.convert import convert_abc2xyz, convert_xyz2abc, read_xyz
 
 def write_struct(atoms, cellparameter=1.0, fname = "STRUCT.fdf"):
 
-    if atoms.get_cell() != None:
+    if atoms.get_cell() is not  None:
         cell1 = atoms.get_cell()[0]
         cell2 = atoms.get_cell()[1]
         cell3 = atoms.get_cell()[2]
@@ -34,7 +34,7 @@ def write_struct(atoms, cellparameter=1.0, fname = "STRUCT.fdf"):
     fileS.write("\n#(3) Lattice, coordinates, k-sampling\n\n")
     fileS.write("LatticeConstant   %15.9f Ang\n" % cellparameter)
     fileS.write("%block LatticeVectors\n")
-    if atoms.get_cell() != None:
+    if atoms.get_cell() is not None:
         va, vb, vc = cell1, cell2, cell3
         fileS.write("%15.9f %15.9f %15.9f\n" % tuple(va))
         fileS.write("%15.9f %15.9f %15.9f\n" % tuple(vb))
