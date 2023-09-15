@@ -162,5 +162,5 @@ def convert_to_preferred_format(sec):
     sec %= 3600
     mini = sec // 60
     sec %= 60
-    st = f"{day}d - {hour:d}:{min:02d}:{sec:02d}"
+    st = f"{day}d - {hour:d}:{mini:02d}:{sec:02d}"
     return st
