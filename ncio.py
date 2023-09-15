@@ -262,7 +262,7 @@ def read_xyz(file_name, keeptype=False, clean=True, initial=False):
     if words:
         if words[0].upper() == 'CELL':
             #print 'This is a CRYSTAL system. (Cell information available)'
-            cell = list(map(float,words[1:7]))
+            cell = map(float,words[1:7])
         else:
             #print 'This is a MOLECULAR system. (NO cell information)'
             cell = None
@@ -307,7 +307,7 @@ def read_xyz(file_name, keeptype=False, clean=True, initial=False):
         line = xyz_file.readline()
         words = line.split()
         if words[0].upper() == 'CELL':
-            cell = list(map(float,words[1:7]))
+            cell = map(float,words[1:7])
         else:
             cell = None
             
