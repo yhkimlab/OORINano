@@ -125,7 +125,8 @@ def main():
                 \n\t\t    /test     job directory is generated\
                 \n\t\t    run_catalysis.py is run inside job script\
                 \n\t    2. Direct run inside job directory\
-                \n\t\trun_catalysis.py -j orr -sj run -N {args.nnode} -np {args.nproc} [--npar $npar|--ncore $ncore]\
+                \n\t\t$mkdir test; cp CONTCAR_Pt-SAC test/POSCAR; cd test\
+                \n\t\t$python ../run_catalysis.py -j orr -sj run -p POSCAR -np {args.nproc} [--npar $npar|--ncore $ncore]\
                 \n\tjob is running in work dir(jobname) & logfile is written in submit dir\
                 \n\t    mpirun runs in class Vasp\
                 \n\tjob finishes: jobname.log -> jobname.out\

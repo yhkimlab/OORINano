@@ -1,10 +1,10 @@
 #!/usr/bin/env python 
 from nanocore import *
 from nanocore import siesta as s2
-from nanocore import vis
+from nanocore.aux import vis
 
 def fdf2xcrysden(fdf_name):
-    at = s2.read_fdf(fdf_name)
+    at = s2.read_struct(fdf_name)
     vis.show_xcrysden(at)
 
 if __name__ == '__main__':
