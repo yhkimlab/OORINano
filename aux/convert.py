@@ -155,4 +155,12 @@ def read_xyz(file_name, keeptype=False, clean=True, initial=False):
     else:
         return AtomsSystem(atoms)
 
-
+def convert_to_preferred_format(sec):
+    day = sec // (24 * 3600)
+    sec %= 24 * 3600
+    hour = sec // 3600
+    sec %= 3600
+    mini = sec // 60
+    sec %= 60
+    st = f"{day}d - {hour:d}:{min:02d}:{sec:02d}"
+    return st

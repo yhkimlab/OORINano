@@ -23,7 +23,7 @@ def run_electrode(nproc):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n", "--nproc", type=int, default=1)
+    parser.add_argument("-np", "--nproc", type=int, default=1)
     args = parser.parse_args()
 
     run_electrode(args.nproc)

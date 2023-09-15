@@ -48,7 +48,7 @@ def main():
     parser.add_argument("-i", "--input",    default="input.yaml")
     parser.add_argument("-o", "--output",   default="output.yaml")
     parser.add_argument("-m", "--model",    default="cnt_6.fdf")
-    parser.add_argument("-n", "--nproc", type=int, default=1)
+    parser.add_argument("-np", "--nproc", type=int, default=1)
     args = parser.parse_args()
     
     run_qt(args.model, args.input, args.output, args.nproc)
