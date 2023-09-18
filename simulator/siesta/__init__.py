@@ -7,6 +7,9 @@ from glob import glob
 import re, sys
 import shutil
 import subprocess
+### inside siesta_defalut_location, psf, model, elec exist
+from ...aux.env import siesta_default_location as default_location
+
 
 #from ...aux.env import siesta_dir as sul
 #from ...aux.env import siesta_util_vh as sv
@@ -156,6 +159,9 @@ class Siesta(object):
         Class instance of AtomsSystem
 
     Optional parameters
+    mode
+    model_el    (atom name, model or size)
+    model_scatter (atom names, model or size)
     -------------------
 
     Example
@@ -170,7 +176,7 @@ class Siesta(object):
 
     #__slots__ = ['_params', '_atoms', '_inputs']
 
-    def __init__(self):
+    def __init__(self, model_el=None, model_scatter=None, sub_dir=None):
 
         self._inputs = {}
         self._run_params = {}
@@ -189,6 +195,9 @@ class Siesta(object):
         for key in block_keys:
             self._block_params[key] = None
         
+        self.model_el = model_el
+        self.model_scatter = model_scatter
+        self.sub_dir = sub_dir
         self.mode = None
         self._req_files = {}
         self._read_default_fdf()
@@ -213,22 +222,23 @@ class Siesta(object):
         import nanocore
         if not self.mode:
             self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf', 'KPT.fdf']
-            rpath = ['simulator', 'siesta_default']
+            rpath = ['simulator', 'siesta', 'siesta_default']
         elif self.mode == 'siesta':
             self._files = ['RUN.fdf', 'BASIS.fdf', 'KPT.fdf']
-            rpath = ['simulator', 'siesta_default']
+            rpath = ['simulator', 'siesta', 'siesta_default']
         elif self.mode == 'elec':
             self._files = ['RUN.fdf', 'BASIS.fdf', 'KPT.fdf']
-            rpath = ['simulator', 'siesta_default', 'transmission', 'elec']
+            rpath = ['simulator', 'siesta', 'siesta_default', 'transmission', 'elec']
         elif self.mode == 'scatter':
             self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf','KPT.fdf']
-            rpath = ['simulator', 'siesta_default', 'transmission', 'scatter']
+            rpath = ['simulator', 'siesta', 'siesta_default', 'transmission', 'scatter']
         elif self.mode == 'tbtrans':
             self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf', 'KPT.fdf']
-            rpath = ['simulator', 'siesta_default', 'transmission', 'scatter']
+            rpath = ['simulator', 'siesta', 'siesta_default', 'transmission', 'scatter']
         else:
             raise ValueError("mode not supported")
         module_path = inspect.getfile(nanocore)
+        #print(module_path)
         default_path = os.sep.join(module_path.split(os.sep)[:-1]+rpath)
         for f in self._files:
             self.read_fdf(default_path+os.sep+f)

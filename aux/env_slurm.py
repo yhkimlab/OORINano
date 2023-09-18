@@ -30,7 +30,9 @@ siesta_dir = '/home2/littleyu/opt/siesta-v4.1-b4'
 siesta_calculator = siesta_dir + '/Obj/siesta'
 
 # Pseudopentiential files location
-siesta_psf_location = ''
+siesta_default_location='/home/joonho/pymod/nanocore/simulator/siesta/siesta_default'
+siesta_psf_location = siesta_default_location + '/psf'
+
 
 # Pyprojection files location
 import os
