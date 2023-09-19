@@ -1,6 +1,7 @@
-#
-# read/write structure files
-#
+'''
+    ln -s env_yours.py env.py
+        link softly your envfile to env.py
+'''
 
 from __future__ import print_function
 import re, sys
@@ -155,7 +156,7 @@ def read_xyz(file_name, keeptype=False, clean=True, initial=False):
     else:
         return AtomsSystem(atoms)
 
-def convert_to_preferred_format(sec):
+def convert_time2human(sec):
     day = sec // (24 * 3600)
     sec %= 24 * 3600
     hour = sec // 3600
@@ -164,3 +165,10 @@ def convert_to_preferred_format(sec):
     sec %= 60
     st = f"{day}d - {hour:d}:{mini:02d}:{sec:02d}"
     return st
+
+def check_file(fname, st):
+    with open(fname, 'r') as f:
+        for line in f.readlines():
+            if st in line:
+                return True
+    return False

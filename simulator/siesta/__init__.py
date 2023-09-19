@@ -176,7 +176,7 @@ class Siesta(object):
 
     #__slots__ = ['_params', '_atoms', '_inputs']
 
-    def __init__(self, model_el=None, model_scatter=None, sub_dir=None):
+    def __init__(self):
 
         self._inputs = {}
         self._run_params = {}
@@ -195,9 +195,6 @@ class Siesta(object):
         for key in block_keys:
             self._block_params[key] = None
         
-        self.model_el = model_el
-        self.model_scatter = model_scatter
-        self.sub_dir = sub_dir
         self.mode = None
         self._req_files = {}
         self._read_default_fdf()
