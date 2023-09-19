@@ -2,9 +2,9 @@
 2023.06.26: updating following refactoring: 
 """
 
-from .atoms import *
-from .ncio import cleansymb, get_unique_symbs
-from .units import ang2bohr; bohr2ang = 1/ang2bohr
+from ..atoms import *
+from ..ncio import cleansymb, get_unique_symbs
+from ..units import ang2bohr; bohr2ang = 1/ang2bohr
 
 
 def make_seqquest_positions(atoms):

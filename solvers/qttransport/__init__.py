@@ -4,8 +4,8 @@ from ...aux.env import *
 import sys, os, re, shutil, importlib     
 
 from nanocore.models import carbonlab
-from nanocore.aux.convert import convert_xyz2abc, check_file
-from nanocore.ncio import write_struct, read_struct ### for model, 1elec
+from nanocore.aux   import convert_xyz2abc, check_file
+from nanocore.ncio  import write_struct, read_struct ### for model, 1elec
 
 import yaml             ### added for cal scattering
 from .qtplot import qtPlot

@@ -3,7 +3,7 @@
 from __future__ import print_function
 from ..atoms import atomic_symbol, atomic_number, reference_states
 from .surface_data import *
-from ..ncio import convert_abc2xyz
+from ..aux import convert_abc2xyz
 from math import sin, cos, sqrt, pi
 import numpy as np
 

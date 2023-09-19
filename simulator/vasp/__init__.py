@@ -1,5 +1,6 @@
-from ...atoms import *
-from ...ncio import cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr
+from ...atoms   import *
+from ...ncio    import cleansymb, get_unique_symbs, ang2bohr
+from ...aux     import convert_xyz2abc 
 from ...units import ang2bohr, R
 from glob import glob
 import os, math

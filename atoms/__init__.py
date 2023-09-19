@@ -13,7 +13,7 @@ import numpy as np
 import copy     # added by SH
 import os
 import sys
-from ..aux.convert import convert_xyz2abc, convert_abc2xyz, read_xyz
+from ..aux import convert_xyz2abc, convert_abc2xyz, read_xyz
 from .atom_vector import Vector
 
 ## Class Atom, AtomsSystem, Vector (move to atom_vector), Trajectory ##

@@ -1,7 +1,8 @@
 #from __future__ import print_function
 from ...atoms import *
 #from ...ncio import cleansymb, get_unique_symbs, convert_xyz2abc, write_xsf
-from ...ncio import write_struct, cleansymb, get_unique_symbs, convert_xyz2abc, ang2bohr, read_struct
+from ...ncio import write_struct, cleansymb, get_unique_symbs, ang2bohr, read_struct
+from ...aux import convert_xyz2abc 
 from ...units import ang2bohr
 from glob import glob
 import re, sys
