@@ -4,8 +4,7 @@ from ...aux.env import *
 import sys, os, re, shutil, importlib     
 
 from nanocore.models import carbonlab
-from nanocore.aux   import convert_xyz2abc, check_file
-from nanocore.ncio  import write_struct, read_struct ### for model, 1elec
+from ...aux   import convert_xyz2abc, check_file ### for model, 1elec
 
 import yaml             ### added for cal scattering
 from .qtplot import qtPlot
@@ -110,7 +109,7 @@ def qtmodel(calc, model_struct, chsize, el_struct, el_size, junc_dist):
             
     ### if not metal species
     else:
-        metal = read_struct(path_fdf_left)[0].get_symbol()
+        metal = modulename.read_struct(path_fdf_left)[0].get_symbol()
         f_psf = metal+'.psf'
     
     ### if not path_psf, get default
@@ -167,8 +166,8 @@ def qtmodel(calc, model_struct, chsize, el_struct, el_size, junc_dist):
             # Code for cli input
             pass
 
-        elecL = read_struct(path_scatter_left)
-        elecR = read_struct(path_scatter_rigt)
+        elecL = modulename.read_struct(path_scatter_left)
+        elecR = modulename.read_struct(path_scatter_rigt)
 
         
         if channel == 'grp':
@@ -206,7 +205,7 @@ def qtmodel(calc, model_struct, chsize, el_struct, el_size, junc_dist):
             new.sort(option = 'z'); new.set_serials(1)
             fout = f"{channel}_{chsize}.fdf"
             path_fdf = cwd+f'/{fout}'
-            write_struct(new, fname = f"{fout}")
+            modulename.write_struct(new, fname = f"{fout}")
             
             # write_poscar(new, f"cnt_{i}.poscar")
         else:
@@ -277,7 +276,7 @@ def calcElectrode(calc, el_model, elecdir, np):
             shutil.copytree('Input', 'Run')
             os.chdir('Run')
             calc.read_all_fdf()
-            calc.run_qt(np)
+            calc.runQuantumTransport(np)
             print(f"Job completed in {subdir}")
             os.chdir('..')
             os.chdir('..')
@@ -341,7 +340,7 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, nproc):
         check_fname = f'{cwdv}/TSHS/MESSAGES'
         
         if (not os.path.isfile(check_fname)) or (not check_file(check_fname, job_complete)):
-            calc.run_qt(nproc, **yoption)
+            calc.runQuantumTransport(nproc, **yoption)
         yoption['scatter'] = os.getcwd()
         os.chdir(cwdv)
 
@@ -352,7 +351,7 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, nproc):
             calc.read_all_fdf()
             calc.set_option('kgrid_Monkhorst_Pack', True, (12,1,1))
             calc.set_option('TS.Elecs.Neglect.Principal', True)
-            calc.run_qt(nproc, **yoption)
+            calc.runQuantumTransport(nproc, **yoption)
             yoption['tbtrans'] = os.getcwd()
         os.chdir(cwdw)
         ### write to yaml

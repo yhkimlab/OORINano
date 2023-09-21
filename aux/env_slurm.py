@@ -1,10 +1,13 @@
 '''
 executable environment: Home cluster
-'''
-#
-#  VASP
-#
-###     HOME
+setting variables:
+
+    VASP                SIESTA
+    vasp_calculator     siesta_calculator
+    vasp_POTCAR_LDA     siesta_default_location
+    vasp_POTCAR_PBE
+'''    
+###    HOME
 vasp_odir="/TGM/Apps/VASP/OLD_BIN/5.4.4/O2/NORMAL"
 vasp_ndir="/TGM/Apps/VASP/5.4.4.pl2"
 vasp_dirv6="/TGM/Apps/VASP/bin/6.3.1"
@@ -21,9 +24,7 @@ vasp_POTCAR_LDA  = vaspini + '1.POTPAW.LDA.54.RECOMMEND'
 vasp_POTCAR_PBE  = vaspini + '2.POTPAW.PBE.54.RECOMMEND'
 vasp_POTCAR_PW91 = vaspini + '2.POTPAW.PBE.54.RECOMMEND'        # connect to correct directory
 
-#
-# SIESTA
-#
+### SIESTA e
 
 siesta_dir = '/home2/littleyu/opt/siesta-v4.1-b4'
 # Siesta calculator location

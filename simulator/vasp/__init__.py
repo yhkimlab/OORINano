@@ -1,7 +1,7 @@
 from ...atoms   import *
-from ...ncio    import cleansymb, get_unique_symbs, ang2bohr
+from ...ncio    import cleansymb, get_unique_symbs
 from ...aux     import convert_xyz2abc 
-from ...units import ang2bohr, R
+from ...units   import ang2bohr, R
 from glob import glob
 import os, math
 import numpy as np
