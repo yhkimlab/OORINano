@@ -1,20 +1,27 @@
 import nanocore as nc
 from nanocore.models import carbonlab
-from nanocore.simulators.siesta import Siesta
-from nanocore.aux.convert import convert_xyz2abc
-from nanocore.ncio import write_struct, read_struct
+from nanocore.simulators.siesta import Siesta, readAtomicStructure, writeAtomicStructure
+from nanocore.simulators.siesta import default_location
+from nanocore.aux import convert_xyz2abc
 import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-M", "--max", dest="max_unit", action="store", type=int, default=12)
 parser.add_argument("-m", "--min", dest="min_unit", action="store", type=int, default=3)
 parser.add_argument("-d", "--dist", dest="dist", action="store", type=float, default=1.96)
-parser.add_argument("-l", "--left", dest="left", action="store", type=str, default="initial/elecL.fdf")
-parser.add_argument("-r", "--right", dest="right", action="store", type=str, default="initial/elecR.fdf")
+parser.add_argument("-l", "--left", dest="left", action="store")
+parser.add_argument("-r", "--right", dest="right", action="store" )
 args = parser.parse_args()
 
-elecL = read_struct(args.left)
-elecR = read_struct(args.right)
+if args.left:
+    path_elecL = args.left
+    path_elecR = args.right
+else:    
+    path_elecL = default_location + '/model/channel/elecL.fdf'
+    path_elecR = default_location + '/model/channel/elecR.fdf'
+
+elecL = readAtomicStructure(path_elecL)
+elecR = readAtomicStructure(path_elecR)
 
 max_unit = args.max_unit
 min_unit = args.min_unit
@@ -52,6 +59,6 @@ for i in range(min_unit, max_unit, 1):
     new.translate(0,0,cell_avg - new_zavg)
     new.select_all()
     new.sort(option = 'z'); new.set_serials(1)
-    write_struct(new, fname = f"cnt_{i}.fdf")
+    writeAtomicStructure(new, fname = f"cnt_{i}.fdf")
     # write_poscar(new, f"cnt_{i}.poscar")
     

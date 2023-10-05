@@ -16,6 +16,7 @@ def qtPlot(calc, plot_dir, cal_dir, inpf, outpf='result', energy=[-0.1, 0.1], gr
     
     if not os.path.isdir(plot_dir):
         os.mkdir(plot_dir)
+        print(f"{plot_dir} was generated")
 
     shutil.copy(f'{cwd}/{cal_dir}/{inpf}', f'{cwd}/{plot_dir}/')
 

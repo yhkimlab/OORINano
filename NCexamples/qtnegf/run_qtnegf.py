@@ -4,10 +4,10 @@ import sys
 import time
 from nanocore.aux import convert_time2human as time_convert
 
+from nanocore.simulators.siesta import Siesta
 from nanocore.solvers.qtnegf import qtNegf
 from nanocore.solvers.qtnegf.cellmodeling import model_electrode, model_channel
 from nanocore.solvers.qtnegf.qtplot import qtPlot
-from nanocore.simulators.siesta import Siesta
 
 def runQtNegf(job, ch_struct, ch_size, el_structs, el_size, junc_dist, in_yaml, out_yaml, nnode, nproc):
 
@@ -31,7 +31,7 @@ def runQtNegf(job, ch_struct, ch_size, el_structs, el_size, junc_dist, in_yaml, 
     '''
     cwd = os.getcwd()
 
-    qt_dir = ['1elec', '2channel', '3postprocess']
+    qt_dir = ['elec', 'channel', 'postprocess']
     #qt_dir = ['.', '.', '3postprocess']
     calc = Siesta()
     ### 1 Make models
@@ -74,8 +74,8 @@ def main():
 			\n\tRun:\
             \n\t    python run_qtnegf.py -m scatt_struct -ms model_size -e elec_struct -es elec_size -jd junc_dist -n nnodes -np nproc\
             \n\t    e.g.:\
-            \n\t\t python run_qtnegf.py -j run -c grp -cs 5 -e Au -jd 1.9 -np 20\
-            \n\t\t python run_qtnegf.py -j model -c grp -cs 5 -e Au -jd 1.9\
+            \n\t\t python run_qtnegf.py -j run -c grp -cs 6 -e Au -jd 1.9 -np 20\
+            \n\t\t python run_qtnegf.py -j model -c grp -cs 6 -e Au -jd 1.9\
             \n\t    Options:\
             \n\t\t-j    [run (all calculation)|model (print model at workdir)|fdf (show fdf parameters)]\
             \n\t\t-c   atoms in scattering model\

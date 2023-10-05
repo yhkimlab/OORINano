@@ -17,7 +17,6 @@ Parameters
 """
 
 job_complete = "Job completed"
-      
 
 def qtNegf(calc, dict_elec, dict_model, qt_dir, inp, outp, np=1, det_k=0, max_nk=10, init_nk=1, step_nk=1, opts=None):
     '''
@@ -44,6 +43,7 @@ def calcElectrode(calc, el_model, elecdir, np):
     ### Make main subdirectory for electrode calculation
     if not os.path.exists(elecdir):
         os.mkdir(elecdir)
+        print(f"{elecdir} was generated")
         os.chdir(elecdir)
         ### two calculations for left and right electrode
         ### make two subdirectories inside 1elec dir
@@ -79,6 +79,7 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, nproc):
     cwd = os.getcwd()
     if not os.path.exists(scatter_dir):
         os.mkdir(scatter_dir)
+        print(f"{scatter_dir} was generated")
     os.chdir(scatter_dir)
     ###### working inside work subdirectory
     cwdw = os.getcwd()

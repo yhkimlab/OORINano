@@ -1,2 +1,2 @@
 clean:
-	rm -r [1-3]* *fdf *tcl
+	rm -r *elec* *chann* *post* *fdf *tcl
