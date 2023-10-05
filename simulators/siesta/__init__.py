@@ -981,7 +981,7 @@ def calc_fatband(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mp
     file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
     file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
 
-    from NanoCore.env import siesta_pyprojection as fat
+    from ...aux.env import siesta_pyprojection as fat
     cmd = 'python %s' % fat
     if mpi:
         cmd = 'mpirun -np %i ' % nproc + cmd
