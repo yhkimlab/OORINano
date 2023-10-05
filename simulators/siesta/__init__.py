@@ -220,19 +220,19 @@ class Siesta(object):
         import nanocore
         if not self.mode:
             self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf', 'KPT.fdf']
-            rpath = ['simulator', 'siesta', 'siesta_default']
+            rpath = ['simulators', 'siesta', 'siesta_default']
         elif self.mode == 'siesta':
             self._files = ['RUN.fdf', 'BASIS.fdf', 'KPT.fdf']
-            rpath = ['simulator', 'siesta', 'siesta_default']
+            rpath = ['simulators', 'siesta', 'siesta_default']
         elif self.mode == 'elec':
             self._files = ['RUN.fdf', 'BASIS.fdf', 'KPT.fdf']
-            rpath = ['simulator', 'siesta', 'siesta_default', 'transmission', 'elec']
+            rpath = ['simulators', 'siesta', 'siesta_default', 'transmission', 'elec']
         elif self.mode == 'scatter':
             self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf','KPT.fdf']
-            rpath = ['simulator', 'siesta', 'siesta_default', 'transmission', 'scatter']
+            rpath = ['simulators', 'siesta', 'siesta_default', 'transmission', 'scatter']
         elif self.mode == 'tbtrans':
             self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf', 'KPT.fdf']
-            rpath = ['simulator', 'siesta', 'siesta_default', 'transmission', 'scatter']
+            rpath = ['simulators', 'siesta', 'siesta_default', 'transmission', 'scatter']
         else:
             raise ValueError("mode not supported")
         module_path = inspect.getfile(nanocore)
@@ -332,7 +332,7 @@ class Siesta(object):
     def read_fdf(self, filename):
         fname = filename.split(os.sep)[-1]
         if fname == 'STRUCT.fdf':
-            self._atoms = read_struct('STRUCT.fdf')
+            self._atoms = readAtomicStructure('STRUCT.fdf')
             return
         with open(filename, 'r') as fd:
             lines = fd.readlines()
@@ -348,7 +348,7 @@ class Siesta(object):
     def write_fdf(self, filename):
         fname = filename.split(os.sep)[-1]
         if fname == 'STRUCT.fdf':
-            write_struct(self._atoms)
+            writeAtomicStructure(self._atoms)
             return
         self.generate_fdf(fname)
         fd = open(filename, 'w')
@@ -595,7 +595,7 @@ class Siesta(object):
         
 
     def write_atoms(self, cellparameter=1.0):
-        write_struct(self._atoms, cellparameter)
+        writeAtomicStructure(self._atoms, cellparameter)
 
     def save_simulation(self):
 
@@ -610,7 +610,7 @@ class Siesta(object):
 
 ###### Functional in siesta module
 ### write and read structure in fdf format
-def write_struct(atoms, cellparameter=1.0, fname = "STRUCT.fdf"):
+def writeAtomicStructure(atoms, cellparameter=1.0, fname = "STRUCT.fdf"):
 
     if atoms.get_cell() is not  None:
         cell1 = atoms.get_cell()[0]
@@ -655,7 +655,7 @@ def write_struct(atoms, cellparameter=1.0, fname = "STRUCT.fdf"):
     fileS.write("%endblock AtomicCoordinatesAndAtomicSpecies\n")
     fileS.close()
 
-def read_struct(file_name):
+def readAtomicStructure(file_name):
     vec_block = []; atoms_block = []; abc_cell_block = []
     atoms_length = 0; species = []
     n_of_species = 0; name = ''; atoms = []; cell = []; cell_scale = ''

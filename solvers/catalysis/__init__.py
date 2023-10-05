@@ -64,7 +64,7 @@ def run_series_HER(calc, sim_params, mode, fix, pivot, vib, label, pH, Temp):
     pivot      passed to 
     '''
     simulator = calc.__class__
-    modu = importlib.import_module(simulator.__module__)
+    simmodule = importlib.import_module(simulator.__module__)
     ### Model: substrate
     natoms = len(calc.atoms)
     
@@ -91,7 +91,7 @@ def run_series_HER(calc, sim_params, mode, fix, pivot, vib, label, pH, Temp):
         pivot = calc.atoms.select_pivot(site='center')
     print(f"pivot {pivot}")
 
-    catalyst_opt = modu.read_poscar(calc.optfile)
+    catalyst_opt = simmodule.readAtomicStructure(calc.optfile)
     her_model = Catmodels(catalyst_opt) 
     atomsH = her_model.HER_transition_gen(pivot=pivot)
     
@@ -106,7 +106,7 @@ def run_series_HER(calc, sim_params, mode, fix, pivot, vib, label, pH, Temp):
     if vib:
         fsuffix += '_vib'
         outfile  = f"{simulator.checkfile}_{fsuffix}"
-        optfile  = modu.read_poscar(calc.optfile)
+        optfile  = simmodule.readAtomicStructure(calc.optfile)
 
         suffixv     = '_vib'
         outfile     += suffixv
@@ -138,7 +138,7 @@ def run_series_ORR(calc, sim_params, mode, fix, pivot, vib, label, pH, Temp):
     pivot      passed to 
     '''
     simulator = calc.__class__
-    modu = importlib.import_module(simulator.__module__)
+    simmodule = importlib.import_module(simulator.__module__)
     #print(f"in run_series_ORR: {sim_params}")
     irc = 0
     natoms      = len(calc.atoms._atoms)
@@ -167,7 +167,7 @@ def run_series_ORR(calc, sim_params, mode, fix, pivot, vib, label, pH, Temp):
     print(f"pivot {pivot}")
     interm_fnames   = ['O2', 'OOH', 'O', 'OH']
     
-    catalyst_opt    = modu.read_poscar(calc.optfile)
+    catalyst_opt    = simmodule.readAtomicStructure(calc.optfile)
     orr_model       = Catmodels(catalyst_opt)
 
     interm_models   = orr_model.four_electron_transition_gen(mode='ORR', pivot=pivot)
@@ -204,7 +204,7 @@ def run_series_ORR(calc, sim_params, mode, fix, pivot, vib, label, pH, Temp):
         if vib:
             fsuffix += '_vib'
             outfile  = f"{simulator.checkfile}_{fsuffix}"
-            optfile  = modu.read_poscar(calc.optfile)
+            optfile  = simmodule.readAtomicStructure(calc.optfile)
             calc = simulator(optfile)
             calc.set_options(**sim_params)
             if not os.path.isfile(outfile):

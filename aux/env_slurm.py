@@ -27,12 +27,13 @@ vasp_POTCAR_PW91 = vaspini + '2.POTPAW.PBE.54.RECOMMEND'        # connect to cor
 ### SIESTA e
 
 siesta_dir = '/home2/littleyu/opt/siesta-v4.1-b4'
-# Siesta calculator location
+### Siesta calculator location
 siesta_calculator = siesta_dir + '/Obj/siesta'
 
-# Pseudopentiential files location
-siesta_default_location='/home/joonho/pymod/nanocore/simulator/siesta/siesta_default'
-siesta_psf_location = siesta_default_location + '/psf'
+### Default siesta location
+siesta_default_location='/home/joonho/pymod/nanocore/simulators/siesta/siesta_default'
+### psf, fdf locates under default siesta locationunder with subdirectories of /psf, /model/elec, /model/channel
+#siesta_psf_location = siesta_default_location + '/psf'
 
 
 # Pyprojection files location

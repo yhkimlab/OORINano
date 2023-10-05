@@ -3,8 +3,8 @@ import os
 import re
 import sys
 from nanocore import catalysis
-from nanocore.simulator.vasp import Vasp
-from nanocore.simulator.vasp import read_poscar as read_geo
+from nanocore.simulators.vasp import Vasp
+from nanocore.simulators.vasp import readAtomicStructure as read_geo
 from nanocore import surflab
 
 def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, nproc, sparallel):
@@ -35,8 +35,11 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, 
         atoms = read_geo(poscar[0])
     ## generate surface
     elif len(poscar) >= 3:
-        asize = int(poscar[2])
-        size=(asize,asize,asize)
+        if len(poscar) == 3:
+            asize = int(poscar[2])
+            size=(asize,asize,asize)
+        elif len(poscar) == 5:
+            size=(int(poscar[2]), int(poscar[3]), int(poscar[4]))
         print(f"fccsurf: {poscar[0]} {poscar[1]}, {size}")
         atoms = surflab.fccsurfaces(poscar[0], poscar[1], size, vac=15)
     else:
@@ -54,7 +57,7 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, 
         ### INCAR params: 
         ###     magmom = dict or list: ispin=2, magmom=['N',2]
         if 'npar' in locals():
-            incar_params = dict(npar=npar, kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
+            incar_params = dict(npar=npar, kpoints=[1,1,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=1)
         else:
             incar_params = dict(ncore=ncore, kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
 
@@ -76,9 +79,11 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, 
     ### 4. Run VASP | Show INCAR | Plot
     if job == 'run':
         if cat_kind == 'orr':
-            catalysis.runORR(calc, sim_params, mode=mode, vib=True, fix=None, label=flabel)    #pivot = 24 (atom index)
+            catalysis.runORR(calc, sim_params, mode='sp', vib=True, fix='b1L', label=flabel, pH=14)    #pivot = 24 (atom index)
         elif cat_kind == 'her':
-            catalysis.runHER(calc, sim_params, mode=mode, vib=False, fix='b1L', label=flabel)
+            catalysis.runHER(calc, sim_params, mode='sp', vib=False, fix='b1L', label=flabel)
+    elif job == 'model':
+        calc.write_POSCAR()
     elif job == 'incar':
         for k, v in calc.get_options():
             print(f"{k:>10}\t{v}")
@@ -89,6 +94,8 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, 
         print(zpe)
         print(TS)
         #catalysis.plot_ORR_4e_acid(G_ORR_vib, U=0.7, legend=['U=1.23V', 'U=0.70V', 'U=0.00V'])
+    elif job == 'dos':
+        pass
     else:
         pass
     return 0
@@ -97,7 +104,7 @@ def main():
     parser = argparse.ArgumentParser(description="Running catalysis::\
                         \n\tselect catalytic job, subjob [run, show incar, ...], some options for vib, overwrite\
                         \n\tsystem params partition, node, etc are applied to specific system")
-    parser.add_argument('-j', '--job', default='run', choices=['run', 'plot', 'incar'], help='incar: show default params')
+    parser.add_argument('-j', '--job', default='run', choices=['run', 'model','incar', 'plot'], help='incar: show default params')
     parser.add_argument('-c', '--cat_kind', default='orr', choices=['orr', 'her', 'oer'], help='catalytic reactions')
     parser.add_argument('-l', '--flabel', default='test', help='label for dirname')
     parser.add_argument('-o', '--overwrite', action='store_true', help='if there exists dir, overwrite')
@@ -125,11 +132,10 @@ def main():
                 \n\t\t    /test     job directory is generated\
                 \n\t\t    run_catalysis.py is run inside job script\
                 \n\t    2. Direct run inside job directory\
-                \n\t\t$mkdir test; cp CONTCAR_Pt-SAC test/POSCAR; cd test\
-                \n\t\t$python ../run_catalysis.py -j orr -sj run -p POSCAR -np {args.nproc} [--npar $npar|--ncore $ncore]\
-                \n\tjob is running in work dir(jobname) & logfile is written in submit dir\
+                \n\t\trun_catalysis.py -c orr -j run -np {args.nproc} [--npar $npar|--ncore $ncore]\
+                \n\t** job is running in work dir(jobname) & logfile is written in submit dir\
                 \n\t    mpirun runs in class Vasp\
-                \n\tjob finishes: jobname.log -> jobname.out\
+                \n\t** job finishes: jobname.log -> jobname.out\
             ")
         sys.exit(0)
     if args.ncore:

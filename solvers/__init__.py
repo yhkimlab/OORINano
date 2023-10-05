@@ -4,6 +4,6 @@ each subpackage works independently
 """
 from . import catalysis
 #from . import phonon_qt
-from . import qttransport
+from . import qtnegf
 
-__all__ = ['catalysis', 'qttransport']
+__all__ = ['catalysis', 'qtnegf']

@@ -3,13 +3,13 @@ import numpy as np
 import yaml
 
 import matplotlib.pyplot as plt
-from nanocore.simulator import siesta as s2
+from nanocore.simulators import siesta as s2
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import importlib
 
 
 def qtPlot(calc, plot_dir, cal_dir, inpf, outpf='result', energy=[-0.1, 0.1], grid=[50,50,200]):
-    modulename = importlib.import_module(calc.__class__.__module__)
+    simmodule = importlib.import_module(calc.__class__.__module__)
 
     cwd = os.getcwd()
     print(f"{cwd} in qtPLot")
@@ -34,7 +34,7 @@ def qtPlot(calc, plot_dir, cal_dir, inpf, outpf='result', energy=[-0.1, 0.1], gr
     shutil.copy(files[0], fcwd)
     os.chdir(fcwd)
 
-    pos, pot = modulename.get_hartree_pot_z(os.path.splitext(files[0])[0])
+    pos, pot = simmodule.get_hartree_pot_z(os.path.splitext(files[0])[0])
     pos = np.asarray(pos); pos = pos * 0.5291
     fig = plt.figure(figsize=[10,8])
     ax1 = fig.add_subplot(2,2,1)
@@ -58,7 +58,7 @@ def qtPlot(calc, plot_dir, cal_dir, inpf, outpf='result', energy=[-0.1, 0.1], gr
             shutil.copy(f, fcwd)
     os.chdir(fcwd)
 
-    energy, trans = modulename.get_transmission(file)
+    energy, trans = simmodule.get_transmission(file)
     # trans = np.log10(trans)
 
     ax2 = fig.add_subplot(2,2,2)
@@ -92,7 +92,7 @@ def qtPlot(calc, plot_dir, cal_dir, inpf, outpf='result', energy=[-0.1, 0.1], gr
     fig.colorbar(cset, cax=cax, orientation='vertical')
     fig.tight_layout()
 
-    modulename.get_tbtrans_ldos(os.path.join(cwdw, f'{outpf}.cube'), energy, grid, **option)
+    simmodule.get_tbtrans_ldos(os.path.join(cwdw, f'{outpf}.cube'), energy, grid, **option)
 
     os.chdir(cwdw)
     plt.savefig(f'{outpf}.jpg')

@@ -141,7 +141,7 @@ class Vasp(object):
         return 0
 
     def set_atoms(self, contcar):
-        self.atoms = read_poscar(contcar)
+        self.atoms = readAtomicStructure(contcar)
 
     ### might be redundant with vasp.write_poscar
     def write_POSCAR(self, file_name='POSCAR', mode='cartesian', fix=None):
@@ -439,7 +439,7 @@ class Vasp(object):
         Example:
         --------
         from nanocore import ncio       
-        at = ncio.read_poscar('POSCAR')
+        at = readAtomicStructure('POSCAR')
         at2 = vasp2.Vasp(at)
         at2.get_vibration_specctrum(output_name='OUTCAR_imag', matplot=1, start=-2000, end=6000)
         """
@@ -511,7 +511,7 @@ class Vasp(object):
             pass
 
 ### functions inside module vasp
-def read_poscar(file_name):
+def readAtomicStructure(file_name):
     f = open(file_name)
     lines = f.readlines()
 
@@ -596,7 +596,7 @@ def read_poscar(file_name):
             return atoms_obj
 
 
-def write_poscar(atoms, file_name='POSCAR_xxyz', mode='cartesian', constraint=None):
+def writeAtomicStructure(atoms, file_name='POSCAR_xxyz', mode='cartesian', constraint=None):
     POSCAR = open(file_name, 'w')
     #POSCAR.write('%s\n' % params['title'])
     POSCAR.write('%s\n' % 'title')

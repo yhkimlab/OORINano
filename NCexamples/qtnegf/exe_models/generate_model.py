@@ -1,6 +1,6 @@
 import nanocore as nc
 from nanocore.models import carbonlab
-from nanocore.simulator.siesta import Siesta
+from nanocore.simulators.siesta import Siesta
 from nanocore.aux.convert import convert_xyz2abc
 from nanocore.ncio import write_struct, read_struct
 import argparse
