@@ -16,10 +16,10 @@ from ...units import T         # T is imported here from thermo.py
 ### auxiliary functions
 def fix_atoms(atoms, fix):
     if fix == 'b1L':
-        fixed = atoms.select_atoms("gid", 0)
-    elif type(fix) == list:
-        fixed = fix
-    return fixed
+        atoms.select_atoms("gid", 0)
+    else:
+        pass
+    return None
 
 ### Workflow for the calculation of catalysis
 
@@ -71,9 +71,12 @@ def run_series_HER(calc, sim_params, mode, fix, pivot, vib, label, pH, Temp):
     ### fixed start from 0 ?
     ngroup = calc.atoms.make_groups()
     if fix:
-        fixed_atoms = fix_atoms(calc.atoms, fix)
+        fix_atoms(calc.atoms, fix)
+        fixed_atoms = calc.atoms.get_selected()
+        #print(f"{fix} atoms fixed: {fixed_atoms}")
     else:
         fixed_atoms = None
+        #print("No atoms are fixed")
         
     ### skip if there is calc.checkfile
     fsuffix     = f"{label}_cat"
@@ -146,9 +149,12 @@ def run_series_ORR(calc, sim_params, mode, fix, pivot, vib, label, pH, Temp):
     ### fixed start from 0
     ngroup = calc.atoms.make_groups()
     if fix:
-        fixed_atoms = fix_atoms(calc.atoms, fix)
+        fix_atoms(calc.atoms, fix)
+        fixed_atoms = calc.atoms.get_selected()
+        #print(f"{fix} atoms fixed: {fixed_atoms}")
     else:
         fixed_atoms = None
+        #print("No atoms are fixed")
     
     ### Skip run_catalysis if there is __outfile of the simulator
     fsuffix     = f"{label}_{irc}_cat"

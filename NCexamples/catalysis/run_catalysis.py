@@ -57,7 +57,7 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, 
         ### INCAR params: 
         ###     magmom = dict or list: ispin=2, magmom=['N',2]
         if 'npar' in locals():
-            incar_params = dict(npar=npar, kpoints=[1,1,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=1)
+            incar_params = dict(npar=npar, kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
         else:
             incar_params = dict(ncore=ncore, kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
 
@@ -79,9 +79,9 @@ def run_catalysis(job, cat_kind, flabel, Loverwrite, poscar, mode, Lvib, nnode, 
     ### 4. Run VASP | Show INCAR | Plot
     if job == 'run':
         if cat_kind == 'orr':
-            catalysis.runORR(calc, sim_params, mode='sp', vib=True, fix='b1L', label=flabel, pH=14)    #pivot = 24 (atom index)
+            catalysis.runORR(calc, sim_params, mode='opt', vib=True, fix='b1L', label=flabel, pH=14)    #pivot = 24 (atom index)
         elif cat_kind == 'her':
-            catalysis.runHER(calc, sim_params, mode='sp', vib=False, fix='b1L', label=flabel)
+            catalysis.runHER(calc, sim_params, mode='opt', vib=False, fix='b1L', label=flabel)
     elif job == 'model':
         calc.write_POSCAR()
     elif job == 'incar':
@@ -104,7 +104,7 @@ def main():
     parser = argparse.ArgumentParser(description="Running catalysis::\
                         \n\tselect catalytic job, subjob [run, show incar, ...], some options for vib, overwrite\
                         \n\tsystem params partition, node, etc are applied to specific system")
-    parser.add_argument('-j', '--job', default='run', choices=['run', 'model','incar', 'plot'], help='incar: show default params')
+    parser.add_argument('-j', '--job', default='run', choices=['run', 'model','incar', 'plot','test'], help='incar: show default params')
     parser.add_argument('-c', '--cat_kind', default='orr', choices=['orr', 'her', 'oer'], help='catalytic reactions')
     parser.add_argument('-l', '--flabel', default='test', help='label for dirname')
     parser.add_argument('-o', '--overwrite', action='store_true', help='if there exists dir, overwrite')
@@ -144,6 +144,13 @@ def main():
         nparallel='p'+str(args.npar)
     if args.test:
         args.mode = 'sp'
+
+    ### To test algorithm
+    if args.job == 'test':
+        args.job    = 'run'
+        args.mode   = 'sp'
+        args.novib  = True
+        ### control more: ispin, kpoints
 
     run_catalysis(args.job, args.cat_kind, args.flabel, args.overwrite, args.poscar, args.mode, args.novib, args.nnode, args.nproc, nparallel)
 

@@ -11,9 +11,7 @@ from .atoms_aux import *
 from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
 import copy     # added by SH
-import os
-import sys
-from ..aux import convert_xyz2abc, convert_abc2xyz, read_xyz
+from ..ncio import convert_xyz2abc, convert_abc2xyz, read_xyz
 from .atom_vector import Vector
 
 ## Class Atom, AtomsSystem, Vector (move to atom_vector), Trajectory ##
@@ -477,6 +475,7 @@ class AtomsSystem(object):
         Select atoms by given string or a list of atom numbers
         (N.B. The only difference from <select_rngnbs> is the extra checking of
         the validity of the input atom #.)
+        Error: no natom
         """
         selected = []
         if type(astr) == list or type(astr) == float:
@@ -909,10 +908,10 @@ class AtomsSystem(object):
         >>> instance.distance([1, 100])
         """
         # extract selected atom numbers
-        if type(selected) is str:
-            self.select_atmnbs(selected)
-        elif type(selected) == list or type(selected) == tuple:
-            self._selected = list(selected)
+        if type(atom_index) is str:
+            self.select_atmnbs(atom_index)
+        elif type(atom_index) == list or type(atom_index) == tuple:
+            self._selected = list(atom_index)
             
         # safety check...
         if len(self._selected) != 2:

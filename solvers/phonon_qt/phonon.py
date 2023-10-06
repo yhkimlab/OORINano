@@ -7,7 +7,7 @@ from . import transmission as m_t
 from . import thermal_post as thp
 from . import trans_post as trp
 from ...units import *
-from ...simulator.vasp import read_poscar
+from ...simulators.vasp import read_poscar
 
 import os, sys
 import pickle

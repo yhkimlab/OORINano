@@ -1,9 +1,9 @@
 from ...atoms   import *
-from ...ncio    import cleansymb, get_unique_symbs
-from ...aux     import convert_xyz2abc 
+from ...ncio    import cleansymb, get_unique_symbs, convert_xyz2abc
+#from ...aux     import convert_xyz2abc 
 from ...units   import ang2bohr, R
 from glob import glob
-import os, math
+import os, math, sys
 import numpy as np
  
 ### import io.read, io.write inside Vasp class

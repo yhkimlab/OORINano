@@ -59,7 +59,7 @@ def model_electrode(calc, el_struct, el_size):
         path_fdf_left = cwd+'/'+li_fdf[0]
         path_fdf_rigt = cwd+'/'+li_fdf[1]
         lfdf = True
-        el_struct = [ f for f in el_struct if f not in fdf ]
+        el_struct = [ f for f in el_struct if f not in li_fdf ]
     elif len(li_fdf) == 1:
         print("Can't run with one-side electrode structure")
         ### module for rotate left struct to right struct

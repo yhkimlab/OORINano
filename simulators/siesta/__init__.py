@@ -1,19 +1,19 @@
 #from __future__ import print_function
 from ...atoms import *
-from ...ncio import cleansymb, get_unique_symbs
-from ...aux import convert_abc2xyz, convert_xyz2abc, read_xyz
+from ...ncio import  get_unique_symbs, write_xsf #cleansymb,
 from ...units import ang2bohr,  degrad, bohr2ang
 from glob import glob
-import re, sys
+import re, sys, os
 import shutil
 import subprocess
-### inside siesta_defalut_location, psf, model, elec exist
+import sisl
+### inside siesta_defalut_location, psf, model/elec, model/channel exist
 from ...aux.env import siesta_default_location as default_location
 
 from math import sin, cos, sqrt, pi
 
-#from ...aux.env import siesta_dir as sul
-#from ...aux.env import siesta_util_vh as sv
+from ...aux.env import siesta_dir as sul
+from ...aux.env import siesta_util_vh as sv
 #
 # SIESTA Simulation Object
 #
@@ -239,7 +239,7 @@ class Siesta(object):
         #print(module_path)
         default_path = os.sep.join(module_path.split(os.sep)[:-1]+rpath)
         for f in self._files:
-            self.read_fdf(default_path+os.sep+f)
+            self.read_fdf(default_path + os.sep + f)
 
     def set_atoms(self, atom: AtomsSystem):
         self._atoms = atom
@@ -869,7 +869,7 @@ def calc_pldos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi 
     file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
     file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
 
-    from NanoCore.env import siesta_pyprojection as pdos
+    from ...aux.env import siesta_pyprojection as pdos
     cmd = 'python %s' % pdos
     if mpi:
         cmd = 'mpirun -np %i ' % nproc + cmd
@@ -892,7 +892,7 @@ def get_transmission(fname):
         return np.asarray(energy), np.asarray(trans)
 
 
-def calc_pdos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi = 0, nporc = 1):
+def calc_pdos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi = 0, nproc = 1):
 
     """
     Interface to PyProjection of siesta utils
@@ -933,14 +933,14 @@ def calc_pdos(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi =
     file_INP.write('PyProjection.NumC         %d\n'%nmesh[2])
     file_INP.write('PyProjection.TargetOrbital    %s\n'%orbital_index)
 
-    from NanoCore.env import siesta_pyprojection as pdos
+    from ...aux.env import siesta_pyprojection as pdos
     cmd = 'python %s' % pdos
     if mpi:
         cmd = 'mpirun -np %i ' % nproc + cmd
     os.system(cmd)
 
 
-def calc_fatband(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi = 0, nporc = 1):
+def calc_fatband(nmesh, emin, emax, npoints, orbital_index, label = 'siesta', mpi = 0, nproc = 1):
 
     """
     Interface to PyProjection of siesta utils
@@ -1016,8 +1016,8 @@ def get_dos(emin, emax, npoints=1001, broad=0.05, label='siesta'):
     """
 
     # Eig2DOS script
-    from NanoCore.env import siesta_util_location as sul
-    from NanoCore.env import siesta_util_dos as sud
+    from ...aux.env import siesta_util_location as sul
+    from ...aux.env import siesta_util_dos as sud
     os.system('%s/%s -f -s %f -n %i -m %f -M %f %s.EIG > DOS' % (sul, sud, 
                                                                  broad, npoints, 
                                                                  emin, emax, label))
@@ -1296,7 +1296,7 @@ def get_ldos(cell, origin, nmesh, label='siesta'):
 
 def get_tbtrans_ldos(ofile, erange, shape = [50,50,200], spectral = 'Left', **option):
 
-    import sisl
+    #import sisl
     interval = float(option['dE'].split()[0])
     emin = min(erange)+interval/2
     emax = max(erange)-interval/2
@@ -1321,7 +1321,7 @@ def get_tbtrans_ldos(ofile, erange, shape = [50,50,200], spectral = 'Left', **op
     ldos_grid.write(ofile)
 
 def get_tbtrans_pldos(**option):
-    import sisl
+    #import sisl
     atom_index = list(map(int, re.findall(r'\d+', option['device'])))
     assert len(atom_index) == 2
     os.chdir(option['tbtrans'])
@@ -1568,8 +1568,8 @@ def get_hartree_pot_z(label='siesta'):
     file_INP.close()
 
     # run rho2xsf
-    from ...aux.env import siesta_dir as sul
-    from ...aux.env import siesta_util_vh as sv
+    #from ...aux.env import siesta_dir as sul
+    #from ...aux.env import siesta_util_vh as sv
     os.system('%s/%s < macroave.in' % (sul, sv))
     os.system('rm macroave.in')
 
@@ -1627,7 +1627,8 @@ def get_eos(pattern='*', struct_file='STRUCT.fdf'):
     for f in dirs:
         os.chdir(f)
         os.chdir('input') #
-        atoms = read_fdf("%s" % struct_file)
+        #atoms = read_fdf("%s" % struct_file)
+        atoms = readAtomicStructure("%s" % struct_file)
         cell = atoms.get_cell()
         v = Vector(cell[0]).dot( Vector(cell[1]).cross(Vector(cell[2])) )
         volume.append(v)
@@ -1703,6 +1704,6 @@ def get_eos(pattern='*', struct_file='STRUCT.fdf'):
     print ('initial guesses  : ',x0)
     print ('fitted parameters: ', murnpars)
 
-from ase.calculators.vasp import vasp
+#from ase.calculators.vasp import vasp
 
 

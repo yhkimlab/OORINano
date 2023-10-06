@@ -1,5 +1,6 @@
 from __future__ import print_function
-import sys, os, re, shutil, importlib     
+import sys, os, re, shutil, importlib
+from ...aux import check_file
 
 import yaml             ### added for cal scattering
 from .qtplot import qtPlot

@@ -1,9 +1,9 @@
 
 from . import carbonlab
-from ..aux   import convert_xyz2abc, check_file ### for model, 1elec
+from ..ncio   import convert_xyz2abc ### for model, 1elec
 from ..atoms   import *
 from ..aux.env import *
-import sys, os, importlib 
+import os 
 
 def interface():
     return 0
@@ -29,7 +29,7 @@ def twoInterfaces(dcenter, lphase, rphase, junc_dist):
         center.wrap_positions()
         center.select_z(-0.1, 1)
         center.delete()
-        ### 2.2 Combine left and right parts of electrode
+        
         center_cell = center.get_cell()
         elecL_cell = lphase.get_cell()
         elecL_cell_abc = convert_xyz2abc(elecL_cell[0], elecL_cell[1], elecL_cell[2])
