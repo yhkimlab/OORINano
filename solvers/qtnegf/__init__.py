@@ -19,7 +19,7 @@ Parameters
 
 job_complete = "Job completed"
 
-def qtNegf(calc, dict_elec, dict_model, qt_dir, inp, outp, np=1, det_k=0, max_nk=10, init_nk=1, step_nk=1, opts=None):
+def qtNegf(calc, dict_elec, dict_model, qt_dir, inp, outp, fdf_params, np=1, det_k=0, max_nk=10, init_nk=1, step_nk=1, opts=None, show_params=False):
     '''
     calc        instance of calculator such as Siesta
     dict_elec   dictionary of electrode {'psf': M.psf, 'fdf': [elec_left.fdf,elec_rigt.fdf]}
@@ -27,27 +27,46 @@ def qtNegf(calc, dict_elec, dict_model, qt_dir, inp, outp, np=1, det_k=0, max_nk
     qt_dir      [elec calc, scatter calc, postprocess]
     inp         yaml input file for scattering calculation
     outp        yaml output for scattering and input for postprocess
+    fdf_params  input parameters from work directory
+                ['elec.fdf' (for electrode), 'scatter.fdf' (for scattering)]
     '''
     ### 0. Models are generated in advance
     ### 1. Electrode calculation
-    calcElectrode(calc, dict_elec, qt_dir[0], np)
+    fdf_elec    = None
+    fdf_scatt   = None
+    if fdf_params:
+        for f in fdf_params:
+            if re.match('el', f):
+                fdf_elec = f
+            elif re.match('sc', f):
+                fdf_scatt = f
+
+    calcElectrode(calc, dict_elec, qt_dir[0], np, fdf_elec = fdf_elec, show_params = show_params)
     ### 2. Scattering region calculation
-    calcScattering(calc, dict_model, qt_dir[1], inp, outp, np)
+    calc.set_clean()        # to clean fdf params
+    calcScattering(calc, dict_model, qt_dir[1], inp, outp, np, fdf_scatt = fdf_scatt, show_params = show_params)
+    if show_params:
+        return 0
     ### 3. Post processing
     qtPlot(calc, qt_dir[2], qt_dir[1], outp)
 
     return 0
 
-def calcElectrode(calc, el_model, elecdir, np):
+def calcElectrode(calc, el_model, elecdir, np, fdf_elec = None, show_params=False):
     cwd = os.getcwd()
-    calc.set_mode('elec')
+    calc.set_mode('elec')       # reads default fdf files
+    if fdf_elec:
+        calc.read_fdf(fdf_elec)
+    if show_params:
+        calc.print_fdfs()
+        return 0 
     ### Make main subdirectory for electrode calculation
     if not os.path.exists(elecdir):
         os.mkdir(elecdir)
         print(f"{elecdir} was generated")
         os.chdir(elecdir)
         ### two calculations for left and right electrode
-        ### make two subdirectories inside 1elec dir
+        ### make two subdirectories inside elec subdir
         sub_dirs=[]
         f_psf = re.split('/', el_model['psf'])[-1]
         metal = os.path.splitext(f_psf)[0]
@@ -62,8 +81,8 @@ def calcElectrode(calc, el_model, elecdir, np):
             shutil.copy(fstruct, 'Input/STRUCT.fdf')
             shutil.copytree('Input', 'Run')
             os.chdir('Run')
-            calc.read_all_fdf()
-            calc.runQuantumTransport(np)
+            #calc.read_all_fdf()     # overwrite if fdf exists
+            calc.runNegf(np)
             print(f"Job completed in {subdir}")
             os.chdir('..')
             os.chdir('..')
@@ -71,7 +90,7 @@ def calcElectrode(calc, el_model, elecdir, np):
     return 0
 
 
-def calcScattering(calc, dict_model, scatter_dir, finp, foutp, nproc):
+def calcScattering(calc, dict_model, scatter_dir, finp, foutp, np, fdf_scatt = None, show_params=False):
     simmodule = importlib.import_module(calc.__class__.__module__)
     '''
     finp    Additional input file of yaml
@@ -82,8 +101,8 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, nproc):
         os.mkdir(scatter_dir)
         print(f"{scatter_dir} was generated")
     os.chdir(scatter_dir)
-    ###### working inside work subdirectory
-    cwdw = os.getcwd()
+    ###### cwds: Scattering subdirectory
+    cwds = os.getcwd()
     if not os.path.isdir('Input'):
         os.mkdir('Input')
     ### copy model.fdf, elec.fdf, psfs
@@ -105,7 +124,7 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, nproc):
         yoption = yaml.safe_load(f)
 
     os.chdir('Input')
-    calc.read_all_fdf()
+    calc.read_all_fdf() # read struct
     os.chdir('..')
 
     ### Develop for-loop in case voltage list, also mod format inside yaml
@@ -116,7 +135,8 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, nproc):
         if not os.path.isdir(vdir_name):
             os.mkdir(vdir_name)
         os.chdir(vdir_name)
-        cwdv = os.getcwd()          # voltage dir
+        ### Voltage subdirectory
+        cwdv = os.getcwd()
 
         ### temparay modification not to run
 
@@ -124,11 +144,16 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, nproc):
             shutil.copytree('../Input', 'TSHS')
         os.chdir('TSHS')
         calc.set_mode('scatter')
+        if fdf_scatt:
+            calc.add_fdf(f"{cwd}/{fdf_scatt}")
+        if show_params:
+            calc.print_fdfs()
+            return 0
         calc.set_option('TS.Elecs.Neglect.Principal', True)
         check_fname = f'{cwdv}/TSHS/MESSAGES'
         
         if (not os.path.isfile(check_fname)) or (not check_file(check_fname, job_complete)):
-            calc.runQuantumTransport(nproc, **yoption)
+            calc.runNegf(np, **yoption)
         yoption['scatter'] = os.getcwd()
         os.chdir(cwdv)
 
@@ -139,9 +164,9 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, nproc):
             calc.read_all_fdf()
             calc.set_option('kgrid_Monkhorst_Pack', True, (12,1,1))
             calc.set_option('TS.Elecs.Neglect.Principal', True)
-            calc.runQuantumTransport(nproc, **yoption)
+            calc.runNegf(np, **yoption)
             yoption['tbtrans'] = os.getcwd()
-        os.chdir(cwdw)
+        os.chdir(cwds)
         ### write to yaml
         with open(f'{foutp}', 'w') as f:
             yaml.safe_dump(yoption, f)

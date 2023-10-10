@@ -19,9 +19,13 @@ E.G.::
 2. electrode calculation in ./1elec
     input in    1elec/Au_left/Input
     siesta run  1elec/Au_left/Run
+    default directory ~/siesta/siesta_default/transmission/elec
+    if any fdf files in wdir, it will overwrite the key-values
 3. transport calculation in ./2channel
     reference input file "input.yaml"
     TSHS and TBtrans runs in subdir of voltages such as 0.1eV/ 0.2eV/ 0.5eV/
+    default directory ~/siesta/siesta_default/transmission/scatter
+    if any fdf files in wdir, it will overwrite the key-values
     
     keyword in "output.yaml" is used for postprocessing
 4. post_processing in ./3postprocess
@@ -29,7 +33,7 @@ E.G.::
     
     
 ### Practice generating models
-/model
+/Example_models
  python generate_model.py
 
 
