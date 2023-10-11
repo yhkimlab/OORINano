@@ -250,6 +250,7 @@ class Siesta(object):
         #print(module_path)
         default_path = os.sep.join(module_path.split(os.sep)[:-1]+rpath)
         for f in self._files:
+            print(f"read {f} in _read_default_fdf")
             self.read_fdf(default_path + os.sep + f)
 
     def set_atoms(self, atom: AtomsSystem):
@@ -348,6 +349,7 @@ class Siesta(object):
         fname = filename.split(os.sep)[-1]
         if fname == 'STRUCT.fdf':
             self._atoms = readAtomicStructure('STRUCT.fdf')
+            # print(f"atoms are read {self._atoms}")
             return
         with open(filename, 'r') as fd:
             lines = fd.readlines()
@@ -357,10 +359,10 @@ class Siesta(object):
     def read_all_fdf(self):
         fnames = copy.deepcopy(self.__class__.basic_inputs)
         fnames.extend(['TS.fdf', 'STRUCT.fdf'])
-        print(f"{fnames} in read_all_fdf")
         for fname in fnames:
             if fname in os.listdir():
                 self.read_fdf(fname)
+                print(f"read {fname} in read_all_fdf")
 
     def print_fdf(self, fname):
         self.generate_fdf(fname)
@@ -484,8 +486,8 @@ class Siesta(object):
                 else:
                     lines.append("%s    %s\n" %(key, val))
             if key == 'SystemLabel':
-                #if self._atoms:    # depending on order to read 'STRUCT.fdf', it makes error
-                lines.append("%include STRUCT.fdf\n")
+                if self._atoms:    # when read_all_fdf, STRUCT.fdf is set to self._atoms
+                    lines.append("%include STRUCT.fdf\n")
                 for f in self._files:
                     if f == 'RUN.fdf':
                         continue
@@ -523,6 +525,7 @@ class Siesta(object):
         from ...aux.env import siesta_util_tbtrans as tbtrans
 
         def set_transiesta_option(**opt):
+            print(f"{self.get_options('TS.Elec.Left')}")
             _, left_elec = self.get_options('TS.Elec.Left')
             _, right_elec = self.get_options('TS.Elec.Right')
             for i, line in enumerate(left_elec):
@@ -627,7 +630,7 @@ class Siesta(object):
         else:
             raise ValueError("unsupported mode")
 
-        # write fdf files
+        # write fdf input files
         self.write_all_fdf()
 
         cmd = f'mpirun -np {nproc}  {exec} < RUN.fdf > stdout.txt'

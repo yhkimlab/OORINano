@@ -9,7 +9,7 @@ modeling electrode
 
 elec_atom = ['Au']
 
-def get_elec_inifile(calc, files):
+def get_psf(calc, files):
     '''
     to get default pathway, calc is passed
     '''
@@ -25,25 +25,15 @@ def get_elec_inifile(calc, files):
         else:
             print(f"Can't find {fpath}")
             sys.exit(111)
-    ### electrode 2 fdf files
-    elif type(files) == list:
-        dir_default = simmodule.default_location+'/model/elec'
-        fpaths=[]
-        for f in files:
-            fpath = dir_default+'/'+f
-            if os.path.isfile(fpath):
-                fpaths.append(fpath)
-            else:
-               print(f"Can't find {fpath}")
-               sys.exit(112)
-        return fpaths
     else:
         print("Input error in ge_elec_inifile")
-        sys.exit(103)
+        sys.exit(112)
 
-def model_electrode(calc, el_struct, el_size):
+### separate path to model and psf
+def model_electrode(calc, el_struct, el_size, path2model=None):
     '''
-    calc                to obtain default directory pathway
+    calc    to obtain default directory pathway for psf
+                      module readAtomicStructure
     To make electrode model
         el_struct       M or M.spf and/or 2 fdf file
     '''
@@ -51,6 +41,7 @@ def model_electrode(calc, el_struct, el_size):
     
     simmodule = importlib.import_module(calc.__class__.__module__)
     
+    ### extract fdf file
     li_fdf = [ f for f in el_struct if 'fdf' in f]
     lfdf = False
     lpsf = False
@@ -59,7 +50,7 @@ def model_electrode(calc, el_struct, el_size):
         path_fdf_left = cwd+'/'+li_fdf[0]
         path_fdf_rigt = cwd+'/'+li_fdf[1]
         lfdf = True
-        el_struct = [ f for f in el_struct if f not in li_fdf ]
+        el_struct = [ f for f in el_struct if f not in li_fdf ] # to obtain .psf
     elif len(li_fdf) == 1:
         print("Can't run with one-side electrode structure")
         ### module for rotate left struct to right struct
@@ -83,27 +74,46 @@ def model_electrode(calc, el_struct, el_size):
     
     ### if not path_psf, get default
     if not lpsf and 'f_psf' in locals():
-        path_psf = get_elec_inifile(calc, f_psf)
+        path_psf = get_psf(calc, f_psf)
     else:
         ### Codes for generation of electrode
         print("Electrode generation code is not ready")
-        sys.exit(102)
+        sys.exit(101)
     ### if no path_fdf, get default
     if not lfdf and 'metal' in locals():
         f_fdf1 = metal+'_STRUCT_left.fdf'
         f_fdf2 = metal+'_STRUCT_rigt.fdf'
-        path_fdf_left, path_fdf_rigt = get_elec_inifile(calc, [f_fdf1, f_fdf2])
+        ### path to wdir/Models
+        if path2model:
+            #print(f"find model in {path2model}")
+            path_fdf_left = f"{path2model}/{f_fdf1}"
+            path_fdf_rigt = f"{path2model}/{f_fdf2}"
+        ### default dir in siesta module
+        else:
+            print("path to model is requisite")
+            sys.exit(102)
+        #    path_fdf_left, path_fdf_rigt = get_elec_inifile(calc, [f_fdf1, f_fdf2])
+        #    print("define path to electrode models")
+            
     
     dict_elec={'psf': path_psf, 'fdf': [path_fdf_left, path_fdf_rigt]}
     return dict_elec
 
-def model_channel(calc, channel_struct, chsize, junc_dist):
+def model_channel(calc, channel_struct, chsize, junc_dist, path2model=None):
+    '''
+    calc    to obtain default directory pathway for psf
+                      module readAtomicStructure
+    To make scattering model
+        3 or 1 fdf files
+            2 side electrode parts
+            1 scattering region
+    '''
     cwd = os.getcwd()
     simmodule = importlib.import_module(calc.__class__.__module__)
     
     ###### get fdf file: [channel, left-elect, right-elect]
     ### if only channel given, get default electrode part
-    dir_default = simmodule.default_location+'/model/channel'
+    #dir_default = simmodule.default_location+'/model/channel'
     
     lfdf = False
     lsidepart = False
@@ -130,8 +140,8 @@ def model_channel(calc, channel_struct, chsize, junc_dist):
     if not lfdf:
         ### Use default side part in scattering region
         if not lsidepart:
-            path_scatter_left = dir_default+'/elecL.fdf'
-            path_scatter_rigt = dir_default+'/elecR.fdf'
+            path_scatter_left = path2model+'/elecL.fdf'
+            path_scatter_rigt = path2model+'/elecR.fdf'
         else:
             # Code for cli input
             pass

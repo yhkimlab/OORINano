@@ -41,9 +41,9 @@ def qtNegf(calc, dict_elec, dict_model, qt_dir, inp, outp, fdf_params, np=1, det
             elif re.match('sc', f):
                 fdf_scatt = f
     #calc.set_clean()
-    calcElectrode(calc, dict_elec, qt_dir[0], np, fdf_elec = fdf_elec, show_params = show_params)
+    #calcElectrode(calc, dict_elec, qt_dir[0], np, fdf_elec = fdf_elec, show_params = show_params)
     ### 2. Scattering region calculation
-    calc.set_clean()        # to clean fdf params
+    calc = calc.__class__()
     calcScattering(calc, dict_model, qt_dir[1], inp, outp, np, fdf_scatt = fdf_scatt, show_params = show_params)
     if show_params:
         return 0
@@ -81,7 +81,7 @@ def calcElectrode(calc, el_model, elecdir, np, fdf_elec = None, show_params=Fals
             shutil.copy(fstruct, 'Input/STRUCT.fdf')
             shutil.copytree('Input', 'Run')
             os.chdir('Run')
-            #calc.read_all_fdf()     # overwrite if fdf exists
+            calc.read_all_fdf() # read all .fdf in /RUN
             calc.runNegf(np)
             print(f"Job completed in {subdir}")
             os.chdir('..')
