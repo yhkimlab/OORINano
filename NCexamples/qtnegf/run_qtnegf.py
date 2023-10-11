@@ -10,7 +10,6 @@ from nanocore.solvers.qtnegf.cellmodeling import model_electrode, model_channel
 from nanocore.solvers.qtnegf.qtplot import qtPlot
 
 def runQtNegf(job, ch_struct, ch_size, el_structs, el_size, junc_dist, in_yaml, out_yaml, fdf_params, nnode, nproc):
-
     '''
     Input Params
         ch_struct       1 fdf or 3 fdf or key-word to generate
@@ -18,7 +17,7 @@ def runQtNegf(job, ch_struct, ch_size, el_structs, el_size, junc_dist, in_yaml, 
         junc_dist       distance between channel and electrode part in consting model
         el_structs      fdf or atom name to get default
         el_size
-        fdf_params       ['el[ec].fdf', 'scat[tering].fdf'] to update default parameters
+        fdf_params       ['elec.fdf', 'scatter.fdf'] to update default parameters
     
     Variables:
         sub_dir         sub directory for qt calculation
@@ -27,8 +26,6 @@ def runQtNegf(job, ch_struct, ch_size, el_structs, el_size, junc_dist, in_yaml, 
      
         model_el        model for electrode, both elements should not be None
         model_structure   model for scattering region, both elements should not be None
-        
-    
     '''
     cwd = os.getcwd()
 
@@ -51,12 +48,12 @@ def runQtNegf(job, ch_struct, ch_size, el_structs, el_size, junc_dist, in_yaml, 
         qtNegf(calc, dict_elec, dict_channel, qt_dir, in_yaml, out_yaml,fdf_params, np=nproc, show_params=show_params)
     elif job == 'plot':         
         #qtPlot(calc, qt_dir[2], qt_dir[1])
-        qtPlot(calc, cwd, qt_dir[1], out_yaml)
+        qtPlot(calc, 'image', qt_dir[1], out_yaml)
     return 0
 
 def main():
     parser = argparse.ArgumentParser(description="run quantum transport at one time")
-    parser.add_argument('-j', '--job', default='run', choices=['run', 'model', 'params'], help='run qt, make model, check fdf')
+    parser.add_argument('-j', '--job', default='run', choices=['run', 'model', 'params', 'plot'], help='run qtnegf, make model, check fdf, postprocess only')
     parser.add_argument('-c', '--channel_struct', nargs='*', default=['grp'], help="fdf files: 1 scatter, 2 elect-region, 3 both, or auto-generation")
     parser.add_argument('-cs', '--channel_size', default=6, type=int, help='size of channel')
     gtransport = parser.add_argument_group(title='args for quantum transport for device')

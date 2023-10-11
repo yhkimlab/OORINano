@@ -186,6 +186,7 @@ class Siesta(object):
         self._req_files = {}
         self._read_default_fdf()
         self.set_necessary_files()
+        self._atoms = None
 
     def set_clean(self):
         '''
@@ -356,12 +357,13 @@ class Siesta(object):
     def read_all_fdf(self):
         fnames = copy.deepcopy(self.__class__.basic_inputs)
         fnames.extend(['TS.fdf', 'STRUCT.fdf'])
+        print(f"{fnames} in read_all_fdf")
         for fname in fnames:
             if fname in os.listdir():
                 self.read_fdf(fname)
 
     def print_fdf(self, fname):
-        
+        self.generate_fdf(fname)
         print(f"\n== {fname} params::\n")
         for line in self._inputs[fname]:
             print(f"{line.rstrip()}")
@@ -371,9 +373,8 @@ class Siesta(object):
         fname = copy.deepcopy(self.__class__.basic_inputs)
         if self.mode == 'scatter':
             fname.append('TS.fdf')
-        print(f"{fname} in print_params()")
+        
         for f in fname:
-            self.generate_fdf(f)
             self.print_fdf(f)
            
         return 0
@@ -391,16 +392,6 @@ class Siesta(object):
     def write_all_fdf(self):
         for f in self._files:
             self.write_fdf(f)
-
-    def add_fdf(self, fname):
-        '''
-        parameter input from non-standard file
-        '''
-        with open(fname, 'r') as f:
-            lines = f.readlines()
-            for line in lines:
-                kv = re.split('\s+', line.strip())
-                self.set_option(kv[0], kv[1])
                 
     def parse_fdf(self, fname):
         '''
@@ -423,37 +414,37 @@ class Siesta(object):
                 if "#" in data:
                     data = data[:data.index("#")]
                 key = data[0]
-
-                if key in dict_input[fname][0] and key not in self._block_params:
-                    value = str(' '.join(data[1:]))
-                    if value in ['T', '.true.']:
-                        dict_input[fname][1][key] = True
-                    elif value in ['F', '.false.']:
-                        dict_input[fname][1][key] = False
-                    else:
-                        dict_input[fname][1][key] = value
-                elif key == '%block':
-                    if len(data) >= 2:
-                        key = data[1]
-                    if key in dict_input[fname][0]:
-                        dict_input[fname][1][key] = True
-                        if key in ['kgrid_Monkhorst_Pack', 'PDOS.kgrid_Monkhorst_Pack']:
-                            kpt = [0, 0, 0]
-                            for j in range(len(kpt)):
-                                if len(self._inputs[fname][i+1+j].split()) > j:
-                                    num = self._inputs[fname][i+1+j].split()[j]
-                                    if num.isdecimal():
-                                        kpt[j] = int(num)
-                            self._block_params[key] = tuple(kpt)
+                for k in dict_input.keys():
+                    if key in dict_input[k][0] and key not in self._block_params:
+                        value = str(' '.join(data[1:]))
+                        if value in ['T', '.true.']:
+                            dict_input[k][1][key] = True
+                        elif value in ['F', '.false.']:
+                            dict_input[k][1][key] = False
                         else:
-                            tmp = []
-                            while not re.search(rf"%endblock", self._inputs[fname][i]):
-                                i += 1
-                                tmpline = self._inputs[fname][i].strip()
-                                tmpline += '\n'
-                                tmp.append("\t"+tmpline)
-                            del tmp[-1]
-                            self._block_params[key] = tmp
+                            dict_input[k][1][key] = value
+                    elif key == '%block':
+                        if len(data) >= 2:
+                            key = data[1]
+                        if key in dict_input[k][0]:
+                            dict_input[k][1][key] = True
+                            if key in ['kgrid_Monkhorst_Pack', 'PDOS.kgrid_Monkhorst_Pack']:
+                                kpt = [0, 0, 0]
+                                for j in range(len(kpt)):
+                                    if len(self._inputs[fname][i+1+j].split()) > j:
+                                        num = self._inputs[fname][i+1+j].split()[j]
+                                        if num.isdecimal():
+                                            kpt[j] = int(num)
+                                self._block_params[key] = tuple(kpt)
+                            else:
+                                tmp = []
+                                while not re.search(rf"%endblock", self._inputs[fname][i]):
+                                    i += 1
+                                    tmpline = self._inputs[fname][i].strip()
+                                    tmpline += '\n'
+                                    tmp.append("\t"+tmpline)
+                                del tmp[-1]
+                                self._block_params[key] = tmp
             except KeyError:
                 raise IOError('Keyword "%s" in RUN.fdf is'
                               'not known.' % key)
@@ -493,8 +484,8 @@ class Siesta(object):
                 else:
                     lines.append("%s    %s\n" %(key, val))
             if key == 'SystemLabel':
-                if hasattr(self, '_atoms'):
-                    lines.append("%include STRUCT.fdf\n")
+                #if self._atoms:    # depending on order to read 'STRUCT.fdf', it makes error
+                lines.append("%include STRUCT.fdf\n")
                 for f in self._files:
                     if f == 'RUN.fdf':
                         continue
