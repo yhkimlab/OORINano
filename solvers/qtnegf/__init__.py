@@ -40,7 +40,7 @@ def qtNegf(calc, dict_elec, dict_model, qt_dir, inp, outp, fdf_params, np=1, det
                 fdf_elec = f
             elif re.match('sc', f):
                 fdf_scatt = f
-
+    calc.set_clean()
     calcElectrode(calc, dict_elec, qt_dir[0], np, fdf_elec = fdf_elec, show_params = show_params)
     ### 2. Scattering region calculation
     calc.set_clean()        # to clean fdf params
@@ -54,9 +54,9 @@ def qtNegf(calc, dict_elec, dict_model, qt_dir, inp, outp, fdf_params, np=1, det
 
 def calcElectrode(calc, el_model, elecdir, np, fdf_elec = None, show_params=False):
     cwd = os.getcwd()
-    calc.set_mode('elec')       # reads default fdf files
+    calc.set_mode('elec')       # sets default fdf params
     if fdf_elec:
-        calc.read_fdf(fdf_elec)
+        calc.add_fdf(fdf_elec)
     if show_params:
         calc.print_fdfs()
         return 0 
@@ -144,6 +144,7 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, np, fdf_scatt = N
             shutil.copytree('../Input', 'TSHS')
         os.chdir('TSHS')
         calc.set_mode('scatter')
+        ### Overwrite input params
         if fdf_scatt:
             calc.add_fdf(f"{cwd}/{fdf_scatt}")
         if show_params:

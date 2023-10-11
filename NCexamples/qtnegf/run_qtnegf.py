@@ -49,22 +49,6 @@ def runQtNegf(job, ch_struct, ch_size, el_structs, el_size, junc_dist, in_yaml, 
         else:
             show_params = True
         qtNegf(calc, dict_elec, dict_channel, qt_dir, in_yaml, out_yaml,fdf_params, np=nproc, show_params=show_params)
-    elif job == 'paramsss':
-        print("=== Electrode Calculation ===")
-        calc.set_mode('elec')
-        if 'elec.fdf' in fdf_params:
-            calc.add_fdf('elec.fdf')
-        files = ['BASIS.fdf', 'KPT.fdf', 'RUN.fdf']
-        for f in files:
-            calc.print_fdf(f)
-        print("\n=== Scattering Calculation ===")
-        calc.set_clean()
-        calc.set_mode('scatter')
-        files.append('TS.fdf')
-        if 'scatter.fdf' in fdf_params:
-            calc.add_fdf('scatter.fdf')
-        for f in files:
-            calc.print_fdf(f)
     elif job == 'plot':         
         #qtPlot(calc, qt_dir[2], qt_dir[1])
         qtPlot(calc, cwd, qt_dir[1], out_yaml)

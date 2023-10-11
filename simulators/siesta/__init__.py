@@ -4,7 +4,7 @@ from ...ncio import  get_unique_symbs, write_xsf #cleansymb,
 from ...units import ang2bohr,  degrad, bohr2ang
 from glob import glob
 import re, sys, os
-import shutil
+import shutil, copy
 import subprocess
 import sisl
 ### inside siesta_defalut_location, psf, model/elec, model/channel exist
@@ -176,6 +176,7 @@ class Siesta(object):
     """
 
     #__slots__ = ['_params', '_atoms', '_inputs']
+    basic_inputs = ['KPT.fdf', 'BASIS.fdf', 'RUN.fdf']
 
     def __init__(self):
 
@@ -187,12 +188,17 @@ class Siesta(object):
         self.set_necessary_files()
 
     def set_clean(self):
+        '''
+        define dict variables
+        '''
         self._inputs = {}
         self._run_params = {}
         self._basis_params = {}
         self._kpt_params = {}
         self._TS_params = {}
         self._block_params = {}
+
+        ### setting _dict of keys and None-values
         for key in run_keys:
             self._run_params[key] = None
         for key in basis_keys:
@@ -255,6 +261,9 @@ class Siesta(object):
             raise ValueError("AtomsSystem is not defined in this class")
         
     def set_mode(self, mode):
+        '''
+        reads default params
+        '''
         self.mode = mode
         self._read_default_fdf()
 
@@ -315,13 +324,11 @@ class Siesta(object):
 
         if value is True and blockValue is None and key in self._block_params:
             raise IOError('trying to change block value but block value is not given')
-        print(f"{key} {value} in set_option")
         if key in self._run_params:
             self._run_params[key] = value
             if key in self._block_params:
                 self._block_params[key] = blockValue
         if key in self._basis_params:
-            print(f"{key} {value} in set_option")
             self._basis_params[key] = value
             if key in self._block_params:
                 self._block_params[key] = blockValue
@@ -334,6 +341,7 @@ class Siesta(object):
             self._TS_params[key] = value
             if key in self._block_params:
                 self._block_params[key] = blockValue
+      
             
     def read_fdf(self, filename):
         fname = filename.split(os.sep)[-1]
@@ -342,23 +350,32 @@ class Siesta(object):
             return
         with open(filename, 'r') as fd:
             lines = fd.readlines()
-        self._inputs[fname] = lines
+        self._inputs[fname] = lines     # dict of (fname, file line list)
         self.parse_fdf(fname)
 
     def read_all_fdf(self):
-        fnames = ['KPT.fdf', 'BASIS.fdf', 'RUN.fdf', 'TS.fdf', 'STRUCT.fdf']
+        fnames = copy.deepcopy(self.__class__.basic_inputs)
+        fnames.extend(['TS.fdf', 'STRUCT.fdf'])
         for fname in fnames:
             if fname in os.listdir():
                 self.read_fdf(fname)
 
+    def print_fdf(self, fname):
+        
+        print(f"\n== {fname} params::\n")
+        for line in self._inputs[fname]:
+            print(f"{line.rstrip()}")
+        return 0
+
     def print_fdfs(self):
-        fname = ['BASIS.fdf', 'KPT.fdf', 'RUN.fdf']
+        fname = copy.deepcopy(self.__class__.basic_inputs)
         if self.mode == 'scatter':
             fname.append('TS.fdf')
+        print(f"{fname} in print_params()")
         for f in fname:
-            print(f"\n== {f} params::\n")
-            for line in self._inputs[f]:
-                print(f"{line.rstrip()}")
+            self.generate_fdf(f)
+            self.print_fdf(f)
+           
         return 0
     
     def write_fdf(self, filename):
@@ -368,7 +385,7 @@ class Siesta(object):
             return
         self.generate_fdf(fname)
         fd = open(filename, 'w')
-        fd.writelines(self._inputs[fname])
+        fd.writelines(self._inputs[fname])  # it does not update
         fd.close()
 
     def write_all_fdf(self):
@@ -376,14 +393,20 @@ class Siesta(object):
             self.write_fdf(f)
 
     def add_fdf(self, fname):
+        '''
+        parameter input from non-standard file
+        '''
         with open(fname, 'r') as f:
             lines = f.readlines()
             for line in lines:
                 kv = re.split('\s+', line.strip())
                 self.set_option(kv[0], kv[1])
-                print(f"{kv[0]} : {kv[1]}")
-
+                
     def parse_fdf(self, fname):
+        '''
+        dict_input  dict(fname, (key list, value dict))
+        So complicate --> nead to modify
+        '''
         dict_input = {'KPT.fdf' : (kpt_keys,self._kpt_params) , 'BASIS.fdf' : (basis_keys,self._basis_params), 'RUN.fdf' : (run_keys,self._run_params), 'TS.fdf':(TS_keys,self._TS_params)}
         if self._inputs[fname] is None:
             raise IOError("cannot find readable fdf file")
@@ -400,45 +423,48 @@ class Siesta(object):
                 if "#" in data:
                     data = data[:data.index("#")]
                 key = data[0]
-                
-                for k, v in dict_input.items():
-                    if key in dict_input[fname][0] and key not in self._block_params:
-                        value = str(' '.join(data[1:]))
-                        if value in ['T', '.true.']:
-                            dict_input[fname][1][key] = True
-                        elif value in ['F', '.false.']:
-                            dict_input[fname][1][key] = False
+
+                if key in dict_input[fname][0] and key not in self._block_params:
+                    value = str(' '.join(data[1:]))
+                    if value in ['T', '.true.']:
+                        dict_input[fname][1][key] = True
+                    elif value in ['F', '.false.']:
+                        dict_input[fname][1][key] = False
+                    else:
+                        dict_input[fname][1][key] = value
+                elif key == '%block':
+                    if len(data) >= 2:
+                        key = data[1]
+                    if key in dict_input[fname][0]:
+                        dict_input[fname][1][key] = True
+                        if key in ['kgrid_Monkhorst_Pack', 'PDOS.kgrid_Monkhorst_Pack']:
+                            kpt = [0, 0, 0]
+                            for j in range(len(kpt)):
+                                if len(self._inputs[fname][i+1+j].split()) > j:
+                                    num = self._inputs[fname][i+1+j].split()[j]
+                                    if num.isdecimal():
+                                        kpt[j] = int(num)
+                            self._block_params[key] = tuple(kpt)
                         else:
-                            dict_input[fname][1][key] = value
-                    elif key == '%block':
-                        if len(data) >= 2:
-                            key = data[1]
-                        if key in dict_input[fname][0]:
-                            dict_input[fname][1][key] = True
-                            if key in ['kgrid_Monkhorst_Pack', 'PDOS.kgrid_Monkhorst_Pack']:
-                                kpt = [0, 0, 0]
-                                for j in range(len(kpt)):
-                                    if len(self._inputs[fname][i+1+j].split()) > j:
-                                        num = self._inputs[fname][i+1+j].split()[j]
-                                        if num.isdecimal():
-                                            kpt[j] = int(num)
-                                self._block_params[key] = tuple(kpt)
-                            else:
-                                tmp = []
-                                while not re.search(rf"%endblock", self._inputs[fname][i]):
-                                    i += 1
-                                    tmpline = self._inputs[fname][i].strip()
-                                    tmpline += '\n'
-                                    tmp.append("\t"+tmpline)
-                                del tmp[-1]
-                                self._block_params[key] = tmp
-            # except KeyError:
-            #     raise IOError('Keyword "%s" in RUN.fdf is'
-            #                   'not known.' % key)
+                            tmp = []
+                            while not re.search(rf"%endblock", self._inputs[fname][i]):
+                                i += 1
+                                tmpline = self._inputs[fname][i].strip()
+                                tmpline += '\n'
+                                tmp.append("\t"+tmpline)
+                            del tmp[-1]
+                            self._block_params[key] = tmp
+            except KeyError:
+                raise IOError('Keyword "%s" in RUN.fdf is'
+                              'not known.' % key)
             except IndexError:
                 raise IOError('Value missing for keyword "%s".' % key)
 
+
     def generate_fdf(self, fname):
+        '''
+        This should run to apply parameter modification to fdf file, 
+        '''
         dict_input = {'KPT.fdf' : self._kpt_params , 'BASIS.fdf' : self._basis_params, 'RUN.fdf' : self._run_params, 'TS.fdf' : self._TS_params}
 
         lines = []
@@ -467,7 +493,7 @@ class Siesta(object):
                 else:
                     lines.append("%s    %s\n" %(key, val))
             if key == 'SystemLabel':
-                if self._atoms:
+                if hasattr(self, '_atoms'):
                     lines.append("%include STRUCT.fdf\n")
                 for f in self._files:
                     if f == 'RUN.fdf':
@@ -634,6 +660,11 @@ class Siesta(object):
         print ("simulation information is saved as %s." % name)
 
 ###### Functional in siesta module
+def print_dicts(var):
+    for key in var.keys():
+        print(f"{key} : {var[key]}")
+
+
 ### write and read structure in fdf format
 def writeAtomicStructure(atoms, cellparameter=1.0, fname = "STRUCT.fdf"):
 
