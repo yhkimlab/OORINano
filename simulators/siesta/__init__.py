@@ -184,7 +184,7 @@ class Siesta(object):
         
         self.mode = None
         self._req_files = {}
-        self._read_default_fdf()
+        # self._read_default_fdf()
         self.set_necessary_files()
         self._atoms = None
 
@@ -198,6 +198,7 @@ class Siesta(object):
         self._kpt_params = {}
         self._TS_params = {}
         self._block_params = {}
+        self._files = []
 
         ### setting _dict of keys and None-values
         for key in run_keys:
@@ -230,27 +231,31 @@ class Siesta(object):
         import inspect
         import nanocore
         if not self.mode:
-            self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf', 'KPT.fdf']
+            self._files.extend(self.__class__.basic_inputs)
+            self._files.append('TS.fdf')
             rpath = ['simulators', 'siesta', 'siesta_default']
         elif self.mode == 'siesta':
-            self._files = ['RUN.fdf', 'BASIS.fdf', 'KPT.fdf']
+            self._files.extend(self.__class__.basic_inputs)
             rpath = ['simulators', 'siesta', 'siesta_default']
         elif self.mode == 'elec':
-            self._files = ['RUN.fdf', 'BASIS.fdf', 'KPT.fdf']
+            self._files.extend(self.__class__.basic_inputs)
             rpath = ['simulators', 'siesta', 'siesta_default', 'transmission', 'elec']
         elif self.mode == 'scatter':
-            self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf','KPT.fdf']
+            self._files.extend(self.__class__.basic_inputs)
+            self._files.append('TS.fdf')
+            print(f"{self.__class__.basic_inputs}")
             rpath = ['simulators', 'siesta', 'siesta_default', 'transmission', 'scatter']
         elif self.mode == 'tbtrans':
-            self._files = ['RUN.fdf', 'BASIS.fdf', 'TS.fdf', 'KPT.fdf']
+            self._files.extend(self.__class__.basic_inputs)
+            self._files.append('TS.fdf')
             rpath = ['simulators', 'siesta', 'siesta_default', 'transmission', 'scatter']
         else:
             raise ValueError("mode not supported")
         module_path = inspect.getfile(nanocore)
-        #print(module_path)
+        #print(f"{self._files}")
         default_path = os.sep.join(module_path.split(os.sep)[:-1]+rpath)
         for f in self._files:
-            print(f"read {f} in _read_default_fdf")
+            #print(f"read {f} in _read_default_fdf")
             self.read_fdf(default_path + os.sep + f)
 
     def set_atoms(self, atom: AtomsSystem):
@@ -362,7 +367,7 @@ class Siesta(object):
         for fname in fnames:
             if fname in os.listdir():
                 self.read_fdf(fname)
-                print(f"read {fname} in read_all_fdf")
+                #print(f"read {fname} in read_all_fdf")
 
     def print_fdf(self, fname):
         self.generate_fdf(fname)
@@ -404,13 +409,19 @@ class Siesta(object):
         if self._inputs[fname] is None:
             raise IOError("cannot find readable fdf file")
         
-        for i, line in enumerate(self._inputs[fname]):
+        lines = self._inputs[fname]
+        
+        i = 0
+        while i < len(lines):
             try:
+                line = lines[i]
                 line = line.replace("#", "# ")
                 data = line.split()
                 if len(data) == 0:
+                    i += 1
                     continue
                 elif data[0][0] in ['#', '!']:
+                    i += 1
                     continue
 
                 if "#" in data:
@@ -427,17 +438,19 @@ class Siesta(object):
                             dict_input[k][1][key] = value
                     elif key == '%block':
                         if len(data) >= 2:
-                            key = data[1]
-                        if key in dict_input[k][0]:
-                            dict_input[k][1][key] = True
-                            if key in ['kgrid_Monkhorst_Pack', 'PDOS.kgrid_Monkhorst_Pack']:
+                            key2 = data[1]
+                        else:
+                            continue
+                        if key2 in dict_input[k][0]:
+                            dict_input[k][1][key2] = True
+                            if key2 in ['kgrid_Monkhorst_Pack', 'PDOS.kgrid_Monkhorst_Pack']:
                                 kpt = [0, 0, 0]
                                 for j in range(len(kpt)):
                                     if len(self._inputs[fname][i+1+j].split()) > j:
                                         num = self._inputs[fname][i+1+j].split()[j]
                                         if num.isdecimal():
                                             kpt[j] = int(num)
-                                self._block_params[key] = tuple(kpt)
+                                self._block_params[key2] = tuple(kpt)
                             else:
                                 tmp = []
                                 while not re.search(rf"%endblock", self._inputs[fname][i]):
@@ -446,7 +459,8 @@ class Siesta(object):
                                     tmpline += '\n'
                                     tmp.append("\t"+tmpline)
                                 del tmp[-1]
-                                self._block_params[key] = tmp
+                                self._block_params[key2] = tmp
+                i += 1
             except KeyError:
                 raise IOError('Keyword "%s" in RUN.fdf is'
                               'not known.' % key)
@@ -496,7 +510,7 @@ class Siesta(object):
         self._inputs[fname] = lines
         return lines
 
-    def runNegf(self, nproc, **option):
+    def runQtNegf(self, nproc, **option):
 
         """
         Run a quantum transport simulation based on the information saved in this simulation object

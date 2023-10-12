@@ -56,7 +56,7 @@ def runQtNegf(job, ch_struct, ch_size, el_structs, el_size, junc_dist, in_yaml, 
 def main():
     cwd = os.getcwd()
     parser = argparse.ArgumentParser(description="run quantum transport at one time")
-    parser.add_argument('-j', '--job', default='run', choices=['run', 'model', 'params', 'plot'], help='run qtnegf, make model, check fdf, postprocess only')
+    parser.add_argument('-j', '--job', default='run', choices=['run', 'model', 'params', 'plot'], help='run qtnegf, make model, check fdf, postprocess only in case "elec", "channel" exist')
     parser.add_argument('-c', '--channel_struct', nargs='*', default=['grp'], help="fdf files: 1 scatter, 2 elect-region, 3 both, or auto-generation")
     parser.add_argument('-cs', '--channel_size', default=6, type=int, help='size of channel')
     parser.add_argument('-mp', '--model_path', default=f'{cwd}/Models', help='if not making models, provide model file path or models')
@@ -66,7 +66,7 @@ def main():
     gtransport.add_argument('-jd', '--junc_dist', default=1.96, type=float, help='distance between electrode & channel')
     gtransport.add_argument('-inpf', '--inp_file', default='input.yaml', help='fname for qt calculation')
     gtransport.add_argument('-outf', '--out_file', default='output.yaml', help='output of qt calculation and input for postprocess')
-    gtransport.add_argument('-p', '--params', nargs='*', help='["elec.fdf", "scatt.fdf"] for electrode, scatt calculation parameter updates')
+    gtransport.add_argument('-p', '--params', nargs='*', help='["param_elec.fdf", "param_scat.fdf"] for electrode, scatt calculation parameter updates')
     gprocess = parser.add_argument_group(title='process related arguments')
     gprocess.add_argument("-np", "--nproc",  type=int, default=1, help='number of nprocess')
     gprocess.add_argument("-n", "--nnode",  type=int, default=1, help='number of Nodes')
@@ -81,15 +81,17 @@ def main():
             \n\t    python run_qtnegf.py -m scatt_struct -ms model_size -e elec_struct -es elec_size -jd junc_dist -n nnodes -np nproc\
             \n\t    e.g.:\
             \n\t\t python run_qtnegf.py -j run -c grp -cs 6 -e Au -jd 1.9 -np 20\
+            \n\t\t python run_qtnegf.py -np 20\
             \n\t\t python run_qtnegf.py -j model -c grp -cs 6 -e Au -jd 1.9\
             \n\t\t python run_qtnegf.py -j params -p elec.fdf\
+            \n\t  * before run '-j run', make clean to delete output subdirectories\
             \n\t    Options:\
             \n\t\t-j    [run (all calculation)|model (print model at workdir)| params (show fdf parameters)]\
             \n\t\t-c   atoms in scattering model\
             \n\t\t-cs   fdf scattering structure: 1 for channel, 2 for parts of electrode\
             \n\t\t-e   one atom for electrode\
             \n\t\t-es   fdf 2 electrode structure for left & right\
-            \n\t\t-p   input parameters in 'elec.fdf', 'scatter.fdf' in wdir\
+            \n\t\t-p   input parameters in 'param_elec.fdf', 'param_scat.fdf' in wdir\
 			")
         sys.exit(0)
     

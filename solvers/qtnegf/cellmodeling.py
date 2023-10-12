@@ -88,14 +88,18 @@ def model_electrode(calc, el_struct, el_size, path2model=None):
             #print(f"find model in {path2model}")
             path_fdf_left = f"{path2model}/{f_fdf1}"
             path_fdf_rigt = f"{path2model}/{f_fdf2}"
-        ### default dir in siesta module
+            if not os.path.exists(path_fdf_left) or not os.path.exists(path_fdf_rigt):
+                print("files does not exist")
+                sys.exit(103)
+            ###  default dir in siesta module
+            #path_fdf_left, path_fdf_rigt = get_elec_inifile(calc, [f_fdf1, f_fdf2])
+            #print("define path to electrode models")
+
+        ### Generation Codes are required 
         else:
             print("path to model is requisite")
             sys.exit(102)
-        #    path_fdf_left, path_fdf_rigt = get_elec_inifile(calc, [f_fdf1, f_fdf2])
-        #    print("define path to electrode models")
-            
-    
+   
     dict_elec={'psf': path_psf, 'fdf': [path_fdf_left, path_fdf_rigt]}
     return dict_elec
 
@@ -136,14 +140,17 @@ def model_channel(calc, channel_struct, chsize, junc_dist, path2model=None):
         print("Only one input fdf for scattering region is required for now")
         sys.exit(111)
 
-    ### Generate channel model
+    ### Generate complete cell for channel
     if not lfdf:
         ### Use default side part in scattering region
         if not lsidepart:
             path_scatter_left = path2model+'/elecL.fdf'
             path_scatter_rigt = path2model+'/elecR.fdf'
+            if not os.path.exists(path_scatter_left) or not os.path.exists(path_scatter_rigt):
+                print(f"Can't find electrode parts for making channel model {path_scatter_rigt}")
+                sys.exit(112)
         else:
-            # Code for cli input
+            ### Codes for generation (electrode parts for channel) are required
             pass
 
         elecL = simmodule.readAtomicStructure(path_scatter_left)
@@ -164,15 +171,7 @@ def model_channel(calc, channel_struct, chsize, junc_dist, path2model=None):
         f_psf = at+'.psf'
         path_psf = simmodule.default_location+f'/psf/{f_psf}'
         path_pp.append(path_psf)
-    
-    '''
-    if job == 'model':
-        print(f"copy {path_fdf_left} to {cwd}")
-        shutil.copy(path_fdf_left, cwd)
-        shutil.copy(path_fdf_rigt, cwd)
-        return 0
-    '''
-    
+
     dict_scatter={'psf': path_pp, 'fdf': path_fdf }
 
     return dict_scatter

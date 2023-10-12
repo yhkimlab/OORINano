@@ -7,7 +7,7 @@
         {
             "name": "Python: Current File",
             "type": "python",
-            "args": ["-j", "run","-np","20"],
+            "args": ["-j", "params","-np","20"],
             "request": "launch",
             "program": "${file}",
             "cwd": "${fileDirname}",

@@ -36,13 +36,13 @@ def qtNegf(calc, dict_elec, dict_model, qt_dir, inp, outp, fdf_params, np=1, det
     fdf_scatt   = None
     if fdf_params:
         for f in fdf_params:
-            if re.match('el', f):
+            if re.search('el', f):
                 fdf_elec = f
-            elif re.match('sc', f):
+            elif re.search('sc', f):
                 fdf_scatt = f
-    #calc.set_clean()
-    #calcElectrode(calc, dict_elec, qt_dir[0], np, fdf_elec = fdf_elec, show_params = show_params)
+    calcElectrode(calc, dict_elec, qt_dir[0], np, fdf_elec = fdf_elec, show_params = show_params)
     ### 2. Scattering region calculation
+    ### need to initialize Siesta instance to make data default
     calc = calc.__class__()
     calcScattering(calc, dict_model, qt_dir[1], inp, outp, np, fdf_scatt = fdf_scatt, show_params = show_params)
     if show_params:
@@ -58,34 +58,40 @@ def calcElectrode(calc, el_model, elecdir, np, fdf_elec = None, show_params=Fals
     if fdf_elec:
         calc.read_fdf(fdf_elec)
     if show_params:
+        print("=== Params for Electrode Calculation ===")
         calc.print_fdfs()
         return 0 
     ### Make main subdirectory for electrode calculation
     if not os.path.exists(elecdir):
         os.mkdir(elecdir)
         print(f"{elecdir} was generated")
-        os.chdir(elecdir)
-        ### two calculations for left and right electrode
-        ### make two subdirectories inside elec subdir
-        sub_dirs=[]
-        f_psf = re.split('/', el_model['psf'])[-1]
-        metal = os.path.splitext(f_psf)[0]
-        sub_dirs.append(metal+'_left')
-        sub_dirs.append(metal+'_rigt')
-                
-        for subdir, fstruct in zip(sub_dirs, el_model['fdf']):
+    os.chdir(elecdir)
+    ### two calculations for left and right electrode
+    ### make two subdirectories inside elec subdir
+    sub_dirs=[]
+    f_psf = re.split('/', el_model['psf'])[-1]
+    metal = os.path.splitext(f_psf)[0]
+    sub_dirs.append(metal+'_left')
+    sub_dirs.append(metal+'_rigt')
+            
+    for subdir, fstruct in zip(sub_dirs, el_model['fdf']):
+        if not os.path.exists(subdir):
             os.mkdir(subdir)
-            os.chdir(subdir)
+        os.chdir(subdir)
+        if not os.path.exists('Input'):
             os.mkdir('Input')
-            shutil.copy(el_model['psf'], 'Input')
-            shutil.copy(fstruct, 'Input/STRUCT.fdf')
-            shutil.copytree('Input', 'Run')
-            os.chdir('Run')
-            calc.read_all_fdf() # read all .fdf in /RUN
-            calc.runNegf(np)
+        shutil.copy(el_model['psf'], 'Input')
+        shutil.copy(fstruct, 'Input/STRUCT.fdf')
+        shutil.copytree('Input', 'Run')
+        os.chdir('Run')
+        cwdr = os.getcwd()
+        check_fname = f'{cwdr}/MESSAGES'
+        calc.read_all_fdf() # read all .fdf in /RUN
+        if (not os.path.isfile(check_fname)) or (not check_file(check_fname, job_complete)):
+            calc.runQtNegf(np)
             print(f"Job completed in {subdir}")
-            os.chdir('..')
-            os.chdir('..')
+        os.chdir('..')
+        os.chdir('..')
     os.chdir(cwd)
     return 0
 
@@ -148,13 +154,14 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, np, fdf_scatt = N
         if fdf_scatt:
             calc.read_fdf(f"{cwd}/{fdf_scatt}")
         if show_params:
+            print("=== Params for Scattering Calculation ===")
             calc.print_fdfs()
             return 0
         calc.set_option('TS.Elecs.Neglect.Principal', True)
         check_fname = f'{cwdv}/TSHS/MESSAGES'
         
         if (not os.path.isfile(check_fname)) or (not check_file(check_fname, job_complete)):
-            calc.runNegf(np, **yoption)
+            calc.runQtNegf(np, **yoption)
         yoption['scatter'] = os.getcwd()
         os.chdir(cwdv)
 
@@ -165,7 +172,7 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, np, fdf_scatt = N
             calc.read_all_fdf()
             calc.set_option('kgrid_Monkhorst_Pack', True, (12,1,1))
             calc.set_option('TS.Elecs.Neglect.Principal', True)
-            calc.runNegf(np, **yoption)
+            calc.runQtNegf(np, **yoption)
             yoption['tbtrans'] = os.getcwd()
         os.chdir(cwds)
         ### write to yaml
