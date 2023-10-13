@@ -105,7 +105,6 @@ def calcScattering(calc, dict_model, scatter_dir, finp, foutp, np, fdf_scatt = N
     cwd = os.getcwd()
     if not os.path.exists(scatter_dir):
         os.mkdir(scatter_dir)
-        print(f"{scatter_dir} was generated")
     os.chdir(scatter_dir)
     ###### cwds: Scattering subdirectory
     cwds = os.getcwd()

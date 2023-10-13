@@ -243,7 +243,6 @@ class Siesta(object):
         elif self.mode == 'scatter':
             self._files.extend(self.__class__.basic_inputs)
             self._files.append('TS.fdf')
-            print(f"{self.__class__.basic_inputs}")
             rpath = ['simulators', 'siesta', 'siesta_default', 'transmission', 'scatter']
         elif self.mode == 'tbtrans':
             self._files.extend(self.__class__.basic_inputs)
@@ -539,7 +538,6 @@ class Siesta(object):
         from ...aux.env import siesta_util_tbtrans as tbtrans
 
         def set_transiesta_option(**opt):
-            print(f"{self.get_options('TS.Elec.Left')}")
             _, left_elec = self.get_options('TS.Elec.Left')
             _, right_elec = self.get_options('TS.Elec.Right')
             for i, line in enumerate(left_elec):
