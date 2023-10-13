@@ -1,0 +1,8 @@
+PAO.EnergyShift   250 meV
+
+%block kgrid_Monkhorst_Pack
+   8   0   0   0.0
+   0   1   0   0.0
+   0   0   50   0.0
+%endblock kgrid_Monkhorst_Pack
+

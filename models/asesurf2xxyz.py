@@ -1,6 +1,6 @@
 import ase.lattice.surface as AS
 import ase.spacegroup as AP
-from nanocore import *
+from .. import *
 
 def asesurf2xxyz(symb, lattice, index, size=(1,1,3), vac=15.0, orthogonal=0):
     """
