@@ -1,4 +1,4 @@
-from nanocore import *
+from oorinano import *
 
 # read structures from external files
 mos2 = io.read_xsf('2H.xsf')    # 2d pbc on xz plane

@@ -24,10 +24,10 @@ options:
     -e   one atom for electrode            
     -es   fdf 2 electrode structure for left & right
 E.G.::
+    "$make clean" before run python to remove subdirectories
     $ python run_qtnegf.py -j run   -c grp -cs 6 -e Au -jd 1.9 -np 20
     $ python run_qtnegf.py -j model -c grp -cs 6 -e Au -jd 1.9
     $ python run_qtnegf.py -j params -p Test_params/elec.fdf
-    - before run python with -j run, make clean to remove subdirectories
 
 ###### Working procedure
 1. make models for electrode and scattering region (model)

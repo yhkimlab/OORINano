@@ -2,12 +2,12 @@ import os, shutil
 import argparse
 import sys
 import time
-from nanocore.aux import convert_time2human as time_convert
+from oorinano.aux import convert_time2human as time_convert
 
-from nanocore.simulators.siesta import Siesta
-from nanocore.solvers.qtnegf import qtNegf
-from nanocore.solvers.qtnegf.cellmodeling import model_electrode, model_channel
-from nanocore.solvers.qtnegf.qtplot import qtPlot
+from oorinano.simulators.siesta import Siesta
+from oorinano.solvers.qtnegf import qtNegf
+from oorinano.solvers.qtnegf.cellmodeling import model_electrode, model_channel
+from oorinano.solvers.qtnegf.qtplot import qtPlot
 
 def runQtNegf(job, ch_struct, ch_size, el_structs, el_size, junc_dist, in_yaml, out_yaml, fdf_params, model_path, nnode, nproc):
     '''

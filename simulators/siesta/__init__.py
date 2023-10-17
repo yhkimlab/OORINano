@@ -229,7 +229,7 @@ class Siesta(object):
 
     def _read_default_fdf(self):
         import inspect
-        import nanocore
+        import oorinano
         if not self.mode:
             self._files.extend(self.__class__.basic_inputs)
             self._files.append('TS.fdf')
@@ -250,7 +250,7 @@ class Siesta(object):
             rpath = ['simulators', 'siesta', 'siesta_default', 'transmission', 'scatter']
         else:
             raise ValueError("mode not supported")
-        module_path = inspect.getfile(nanocore)
+        module_path = inspect.getfile(oorinano)
         #print(f"{self._files}")
         default_path = os.sep.join(module_path.split(os.sep)[:-1]+rpath)
         for f in self._files:

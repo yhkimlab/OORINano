@@ -1,5 +1,5 @@
 from __future__ import print_function
-from nanocore import *
+from oorinano import *
 import numpy as np
 from .trans_io import DM
 from . import trans_io as m_io

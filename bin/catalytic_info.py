@@ -1,13 +1,13 @@
-import nanocore as nc
+import oorinano as oori
 import argparse
 
 def post_process(job, inf, opt):
     if job == 'pdos':
-        nc.vasp.pdos_orbital_analysis(fname=inf, orbitals=opt)
+        oori.vasp.pdos_orbital_analysis(fname=inf, orbitals=opt)
     elif job == 'split':
-        at = nc.vasp.read_poscar(inf)       # in doscar_split.py
+        at = oori.vasp.read_poscar(inf)       # in doscar_split.py
         n_at = len(at)
-        nc.vasp.pdos_split_sum(sum_list=[i for i in range(n_at)])
+        oori.vasp.pdos_split_sum(sum_list=[i for i in range(n_at)])
     return 0
 
 def main():
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
 '''
 doscar_split.py
-at = nc.vasp.read_poscar('POSCAR')
+at = oori.vasp.read_poscar('POSCAR')
 n_at = len(at)
-nc.vasp.pdos_split_sum(sum_list=[i for i in range(n_at)])
+oori.vasp.pdos_split_sum(sum_list=[i for i in range(n_at)])
 '''

@@ -1,7 +1,7 @@
 #!/usr/bin/env python 
-from nanocore import *
-from nanocore.simulators import siesta as s2
-from nanocore.aux import vis
+from oorinano import *
+from oorinano.simulators import siesta as s2
+from oorinano.aux import vis
 
 def fdf2xcrysden(fdf_name):
     at = s2.readAtomicStructure(fdf_name)

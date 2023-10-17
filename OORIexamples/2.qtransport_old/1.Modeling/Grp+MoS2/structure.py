@@ -1,11 +1,11 @@
 import os, sys
 import copy
 import numpy as np
-import nanocore as nc
-from nanocore import siesta as s2
+import oorinano as oori
+from oorinano import siesta as s2
 from time import sleep
 
-from nanocore.atoms import AtomsSystem, Vector
+from oorinano.atoms import AtomsSystem, Vector
 
 option = 'A'  # ABABA
 delta = [2.88, 3.269] # interlayer, G-TMDC
@@ -70,8 +70,8 @@ if __name__ =='__main__':
 
     ec = elec2.get_cell()
     mc = modelA.get_cell()
-    elec_cell = nc.io.convert_xyz2abc(ec[0], ec[1], ec[2])
-    model_cell = nc.io.convert_xyz2abc(mc[0], mc[1], mc[2])
+    elec_cell = oori.ncio.convert_xyz2abc(ec[0], ec[1], ec[2])
+    model_cell = oori.ncio.convert_xyz2abc(mc[0], mc[1], mc[2])
     ratio = elec_cell[0] / model_cell[0]
     modelA2 = modelA.adjust_cell_size(ratio, 4)
     modelB2 = modelB.adjust_cell_size(ratio, 4)
@@ -99,7 +99,7 @@ if __name__ =='__main__':
     new = new + elec2
 
     if gate == True:
-        Au = nc.atoms.Atom('Au', Vector(0,0,new.get_zmax() + 11.53))
+        Au = oori.atoms.Atom('Au', Vector(0,0,new.get_zmax() + 11.53))
         Au_slab = AtomsSystem([Au], elec.get_cell())
         Au_slab = Au_slab * (m1, m1, 1)
         new = new + Au_slab

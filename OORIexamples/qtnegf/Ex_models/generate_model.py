@@ -1,8 +1,7 @@
-import nanocore as nc
-from nanocore.models import carbonlab
-from nanocore.simulators.siesta import Siesta, readAtomicStructure, writeAtomicStructure
-from nanocore.simulators.siesta import default_location
-from nanocore.aux import convert_xyz2abc
+from oorinano.models import carbonlab
+from oorinano.simulators.siesta import Siesta, readAtomicStructure, writeAtomicStructure
+from oorinano.simulators.siesta import default_location
+from oorinano.aux import convert_xyz2abc
 import argparse
 
 parser = argparse.ArgumentParser()

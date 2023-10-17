@@ -6,7 +6,7 @@ from . import m_io
 from .trans_io import DM
 from . import transmission as m_t
 from .unit import *
-from nanocore import *
+from oorinano import *
 
 
 #

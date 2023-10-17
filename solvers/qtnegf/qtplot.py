@@ -3,7 +3,7 @@ import numpy as np
 import yaml
 
 import matplotlib.pyplot as plt
-from nanocore.simulators import siesta as s2
+from ...simulators import siesta as s2
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import importlib
 

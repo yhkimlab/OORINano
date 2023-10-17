@@ -17,7 +17,7 @@ logfile=$log_dir/$jobname.log
 outfile=$log_dir/$jobname.out
 
 ### set env file here
-ncpackage=$HOME/NanoCore/nanocore/
+ncpackage=$HOME/NanoCore/oorinano/
 env_dir=$ncpackage/etc
 rm $env_dir/env.py
 ln -s $env_dir/env_kisti.py env.py

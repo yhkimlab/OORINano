@@ -31,7 +31,7 @@ siesta_dir = '/home2/littleyu/opt/siesta-v4.1-b4'
 siesta_calculator = siesta_dir + '/Obj/siesta'
 
 ### Default siesta location
-siesta_default_location='/home/joonho/pymod/nanocore/simulators/siesta/siesta_default'
+siesta_default_location='/home/joonho/pymod/oorinano/simulators/siesta/siesta_default'
 ### psf, fdf locates under default siesta locationunder with subdirectories of /psf, /model/elec, /model/channel
 #siesta_psf_location = siesta_default_location + '/psf'
 

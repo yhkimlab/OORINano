@@ -323,7 +323,7 @@ class Vasp(object):
         p = self._params
         
         #if p['SERVER'] == 'kisti':
-        #    from nanocore.env.env_kisti import vasp_calculator as executable
+        #    from oorinano.env.env_kisti import vasp_calculator as executable
         #else:
         from ...aux.env import vasp_calculator as executable
 
@@ -400,7 +400,7 @@ class Vasp(object):
         """
         Example:
         --------
-        from nanocore import vasp    
+        from oorinano import vasp    
         ZPE, TS = vasp.get_vibration_energy(Temp=300)
         """
         
@@ -438,7 +438,7 @@ class Vasp(object):
         """
         Example:
         --------
-        from nanocore import ncio       
+        from oorinano import ncio       
         at = readAtomicStructure('POSCAR')
         at2 = vasp2.Vasp(at)
         at2.get_vibration_specctrum(output_name='OUTCAR_imag', matplot=1, start=-2000, end=6000)

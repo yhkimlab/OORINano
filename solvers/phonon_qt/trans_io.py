@@ -1,6 +1,6 @@
 import numpy as np
-from nanocore import *
-from nanocore.atoms import Vector
+from oorinano import *
+from oorinano.atoms import Vector
 
 
 #
