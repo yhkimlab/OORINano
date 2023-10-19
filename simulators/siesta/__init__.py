@@ -214,7 +214,9 @@ class Siesta(object):
         
 
     def set_necessary_files(self):
-        self._req_files['cwd'] = sys.path[0]
+        self._req_files['cwd_py'] = sys.path[0]   # this is for python script location
+        self._req_files['cwd'] = os.getcwd()    # this is for job submit location
+        
         dir_all = os.listdir(os.getcwd())
         dir_pp = [os.getcwd()+os.sep+f for f in dir_all if os.path.splitext(f)[-1] == '.psf']
         self._req_files['pp'] = dir_pp
@@ -585,7 +587,7 @@ class Siesta(object):
 
         def set_result_files(**opt):
             cwd = self._req_files['cwd'] + os.sep
-            #print(f"in set_result_files cwd {cwd}")
+            print(f"in set_result_files cwd {cwd}")
             if self.mode == 'scatter':
                 keys = ['elecL', 'elecR']
                 for k in keys:

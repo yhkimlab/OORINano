@@ -82,7 +82,9 @@ def calcElectrode(calc, el_model, elecdir, np, fdf_elec = None, show_params=Fals
             os.mkdir('Input')
         shutil.copy(el_model['psf'], 'Input')
         shutil.copy(fstruct, 'Input/STRUCT.fdf')
-        shutil.copytree('Input', 'Run')
+        if not os.path.exists('Run'):           # to skip elec calculation
+            shutil.copytree('Input', 'Run')
+        
         os.chdir('Run')
         cwdr = os.getcwd()
         check_fname = f'{cwdr}/MESSAGES'
