@@ -89,9 +89,9 @@ def main():
             \n\t\t    * Before run, '$make clean' to delete output subdirectories\
             \n\t\tOptions:\
             \n\t\t    -j    [run (all calculation)|model (print model at workdir)| params (show fdf parameters)]\
-            \n\t\t    -c   atoms in scattering model\
-            \n\t\t    -cs   fdf scattering structure: 1 for channel, 2 for parts of electrode\
-            \n\t\t    -e   Au| Au.psf| left.fdf right.fdf\
+            \n\t\t    -c    keyword such as 'grp' or 1 fdf scattering structure and/or psf files\
+            \n\t\t    -cs   size of 'grp' in case -c 'grp'\
+            \n\t\t    -e   Au| Au.psf and/or left.fdf right.fdf\
             \n\t\t    -p   input parameters in 'param_elec.fdf', 'param_scat.fdf' in wdir\
             \n\t    Job scheduler: slurm\
             \n\t\tsbatch -J test -p X1 -N 8 -n 64 slm_qtnegf.sh     # running in main directory\
@@ -101,7 +101,7 @@ def main():
             \n\t\t    -p    partition\
             \n\t\t    -N    number of nodes\
             \n\t\t    -n    number of total process\
-            \n\t\t    * Modify python argument inside 'slm_siesta.sh'\
+            \n\t\t    * Modify python argument inside 'slm_qtnegf.sh'\
 			")
         sys.exit(0)
     
