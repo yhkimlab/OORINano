@@ -1,5 +1,5 @@
 cp:
-	cp -r Models Makefile readme.txt run_qtnegf.py input.yaml *fdf /home/joonho/pymod/nanocore/NCexamples/qtnegf
+	cp -r Makefile readme.txt run_qtnegf.py input.yaml slm_qtnegf.sh /home/joonho/pymod/oorinano/OORIexamples/qtnegf
 
 clean:
-	rm -r *elec* *chann* *post* *fdf *tcl
+	rm -r *elec* *chann* *post* *fdf *tcl *.o *.e *.out

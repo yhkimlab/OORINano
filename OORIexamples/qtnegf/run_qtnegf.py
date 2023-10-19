@@ -68,6 +68,7 @@ def main():
     gtransport.add_argument('-outf', '--out_file', default='output.yaml', help='output of qt calculation and input for postprocess')
     gtransport.add_argument('-p', '--params', nargs='*', help='["param_elec.fdf", "param_scat.fdf"] for electrode, scatt calculation parameter updates')
     gprocess = parser.add_argument_group(title='process related arguments')
+    gprocess.add_argument("-x", "--partition",  type=int, default=1, help='partition number')
     gprocess.add_argument("-np", "--nproc",  type=int, default=1, help='number of nprocess')
     gprocess.add_argument("-n", "--nnode",  type=int, default=1, help='number of Nodes')
     parser.add_argument('-u', '--usage', action='store_true', help='usage for run_qt')
@@ -78,20 +79,28 @@ def main():
             \n\tThis is how to run quantum transport\
 			\n\tCheck 'readme.txt' for detail\
 			\n\tRun:\
-            \n\t    python run_qtnegf.py -m scatt_struct -ms model_size -e elec_struct -es elec_size -jd junc_dist -n nnodes -np nproc\
-            \n\t    e.g.:\
-            \n\t\t python run_qtnegf.py -j run -c grp -cs 6 -e Au -jd 1.9 -np 20\
-            \n\t\t python run_qtnegf.py -np 20\
-            \n\t\t python run_qtnegf.py -j model -c grp -cs 6 -e Au -jd 1.9\
-            \n\t\t python run_qtnegf.py -j params -p elec.fdf\
-            \n\t  * before run '-j run', make clean to delete output subdirectories\
-            \n\t    Options:\
-            \n\t\t-j    [run (all calculation)|model (print model at workdir)| params (show fdf parameters)]\
-            \n\t\t-c   atoms in scattering model\
-            \n\t\t-cs   fdf scattering structure: 1 for channel, 2 for parts of electrode\
-            \n\t\t-e   one atom for electrode\
-            \n\t\t-es   fdf 2 electrode structure for left & right\
-            \n\t\t-p   input parameters in 'param_elec.fdf', 'param_scat.fdf' in wdir\
+            \n\t    Direct run\
+            \n\t\tpython run_qtnegf.py -m scatt_struct -ms model_size -e elec_struct -es elec_size -jd junc_dist -n nnodes -np nproc\
+            \n\t\te.g.:\
+            \n\t\t    python run_qtnegf.py -j run -c grp -cs 6 -e Au -jd 1.9 -np 20\
+            \n\t\t    python run_qtnegf.py -np 20\
+            \n\t\t    python run_qtnegf.py -j model -c grp -cs 6 -e Au -jd 1.9\
+            \n\t\t    python run_qtnegf.py -j params -p elec.fdf\
+            \n\t\t    * Before run, '$make clean' to delete output subdirectories\
+            \n\t\tOptions:\
+            \n\t\t    -j    [run (all calculation)|model (print model at workdir)| params (show fdf parameters)]\
+            \n\t\t    -c   atoms in scattering model\
+            \n\t\t    -cs   fdf scattering structure: 1 for channel, 2 for parts of electrode\
+            \n\t\t    -e   one atom for electrode\
+            \n\t\t    -es   fdf 2 electrode structure for left & right\
+            \n\t\t    -p   input parameters in 'param_elec.fdf', 'param_scat.fdf' in wdir\
+            \n\t    Job scheduler: slurm\
+            \n\t\tsbatch -J slmtest -p X1 -N 8 -n 64 slm_siesta.sh\
+            \n\t\tOptions for sbatch:\
+            \n\t\t    -p    partition\
+            \n\t\t    -N    number of nodes\
+            \n\t\t    -n    number of total process\
+            \n\t\t    * Modify python argument inside 'slm_siesta.sh'\
 			")
         sys.exit(0)
     
@@ -101,7 +110,7 @@ def main():
     runQtNegf(args.job, args.channel_struct, args.channel_size, args.elec_struct, args.elec_size, args.junc_dist, args.inp_file, args.out_file, args.params, args.model_path, args.nnode, args.nproc)
 
     end  = int(time.time())
-    fname = f"lapsetime{args.nproc}.dat"
+    fname = f"lapsetimeX{args.partition}np{args.nproc}.dat"
     lapse = end - start
     time_str = time_convert(lapse)
     with open(fname, 'w') as f:
