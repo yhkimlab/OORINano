@@ -9,7 +9,7 @@ from oorinano.solvers.qtnegf import qtNegf
 from oorinano.solvers.qtnegf.cellmodeling import model_electrode, model_channel
 from oorinano.solvers.qtnegf.qtplot import qtPlot
 
-def runQtNegf(job, ch_struct, ch_size, el_structs, el_size, junc_dist, in_yaml, out_yaml, fdf_params, model_path, nnode, nproc):
+def runQtNegf(job, ch_struct, ch_size, el_structs, junc_dist, in_yaml, out_yaml, fdf_params, model_path, nnode, nproc):
     '''
     Input Params
         ch_struct       1 fdf or 3 fdf or key-word to generate
@@ -35,7 +35,7 @@ def runQtNegf(job, ch_struct, ch_size, el_structs, el_size, junc_dist, in_yaml, 
     ### 1 Make models
     model_el_path = model_path + '/elec'
     model_ch_path = model_path + '/channel'
-    dict_elec = model_electrode(calc, el_structs, el_size, path2model=model_el_path)
+    dict_elec = model_electrode(calc, el_structs, path2model=model_el_path)
     dict_channel = model_channel(calc, ch_struct, ch_size, junc_dist, path2model=model_ch_path)
 
     ### 2 Jobs: 
@@ -62,13 +62,13 @@ def main():
     parser.add_argument('-mp', '--model_path', default=f'{cwd}/Models', help='if not making models, provide model file path or models')
     gtransport = parser.add_argument_group(title='args for quantum transport for device')
     gtransport.add_argument('-e', '--elec_struct', nargs='*', default=['Au'], help="[one atom to bring fdf|two fdf for right and left]")
-    gtransport.add_argument('-es', '--elec_size', help="to design the size of electrode")
+    #gtransport.add_argument('-es', '--elec_size', help="to design the size of electrode")
     gtransport.add_argument('-jd', '--junc_dist', default=1.96, type=float, help='distance between electrode & channel')
     gtransport.add_argument('-inpf', '--inp_file', default='input.yaml', help='fname for qt calculation')
     gtransport.add_argument('-outf', '--out_file', default='output.yaml', help='output of qt calculation and input for postprocess')
     gtransport.add_argument('-p', '--params', nargs='*', help='["param_elec.fdf", "param_scat.fdf"] for electrode, scatt calculation parameter updates')
     gprocess = parser.add_argument_group(title='process related arguments')
-    gprocess.add_argument("-x", "--partition",  type=int, default=1, help='partition number')
+    gprocess.add_argument("-x", "--partition",  help='partition name such as X1, X2, etc')
     gprocess.add_argument("-np", "--nproc",  type=int, default=1, help='number of nprocess')
     gprocess.add_argument("-n", "--nnode",  type=int, default=1, help='number of Nodes')
     parser.add_argument('-u', '--usage', action='store_true', help='usage for run_qt')
@@ -91,11 +91,12 @@ def main():
             \n\t\t    -j    [run (all calculation)|model (print model at workdir)| params (show fdf parameters)]\
             \n\t\t    -c   atoms in scattering model\
             \n\t\t    -cs   fdf scattering structure: 1 for channel, 2 for parts of electrode\
-            \n\t\t    -e   one atom for electrode\
-            \n\t\t    -es   fdf 2 electrode structure for left & right\
+            \n\t\t    -e   Au| Au.psf| left.fdf right.fdf\
             \n\t\t    -p   input parameters in 'param_elec.fdf', 'param_scat.fdf' in wdir\
             \n\t    Job scheduler: slurm\
-            \n\t\tsbatch -J slmtest -p X1 -N 8 -n 64 slm_siesta.sh\
+            \n\t\tsbatch -J test -p X1 -N 8 -n 64 slm_qtnegf.sh     # running in main directory\
+            \n\t\tsbatch -J test -p X1 -N 8 -n 64 --export=sub=0 slm_qtnegf.sh # making subdirectory\
+            \n\t\tAs for customized input models, modify slm_qtnegf.sh\
             \n\t\tOptions for sbatch:\
             \n\t\t    -p    partition\
             \n\t\t    -N    number of nodes\
@@ -107,10 +108,10 @@ def main():
     
     start = int(time.time())
 
-    runQtNegf(args.job, args.channel_struct, args.channel_size, args.elec_struct, args.elec_size, args.junc_dist, args.inp_file, args.out_file, args.params, args.model_path, args.nnode, args.nproc)
+    runQtNegf(args.job, args.channel_struct, args.channel_size, args.elec_struct, args.junc_dist, args.inp_file, args.out_file, args.params, args.model_path, args.nnode, args.nproc)
 
     end  = int(time.time())
-    fname = f"lapsetimeX{args.partition}np{args.nproc}.dat"
+    fname = f"lapsetime{args.partition}np{args.nproc}.dat"
     lapse = end - start
     time_str = time_convert(lapse)
     with open(fname, 'w') as f:

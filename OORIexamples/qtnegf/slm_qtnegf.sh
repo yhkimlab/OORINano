@@ -22,9 +22,11 @@ outfile=$pdir/${SLURM_JOB_ID}.${jobname}.out
 partname=$SLURM_JOB_PARTITION
 nodelist=$SLURM_JOB_NODELIST
 
-subdir=1    # change into other value to run main directory
+subd=1
+subdir=${sub:-$subd}    # change into other value to run main directory
 
-str="-j run -c grp -cs 6 -e Au -jd 1.9 -np $SLURM_NTASKS -x $partname"
+#str="-j run -c grp -cs 6 -e Au -jd 1.9 -np $SLURM_NTASKS -x $partname"
+str="-e Models/elec/Au_STRUCT_left.fdf Models/elec/Au_STRUCT_rigt.fdf -c grp_6.fdf -np $SLURM_NTASKS -x $partname"
 
 if [ $subdir -eq 1 ]; then
 
@@ -36,10 +38,11 @@ if [ $subdir -eq 1 ]; then
 
     cp -r input.yaml Models $wdir
     cd $wdir
-    
+    exe0="../run_qtnegf.py -j model"
     exe="../run_qtnegf.py   $str"
 
 else
+    exe0="run_qtnegf.py -j model"
     exe="run_qtnegf.py      $str"
 fi
 
@@ -47,6 +50,7 @@ echo `date` >> $logfile
 echo "Partition : $partname" >> $logfile
 echo "python3 $exe" >> $logfile
 
+python3 $exe0 >> $logfile
 python3 $exe >> $logfile
 
 echo `date` >> $logfile
