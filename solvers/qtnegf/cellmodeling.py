@@ -42,33 +42,33 @@ def model_electrode(calc, el_struct, path2model=None):
     simmodule = importlib.import_module(calc.__class__.__module__)
     
     ### extract fdf file
-    li_fdf = [ f for f in el_struct if 'fdf' in f]
+    l_fdf = [ f for f in el_struct if 'fdf' in f]
     ### remaining might be .psf
-    res = list(filter(lambda x: x not in li_fdf, el_struct ))
-    lfdf = False
-    lpsf = False
+    remain = list(filter(lambda x: x not in l_fdf, el_struct ))
+    Lfdf = False
+    Lpsf = False
     ### if Au_STRUCT_left[rigt].fdf exists
-    if len(li_fdf) == 2:
-        path_fdf_left = cwd+'/'+li_fdf[0]
-        path_fdf_rigt = cwd+'/'+li_fdf[1]
-        lfdf = True
+    if len(l_fdf) == 2:
+        path_fdf_left = cwd+'/'+l_fdf[0]
+        path_fdf_rigt = cwd+'/'+l_fdf[1]
+        Lfdf = True
         
-    elif len(li_fdf) == 1:
+    elif len(l_fdf) == 1:
         print("Can't run with one-side electrode structure")
         ### module for rotate left struct to right struct
         sys.exit(101)
 
-    ### res might be M or M.psf
-    if len(res) == 1:
-        if os.path.splitext(res[0])[-1] == '.psf':
+    ### remain might be M or M.psf
+    if len(remain) == 1:
+        if os.path.splitext(remain[0])[-1] == '.psf':
             path_psf = cwd+'/'+el_struct[0]
             metal = os.path.splitext(el_struct[0])[0]
-            lpsf = True
+            Lpsf = True
         else:
             metal = el_struct[0]
             f_psf = metal + '.psf'
     ### No psf: read input file     
-    elif len(res) == 0:
+    elif len(remain) == 0:
         metal = simmodule.readAtomicStructure(path_fdf_left)[0].get_symbol()
         f_psf = metal+'.psf'
     else:
@@ -76,14 +76,14 @@ def model_electrode(calc, el_struct, path2model=None):
         sys.exit(103)
     
     ### if not path_psf, get default
-    if not lpsf and 'f_psf' in locals():
+    if not Lpsf and 'f_psf' in locals():
         path_psf = get_psf(calc, f_psf)
     else:
         ### Codes for generation of electrode
         print("Electrode generation code is not ready")
         sys.exit(105)
     ### if no path_fdf, get default
-    if not lfdf and 'metal' in locals():
+    if not Lfdf and 'metal' in locals():
         f_fdf1 = metal+'_STRUCT_left.fdf'
         f_fdf2 = metal+'_STRUCT_rigt.fdf'
         ### path to wdir/Models
@@ -122,8 +122,8 @@ def model_channel(calc, channel_struct, chsize, junc_dist, path2model=None):
     ### if only channel given, get default electrode part
     #dir_default = simmodule.default_location+'/model/channel'
     
-    lfdf = False
-    lsidepart = False
+    Lfdf = False
+    Lsidepart = False
 
     fdf = [f for f in channel_struct if 'fdf' in f]
     ### No inupt fdf but model name, gnenerate
@@ -132,7 +132,7 @@ def model_channel(calc, channel_struct, chsize, junc_dist, path2model=None):
     if len(fdf) == 1:
         path_fdf = f"{cwd}/{fdf[0]}"
         cell = simmodule.readAtomicStructure(path_fdf)
-        lfdf = True
+        Lfdf = True
         
     elif len(fdf) == 0:
         ### if input is one, it is channel name
@@ -147,9 +147,9 @@ def model_channel(calc, channel_struct, chsize, junc_dist, path2model=None):
         sys.exit(111)
 
     ### Generate complete cell for channel
-    if not lfdf:
+    if not Lfdf:
         ### Use default side part in scattering region
-        if not lsidepart:
+        if not Lsidepart:
             path_scatter_left = path2model+'/elecL.fdf'
             path_scatter_rigt = path2model+'/elecR.fdf'
             if not os.path.exists(path_scatter_left) or not os.path.exists(path_scatter_rigt):
@@ -168,7 +168,7 @@ def model_channel(calc, channel_struct, chsize, junc_dist, path2model=None):
         path_fdf = cwd+f'/{fout}'
         ### write channel in work directory
         simmodule.writeAtomicStructure(cell, fname = f"{fout}")
-        lfdf = True
+        Lfdf = True
     
     ### find psf files: from input or default directory
     #print(f"in mdeling scattering region {new.get_species()}")
