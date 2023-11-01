@@ -1,10 +1,11 @@
 from ...atoms   import *
 from ...ncio    import cleansymb, get_unique_symbs, convert_xyz2abc
-#from ...aux     import convert_xyz2abc 
-from ...units   import ang2bohr, R
+from ...units   import R
+from ...units.sci_func import fermi_dirac, derivative_fd
 from glob import glob
 import os, math, sys
 import numpy as np
+from ...aux.aux_parse import parse_line, parse_lines
  
 ### import io.read, io.write inside Vasp class
 
@@ -99,7 +100,7 @@ class Vasp(object):
         """
         return self._params.items()
     ### useless: deprecate
-    def file_read(fname):
+    def read_file(fname):
         lineinfo = []
         wordinfo = []
         with open(fname) as f:
@@ -382,7 +383,7 @@ class Vasp(object):
 
     def get_total_energy(self, output_name='OUTCAR'):
         
-        line_info, word_info = Vasp.file_read(output_name)
+        line_info, word_info = Vasp.read_file(output_name)
         
         VASP_E = []
         for i in range(len(line_info)):
@@ -404,7 +405,7 @@ class Vasp(object):
         ZPE, TS = vasp.get_vibration_energy(Temp=300)
         """
         
-        line_info, word_info = Vasp.file_read(output_name)
+        line_info, word_info = Vasp.read_file(output_name)
 
         ZPE = 0.0; TS = 0.0
         RT  = R * Temp
@@ -444,7 +445,7 @@ class Vasp(object):
         at2.get_vibration_specctrum(output_name='OUTCAR_imag', matplot=1, start=-2000, end=6000)
         """
                                                                                                                           
-        def file_read(fname):
+        def read_file(fname):
             lineinfo = []
             wordinfo = []
             with open(fname) as f:
@@ -456,7 +457,7 @@ class Vasp(object):
          
             return lineinfo, wordinfo 
         
-        line_info, word_info = file_read(output_name) 
+        line_info, word_info = read_file(output_name) 
                                                                                                                           
         vib_cm = []
         for i in range(len(line_info)):
@@ -698,41 +699,265 @@ def get_magmom_4pos(pos='POSCAR', magin=None):
     if Lmag: return magstr + "100*0"
     else:    return "# " + magstr
 
+def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
+    '''
+    DOSCAR: 5 [preline] + (ngrid + 1 [energy headline]) * (natom + 1 [total DOS])
+        ngrid   number of energy grid
+    
+    atom_list should starts from 1
+    option: in case of spin = 2
+        None    sum spin-up and spin-down
+        split   write spin-up and spin-down with two columns
+    '''
 
-def pdos_split_sum(sum_list=[1]):
-    nline_pre = 6
-    line_info, word_info = Vasp.file_read('DOSCAR')
-    n_points = int(word_info[5][2])                     # number of E points
-    E_fermi  = float(word_info[5][3])
-    if len(word_info[6]) == 5:
+    nline_pre = 5
+    with open(fname, 'r') as f:
+        lines = f.readlines()
+    #line_info, word_info = Vasp.read_file('DOSCAR')
+
+    pre2d = parse_lines(lines[:5])
+
+    ### prelude analysis
+    natom = int(pre2d[0][0])
+
+    ### parse energy title
+    elist   = parse_line(lines[5])
+    Emax    = float(elist[0])
+    Emin    = float(elist[1])
+    ngrid   = int(elist[2])                     # number of Ene grid
+    E_fermi  = float(elist[3])
+
+    ### test parsing of one line in energy block
+    if len(parse_line(lines[6])) == 5:
+        spin = 2    # spin polarized
+    else:           # ncol = 3
         spin = 1
-    else:
-        spin = 0
-    print(f"spin: {spin}")
+    
+    ### Obtain TDOS = [nline_pre+1: nline_pre + ngrid +1] 
 
-    ### Obtain TDOS
-
-    E_mod   = []
-    tdos    = []
+    Ei_f0   = []         # E w.r.t. E_fermi
+    tdos    = []        # non-spin or spin-up
     tdos_cum = []
-    if spin == 1:
+    if spin == 2:
         tdos_dn     = []
         tdos_cum_dn = []
 
-    for ind in range(nline_pre, nline_pre+n_points+1):  # ind: index of line in DOSCAR
-        E_mod.append(float(word_info[ind][0])-E_fermi)
-        tdos.append(float(word_info[ind][1]))
-        tdos_cum.append(float(word_info[ind][2]))
+    ### for TDOS
+    for i, line in enumerate(lines[nline_pre+1:nline_pre+1+ngrid]):
+        lele = parse_line(line)
+        Ei_f0.append(float(lele[0])-E_fermi)
+        tdos.append(float(lele[1]))
         if spin == 1:
-            tdos_dn.append(float(word_info[ind][3]))
-            tdos_cum_dn.append(float(word_info[ind][4]))
+            tdos_cum.append(float(lele[2]))       # Tdos total
+        ### wrong order for spin==2, by J. Park
+        else: # spin == 2:
+            tdos_dn.append(float(lele[2]))    # this is TDOS-up-acc if spin == 2
+            tdos_cum.append(float(lele[3]))
+            tdos_cum_dn.append(float(lele[4]))    # TDOS-down-acc   if spin == 2
+    
+    with open('TDOS.dat', 'w') as f:
+        for i in range(len(Ei_f0)):
+            st = f"{Ei_f0[i]:11.3f}  {tdos[i]:10.4g}"
+            if spin == 1:
+                st += f"  {tdos_cum[i]:10.4g}"
+            else: # spin == 2:
+                st += f"  {tdos_dn[i]:10.4g}  {tdos_cum[i]:10.4g}  {tdos_cum_dn[i]:10.4g}"       # in the order of original DOSCAR
+            f.write(st+"\n")
+  
+
+    ### 2D list [atom][energy] ###   
+    atoms_s_up     = []   ;    atoms_s_dn     = []     
+    atoms_py_up    = []   ;    atoms_py_dn    = []
+    atoms_pz_up    = []   ;    atoms_pz_dn    = []
+    atoms_px_up    = []   ;    atoms_px_dn    = []
+    atoms_dxy_up   = []   ;    atoms_dxy_dn   = []
+    atoms_dyz_up   = []   ;    atoms_dyz_dn   = []
+    atoms_dz2_up   = []   ;    atoms_dz2_dn   = []
+    atoms_dxz_up   = []   ;    atoms_dxz_dn   = []
+    atoms_dx2_up   = []   ;    atoms_dx2_dn   = []
+    
+        
+    ### scan atom_list:: Make 2D atoms list
+    #print(f"atom list {atom_list}")
+    for iatom in atom_list:
+        ### Initialize for atom ###
+        s_up     = []   ;    s_dn   = []
+        py_up    = []   ;    py_dn  = []
+        pz_up    = []   ;    pz_dn  = []
+        px_up    = []   ;    px_dn  = []
+        dxy_up   = []   ;    dxy_dn = []
+        dyz_up   = []   ;    dyz_dn = []
+        dz2_up   = []   ;    dz2_dn = []
+        dxz_up   = []   ;    dxz_dn = []
+        dx2_up   = []   ;    dx2_dn = []
+        ### obtain block
+        ipivot = nline_pre + (ngrid + 1) * (iatom)   # +1 (TDOS) -1 (at start)
+
+        for i, line in enumerate(lines[ ipivot+1 : ipivot + 1 + ngrid]):
+            item = parse_line(line)
+            ### spin case
+            if spin == 1: # only for the s,p,d + spin case
+                s_up.append(float(item[1]))
+                py_up.append(float(item[2])) ;  pz_up.append(float(item[3])) ;  px_up.append(float(item[4]))
+                dxy_up.append(float(item[5]));  dyz_up.append(float(item[6]));  dz2_up.append(float(item[7]))
+                dxz_up.append(float(item[8]));  dx2_up.append(float(item[9]))
+            else:   # for spin == 2
+                s_up.append(float(item[1]))   ; s_dn.append(float(item[2]))
+                py_up.append(float(item[3]))  ; py_dn.append(float(item[4]));
+                pz_up.append(float(item[5]))  ; pz_dn.append(float(item[6]))
+                px_up.append(float(item[7]))  ; px_dn.append(float(item[8]))
+                dxy_up.append(float(item[9])) ; dxy_dn.append(float(item[10]))
+                dyz_up.append(float(item[11])); dyz_dn.append(float(item[12]))
+                dz2_up.append(float(item[13])); dz2_dn.append(float(item[14]))
+                dxz_up.append(float(item[15])); dxz_dn.append(float(item[16]))
+                dx2_up.append(float(item[17])); dx2_dn.append(float(item[18]))
+        ### one atom dos in the list of energy
+        atoms_s_up.append(s_up); 
+        atoms_py_up.append(py_up)   ;   atoms_pz_up.append(pz_up)   ; atoms_px_up.append(px_up)     
+        atoms_dxy_up.append(dxy_up) ;   atoms_dyz_up.append(dyz_up) ; atoms_dz2_up.append(dz2_up)      
+        atoms_dxz_up.append(dxz_up) ;   atoms_dx2_up.append(dx2_up)
+        if spin == 2:    
+            atoms_s_dn.append(s_dn)    
+            atoms_py_dn.append(py_dn)   ;   atoms_pz_dn.append(pz_dn)   ; atoms_px_dn.append(px_dn)  
+            atoms_dxy_dn.append(dxy_dn) ;   atoms_dyz_dn.append(dyz_dn) ; atoms_dz2_dn.append(dz2_dn) 
+            atoms_dxz_dn.append(dxz_dn) ;   atoms_dx2_dn.append(dx2_dn)
+    ### you might extract dos for each atom
+
+    ### summation for atoms :: Make 1D lsum list
+    lsum_s_up   = []   ;   lsum_s_dn   = []
+    lsum_py_up  = []   ;   lsum_py_dn  = []
+    lsum_pz_up  = []   ;   lsum_pz_dn  = []
+    lsum_px_up  = []   ;   lsum_px_dn  = []
+    lsum_dxy_up = []   ;   lsum_dxy_dn = []
+    lsum_dyz_up = []   ;   lsum_dyz_dn = []
+    lsum_dz2_up = []   ;   lsum_dz2_dn = []
+    lsum_dxz_up = []   ;   lsum_dxz_dn = []
+    lsum_dx2_up = []   ;   lsum_dx2_dn = []
+    ### shape of atoms_dos=[natoms_in_list][ngrid]
+    for j in range(ngrid):
+        sum_s_up   = 0   ;   sum_s_dn   = 0
+        sum_py_up  = 0   ;   sum_py_dn  = 0
+        sum_pz_up  = 0   ;   sum_pz_dn  = 0
+        sum_px_up  = 0   ;   sum_px_dn  = 0
+        sum_dxy_up = 0   ;   sum_dxy_dn = 0
+        sum_dyz_up = 0   ;   sum_dyz_dn = 0
+        sum_dz2_up = 0   ;   sum_dz2_dn = 0
+        sum_dxz_up = 0   ;   sum_dxz_dn = 0
+        sum_dx2_up = 0   ;   sum_dx2_dn = 0
+        for i in range(len(atom_list)):
+            # atom_list index should starts from 1, len(s_up) == nEne * 'sum of Atoms'
+            sum_s_up    += atoms_s_up[i][j]       
+            sum_py_up   += atoms_py_up[i][j]     
+            sum_pz_up   += atoms_pz_up[i][j]     
+            sum_px_up   += atoms_px_up[i][j]     
+            sum_dxy_up  += atoms_dxy_up[i][j]   
+            sum_dyz_up  += atoms_dyz_up[i][j]   
+            sum_dz2_up  += atoms_dz2_up[i][j]   
+            sum_dxz_up  += atoms_dxz_up[i][j]   
+            sum_dx2_up  += atoms_dx2_up[i][j]  
+            if spin == 2:
+                sum_s_dn    += atoms_s_dn[i][j]   
+                sum_py_dn   += atoms_py_dn[i][j]  
+                sum_pz_dn   += atoms_pz_dn[i][j]  
+                sum_px_dn   += atoms_px_dn[i][j]  
+                sum_dxy_dn  += atoms_dxy_dn[i][j] 
+                sum_dyz_dn  += atoms_dyz_dn[i][j] 
+                sum_dz2_dn  += atoms_dz2_dn[i][j] 
+                sum_dxz_dn  += atoms_dxz_dn[i][j]                  
+                sum_dx2_dn  += atoms_dx2_dn[i][j]              # each summed orbitals
+        lsum_s_up.append(sum_s_up)   
+        lsum_py_up.append(sum_py_up)  ; lsum_pz_up.append(sum_pz_up)  ; lsum_px_up.append(sum_px_up)
+        lsum_dxy_up.append(sum_dxy_up); lsum_dyz_up.append(sum_dyz_up); lsum_dz2_up.append(sum_dz2_up)
+        lsum_dxz_up.append(sum_dxz_up); lsum_dx2_up.append(sum_dx2_up)
+        if spin == 2:
+            lsum_s_dn.append(sum_s_dn)   
+            lsum_py_dn.append(sum_py_dn)  ; lsum_pz_dn.append(sum_pz_dn)  ; lsum_px_dn.append(sum_px_dn)
+            lsum_dxy_dn.append(sum_dxy_dn); lsum_dyz_dn.append(sum_dyz_dn); lsum_dz2_dn.append(sum_dz2_dn)
+            lsum_dxz_dn.append(sum_dxz_dn); lsum_dx2_dn.append(sum_dx2_dn)
+
+    ### make string for atom index
+    if len(atom_list) == 1:
+        froot = f"Atoms{atom_list[0]}"
+    else:
+        froot = f"Atoms{atom_list[0]}-{atom_list[-1]}_N{len(atom_list)}"
+    if option:
+        froot += option[:3]
+    outfile = froot + '.dat'
+    outf = open(outfile, 'w')
+    lsum_p = []
+    lsum_d = []
+    lsum_p_dn = []
+    lsum_d_dn = []
+    #print(f"dim ngrid {range(ngrid)}, {len(lsum_px_up)}")
+    for i in range(ngrid):
+        lsum_p.append(lsum_px_up[i]+lsum_py_up[i]+lsum_pz_up[i])
+        lsum_d.append(lsum_dx2_up[i]+lsum_dxy_up[i]+lsum_dxz_up[i]+lsum_dyz_up[i]+lsum_dz2_up[i])
+        if spin == 1:
+            ### format:: E, lsum_s, lsum_p, lsum_d, lsum(s+p+d)
+            st = "%15.8f %15.8f %15.8f %15.8f %15.8f" % (Ei_f0[i],lsum_s_up[i], lsum_p[i], lsum_d[i], lsum_s_up[i]+lsum_p[i]+lsum_d[i])
+        else:
+            lsum_p_dn.append(lsum_px_dn[i]+lsum_py_dn[i]+lsum_pz_dn[i])
+            lsum_d_dn.append(lsum_dx2_dn[i]+lsum_dxy_dn[i]+lsum_dxz_dn[i]+lsum_dyz_dn[i]+lsum_dz2_dn[i])
+            if option == 'split':
+                ### format:: E, lsum_s_up, lsum_s_dn, lsum_p, lsum_p_dn, lsum_d, lsum_d_dn, lsum(s+p+d), lsum(s+p+d)_dn 
+                st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % \
+                    (Ei_f0[i],lsum_s_up[i],lsum_s_dn[i],lsum_p[i],lsum_p_dn[i],lsum_d[i],lsum_d_dn[i],lsum_s_up[i]+lsum_p[i]+lsum_d[i],lsum_s_dn[i]+lsum_p_dn[i]+lsum_d_dn[i])
+            elif option == 'polar':
+                st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % \
+                    (Ei_f0[i],lsum_s_up[i],-lsum_s_dn[i],lsum_p[i],-lsum_p_dn[i],lsum_d[i],-lsum_d_dn[i],lsum_s_up[i]+lsum_p[i]+lsum_d[i],-(lsum_s_dn[i]+lsum_p_dn[i]+lsum_d_dn[i]))           
+            ### No option: lsum up and down ### format:: E, lsum_s, lsum_p, lsum_d, lsum(s+p+d)
+            else:
+                st = "%15.8f %15.8f %15.8f %15.8f %15.8f" % (Ei_f0[i],lsum_s_up[i]+lsum_s_dn[i],lsum_p[i]+lsum_p_dn[i],lsum_d[i]+lsum_d_dn[i],lsum_s_up[i]+lsum_p[i]+lsum_d[i]+lsum_s_dn[i]+lsum_p_dn[i]+lsum_d_dn[i])
+        
+        outf.write(st)
+        outf.write("\n")
+    outf.close()
+    os.system(f'cp {fname} SUM_ATOM.dat')
+
+
+def pdos_split_sum(atom_list=[1]):
+    '''
+    atom_list should starts from 1
+    '''
+    nline_pre = 6
+    line_info, word_info = Vasp.read_file('DOSCAR')
+    nEne = int(word_info[5][2])                     # number of E points
+    E_fermi  = float(word_info[5][3])
+    if len(word_info[6]) == 5:
+        spin = 2    # spin polarized
+    else:
+        spin = 1
+    #print(f"spin: {spin}, 2 for spin-polarized")
+
+    ### Obtain TDOS
+
+    E_f0   = []         # E w.r.t. E_fermi
+    tdos    = []        # non-spin or spin-up
+    tdos_cum = []
+    if spin == 2:
+        tdos_dn     = []
+        tdos_cum_dn = []
+
+    ### for TDOS
+    for ind in range(nline_pre, nline_pre+nEne+1):  # ind: index of line in DOSCAR
+        E_f0.append(float(word_info[ind][0])-E_fermi)
+        tdos.append(float(word_info[ind][1]))
+        if spin != 2:
+            tdos_cum.append(float(word_info[ind][2]))       # this is TDOS-down   if spin == 2
+        ### wrong order for spin==2, by J. Park
+        else: # spin == 2:
+            tdos_dn.append(float(word_info[ind][2]))    # this is TDOS-up-acc if spin == 2
+            tdos_cum.append(float(word_info[ind][3]))
+            tdos_cum_dn.append(float(word_info[ind][4]))    # TDOS-down-acc   if spin == 2
 
     
     with open('TDOS.dat', 'w') as f:
-        for i in range(len(E_mod)):
-            st = f"{E_mod[i]:11.3f}  {tdos[i]:10.4g}  {tdos_cum[i]:10.4g}"
-            if spin == 1:
-                st += f"  {tdos_dn[i]:10.4g}  {tdos_cum_dn[i]:10.4g}"
+        for i in range(len(E_f0)):
+            st = f"{E_f0[i]:11.3f}  {tdos[i]:10.4g}"
+            if spin != 2:
+                st += f"  {tdos_cum[i]:10.4g}"
+            else: # spin == 2:
+                st += f"  {tdos_dn[i]:10.4g}  {tdos_cum[i]:10.4g}  {tdos_cum_dn[i]:10.4g}"       # in the order of original DOSCAR
             f.write(st+"\n")
 
 
@@ -751,12 +976,14 @@ def pdos_split_sum(sum_list=[1]):
     d_up_sum = []   ;  d_dn_sum = []
     ###
 
-    E_modi   = []
+    E_f0i   = []
+    
+    ### scan all the line in DOSCAR
     for i in range(len(word_info)):
         ### spin case
         if len(word_info[i]) == 19: # only for the s,p,d + spin case
             item = word_info[i]
-            E_modi.append(float(item[0])-E_fermi)
+            E_f0i.append(float(item[0])-E_fermi)
             s_up.append(float(item[1]))
             s_dn.append(-float(item[2]))
             py_up.append(float(item[3]))
@@ -777,7 +1004,7 @@ def pdos_split_sum(sum_list=[1]):
             dx2_dn.append(-float(item[18]))
         elif len(word_info[i]) == 10:
             item = word_info[i]
-            E_modi.append(float(item[0])-E_fermi)
+            E_f0i.append(float(item[0])-E_fermi)
             s_up.append(float(item[1]))
             py_up.append(float(item[2]))
             pz_up.append(float(item[3]))
@@ -788,23 +1015,23 @@ def pdos_split_sum(sum_list=[1]):
             dxz_up.append(float(item[8]))
             dx2_up.append(float(item[9]))
 
-    N_atoms = len(E_modi) / n_points # double check
-
-    # write arranged data
-
+    N_atoms = len(E_f0i) / nEne # double check
+    
+    
+    ### in all atom split, index starts from 0
     for i in range(int(N_atoms)):
         dataDOS = open('%03d_ATOM.dat' % int(i+1), 'w')
-        for j in range(n_points):
-            if spin == 1:
+        for j in range(nEne):
+            if spin == 2:
                 ### format:: E, sum_up, sum_dn, s_up, s_down, psum_up, psum_dn, dsum_up, dsum_dn, 18-lm: total 27 col
-                char = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % (E_modi[i*n_points+j],s_up[i*n_points+j]+py_up[i*n_points+j]+pz_up[i*n_points+j]+px_up[i*n_points+j]+dxy_up[i*n_points+j]+dyz_up[i*n_points+j]+dz2_up[i*n_points+j]+dxz_up[i*n_points+j]+dx2_up[i*n_points+j],s_dn[i*n_points+j]+py_dn[i*n_points+j]+pz_dn[i*n_points+j]+px_dn[i*n_points+j]+dxy_dn[i*n_points+j]+dyz_dn[i*n_points+j]+dz2_dn[i*n_points+j]+dxz_dn[i*n_points+j]+dx2_dn[i*n_points+j],s_up[i*n_points+j],s_dn[i*n_points+j],py_up[i*n_points+j]+pz_up[i*n_points+j]+px_up[i*n_points+j],py_dn[i*n_points+j]+pz_dn[i*n_points+j]+px_dn[i*n_points+j],dxy_up[i*n_points+j]+dyz_up[i*n_points+j]+dz2_up[i*n_points+j]+dxz_up[i*n_points+j]+dx2_up[i*n_points+j],dxy_dn[i*n_points+j]+dyz_dn[i*n_points+j]+dz2_dn[i*n_points+j]+dxz_dn[i*n_points+j]+dx2_dn[i*n_points+j],s_up[i*n_points+j],s_dn[i*n_points+j],py_up[i*n_points+j],py_dn[i*n_points+j],pz_up[i*n_points+j],pz_dn[i*n_points+j],px_up[i*n_points+j],px_dn[i*n_points+j],dxy_up[i*n_points+j],dxy_dn[i*n_points+j],dyz_up[i*n_points+j],dyz_dn[i*n_points+j],dz2_up[i*n_points+j],dz2_dn[i*n_points+j],dxz_up[i*n_points+j],dxz_dn[i*n_points+j],dx2_up[i*n_points+j],dx2_dn[i*n_points+j])    
+                st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % (E_f0i[i*nEne+j],s_up[i*nEne+j]+py_up[i*nEne+j]+pz_up[i*nEne+j]+px_up[i*nEne+j]+dxy_up[i*nEne+j]+dyz_up[i*nEne+j]+dz2_up[i*nEne+j]+dxz_up[i*nEne+j]+dx2_up[i*nEne+j],s_dn[i*nEne+j]+py_dn[i*nEne+j]+pz_dn[i*nEne+j]+px_dn[i*nEne+j]+dxy_dn[i*nEne+j]+dyz_dn[i*nEne+j]+dz2_dn[i*nEne+j]+dxz_dn[i*nEne+j]+dx2_dn[i*nEne+j],s_up[i*nEne+j],s_dn[i*nEne+j],py_up[i*nEne+j]+pz_up[i*nEne+j]+px_up[i*nEne+j],py_dn[i*nEne+j]+pz_dn[i*nEne+j]+px_dn[i*nEne+j],dxy_up[i*nEne+j]+dyz_up[i*nEne+j]+dz2_up[i*nEne+j]+dxz_up[i*nEne+j]+dx2_up[i*nEne+j],dxy_dn[i*nEne+j]+dyz_dn[i*nEne+j]+dz2_dn[i*nEne+j]+dxz_dn[i*nEne+j]+dx2_dn[i*nEne+j],s_up[i*nEne+j],s_dn[i*nEne+j],py_up[i*nEne+j],py_dn[i*nEne+j],pz_up[i*nEne+j],pz_dn[i*nEne+j],px_up[i*nEne+j],px_dn[i*nEne+j],dxy_up[i*nEne+j],dxy_dn[i*nEne+j],dyz_up[i*nEne+j],dyz_dn[i*nEne+j],dz2_up[i*nEne+j],dz2_dn[i*nEne+j],dxz_up[i*nEne+j],dxz_dn[i*nEne+j],dx2_up[i*nEne+j],dx2_dn[i*nEne+j])    
             else:
-                char = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % (E_modi[i*n_points+j],s_up[i*n_points+j]+py_up[i*n_points+j]+pz_up[i*n_points+j]+px_up[i*n_points+j]+dxy_up[i*n_points+j]+dyz_up[i*n_points+j]+dz2_up[i*n_points+j]+dxz_up[i*n_points+j]+dx2_up[i*n_points+j],s_up[i*n_points+j],py_up[i*n_points+j]+pz_up[i*n_points+j]+px_up[i*n_points+j],dxy_up[i*n_points+j]+dyz_up[i*n_points+j]+dz2_up[i*n_points+j]+dxz_up[i*n_points+j]+dx2_up[i*n_points+j],s_up[i*n_points+j],py_up[i*n_points+j],pz_up[i*n_points+j],px_up[i*n_points+j],dxy_up[i*n_points+j],dyz_up[i*n_points+j],dz2_up[i*n_points+j],dxz_up[i*n_points+j],dx2_up[i*n_points+j])    
-            dataDOS.write(char)
+                st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % (E_f0i[i*nEne+j],s_up[i*nEne+j]+py_up[i*nEne+j]+pz_up[i*nEne+j]+px_up[i*nEne+j]+dxy_up[i*nEne+j]+dyz_up[i*nEne+j]+dz2_up[i*nEne+j]+dxz_up[i*nEne+j]+dx2_up[i*nEne+j],s_up[i*nEne+j],py_up[i*nEne+j]+pz_up[i*nEne+j]+px_up[i*nEne+j],dxy_up[i*nEne+j]+dyz_up[i*nEne+j]+dz2_up[i*nEne+j]+dxz_up[i*nEne+j]+dx2_up[i*nEne+j],s_up[i*nEne+j],py_up[i*nEne+j],pz_up[i*nEne+j],px_up[i*nEne+j],dxy_up[i*nEne+j],dyz_up[i*nEne+j],dz2_up[i*nEne+j],dxz_up[i*nEne+j],dx2_up[i*nEne+j])    
+            dataDOS.write(st)
             dataDOS.write("\n")
         dataDOS.close()
-    
-    os.system('mkdir PDOS')
+    if not os.path.isdir('PDOS'):
+        os.system('mkdir PDOS')
     os.system('mv *_ATOM.dat PDOS')
     
     ### Sum data list (s, p, d + spin) ###   
@@ -822,7 +1049,7 @@ def pdos_split_sum(sum_list=[1]):
     sum_d_up_sum = []   ;    sum_d_dn_sum = []
     ###
     
-    for j in range(n_points):
+    for j in range(nEne):
         num_s_up   = 0   ;   num_s_dn   = 0
         num_py_up  = 0   ;   num_py_dn  = 0
         num_pz_up  = 0   ;   num_pz_dn  = 0
@@ -835,35 +1062,35 @@ def pdos_split_sum(sum_list=[1]):
         num_s_up_sum = 0 ;   num_s_dn_sum = 0
         num_p_up_sum = 0 ;   num_p_dn_sum = 0
         num_d_up_sum = 0 ;   num_d_dn_sum = 0
-        for i in sum_list:
-            # each orbitals: J Park it should start from 0
-            num_s_up += s_up[(i-1)*n_points+j]       
-            num_py_up += py_up[(i-1)*n_points+j]     
-            num_pz_up += pz_up[(i-1)*n_points+j]     
-            num_px_up += px_up[(i-1)*n_points+j]     
-            num_dxy_up += dxy_up[(i-1)*n_points+j]   
-            num_dyz_up += dyz_up[(i-1)*n_points+j]   
-            num_dz2_up += dz2_up[(i-1)*n_points+j]   
-            num_dxz_up += dxz_up[(i-1)*n_points+j]   
-            num_dx2_up += dx2_up[(i-1)*n_points+j]  
-            if spin == 1:
-                num_s_dn += s_dn[(i-1)*n_points+j]
-                num_py_dn += py_dn[(i-1)*n_points+j]
-                num_pz_dn += pz_dn[(i-1)*n_points+j]
-                num_px_dn += px_dn[(i-1)*n_points+j]
-                num_dxy_dn += dxy_dn[(i-1)*n_points+j]
-                num_dyz_dn += dyz_dn[(i-1)*n_points+j]
-                num_dz2_dn += dz2_dn[(i-1)*n_points+j]
-                num_dxz_dn += dxz_dn[(i-1)*n_points+j]                 
-                num_dx2_dn += dx2_dn[(i-1)*n_points+j]             # each summed orbitals
-            num_s_up_sum += s_up[(i-1)*n_points+j]   
-            num_p_up_sum += py_up[(i-1)*n_points+j] + pz_up[(i-1)*n_points+j] + px_up[(i-1)*n_points+j]
-            num_d_up_sum += dxy_up[(i-1)*n_points+j] + dyz_up[(i-1)*n_points+j] + dz2_up[(i-1)*n_points+j] + dxz_up[(i-1)*n_points+j] + dx2_up[(i-1)*n_points+j]
-            if spin == 1:
-                num_s_dn_sum += s_dn[(i-1)*n_points+j]
-                num_p_dn_sum += py_dn[(i-1)*n_points+j] + pz_dn[(i-1)*n_points+j] + px_dn[(i-1)*n_points+j]
-                num_d_dn_sum += dxy_dn[(i-1)*n_points+j] + dyz_dn[(i-1)*n_points+j] + dz2_dn[(i-1)*n_points+j] + dxz_dn[(i-1)*n_points+j] + dx2_dn[(i-1)*n_points+j]
-        # summation values
+        for i in atom_list:
+            # atom_list index should starts from 1, len(s_up) == nEne * 'num of Atoms'
+            num_s_up += s_up[(i-1)*nEne+j]       
+            num_py_up += py_up[(i-1)*nEne+j]     
+            num_pz_up += pz_up[(i-1)*nEne+j]     
+            num_px_up += px_up[(i-1)*nEne+j]     
+            num_dxy_up += dxy_up[(i-1)*nEne+j]   
+            num_dyz_up += dyz_up[(i-1)*nEne+j]   
+            num_dz2_up += dz2_up[(i-1)*nEne+j]   
+            num_dxz_up += dxz_up[(i-1)*nEne+j]   
+            num_dx2_up += dx2_up[(i-1)*nEne+j]  
+            if spin == 2:
+                num_s_dn += s_dn[(i-1)*nEne+j]
+                num_py_dn += py_dn[(i-1)*nEne+j]
+                num_pz_dn += pz_dn[(i-1)*nEne+j]
+                num_px_dn += px_dn[(i-1)*nEne+j]
+                num_dxy_dn += dxy_dn[(i-1)*nEne+j]
+                num_dyz_dn += dyz_dn[(i-1)*nEne+j]
+                num_dz2_dn += dz2_dn[(i-1)*nEne+j]
+                num_dxz_dn += dxz_dn[(i-1)*nEne+j]                 
+                num_dx2_dn += dx2_dn[(i-1)*nEne+j]             # each summed orbitals
+            num_s_up_sum += s_up[(i-1)*nEne+j]   
+            num_p_up_sum += py_up[(i-1)*nEne+j] + pz_up[(i-1)*nEne+j] + px_up[(i-1)*nEne+j]
+            num_d_up_sum += dxy_up[(i-1)*nEne+j] + dyz_up[(i-1)*nEne+j] + dz2_up[(i-1)*nEne+j] + dxz_up[(i-1)*nEne+j] + dx2_up[(i-1)*nEne+j]
+            if spin == 2:
+                num_s_dn_sum += s_dn[(i-1)*nEne+j]
+                num_p_dn_sum += py_dn[(i-1)*nEne+j] + pz_dn[(i-1)*nEne+j] + px_dn[(i-1)*nEne+j]
+                num_d_dn_sum += dxy_dn[(i-1)*nEne+j] + dyz_dn[(i-1)*nEne+j] + dz2_dn[(i-1)*nEne+j] + dxz_dn[(i-1)*nEne+j] + dx2_dn[(i-1)*nEne+j]
+        # summation values: energy list
         sum_s_up.append(num_s_up)         ;   sum_s_dn.append(num_s_dn)
         sum_py_up.append(num_py_up)       ;   sum_py_dn.append(num_py_dn)
         sum_pz_up.append(num_pz_up)       ;   sum_pz_dn.append(num_pz_dn)
@@ -876,35 +1103,32 @@ def pdos_split_sum(sum_list=[1]):
         sum_s_up_sum.append(num_s_up_sum) ;   sum_s_dn_sum.append(num_s_dn_sum)
         sum_p_up_sum.append(num_p_up_sum) ;   sum_p_dn_sum.append(num_p_dn_sum)
         sum_d_up_sum.append(num_d_up_sum) ;   sum_d_dn_sum.append(num_d_dn_sum)
-    dataSUMDOS = open('SUM_ATOM.dat', 'w')
-    for i in range(n_points):
-        if spin == 1:
+    ### make string for atom index
+    fname = f"Atoms{atom_list[0]}_{atom_list[-1]}_N{len(atom_list)}.dat"
+    dataSUMDOS = open(fname, 'w')
+    for i in range(nEne):
+        if spin == 2:
             ### format:: E, sum_up, sum_dn, s_up, s_down, psum_up, psum_dn, dsum_up, dsum_dn, 18-lm: total 27 col
-            char = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % (E_modi[i],sum_s_up_sum[i]+sum_p_up_sum[i]+sum_d_up_sum[i],sum_s_dn_sum[i]+sum_p_dn_sum[i]+sum_d_dn_sum[i],sum_s_up_sum[i],sum_s_dn_sum[i],sum_p_up_sum[i],sum_p_dn_sum[i],sum_d_up_sum[i],sum_d_dn_sum[i],sum_s_up[i],sum_s_dn[i],sum_py_up[i],sum_py_dn[i],sum_pz_up[i],sum_pz_dn[i],sum_px_up[i],sum_px_dn[i],sum_dxy_up[i],sum_dxy_dn[i],sum_dyz_up[i],sum_dyz_dn[i],sum_dz2_up[i],sum_dz2_dn[i],sum_dxz_up[i],sum_dxz_dn[i],sum_dx2_up[i],sum_dx2_dn[i])
+            st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % (E_f0i[i],sum_s_up_sum[i]+sum_p_up_sum[i]+sum_d_up_sum[i],sum_s_dn_sum[i]+sum_p_dn_sum[i]+sum_d_dn_sum[i],sum_s_up_sum[i],sum_s_dn_sum[i],sum_p_up_sum[i],sum_p_dn_sum[i],sum_d_up_sum[i],sum_d_dn_sum[i],sum_s_up[i],sum_s_dn[i],sum_py_up[i],sum_py_dn[i],sum_pz_up[i],sum_pz_dn[i],sum_px_up[i],sum_px_dn[i],sum_dxy_up[i],sum_dxy_dn[i],sum_dyz_up[i],sum_dyz_dn[i],sum_dz2_up[i],sum_dz2_dn[i],sum_dxz_up[i],sum_dxz_dn[i],sum_dx2_up[i],sum_dx2_dn[i])
         else:
-            char = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % (E_modi[i],sum_s_up_sum[i]+sum_p_up_sum[i]+sum_d_up_sum[i],sum_s_up_sum[i],sum_p_up_sum[i],sum_d_up_sum[i],sum_s_up[i],sum_py_up[i],sum_pz_up[i],sum_px_up[i],sum_dxy_up[i],sum_dyz_up[i],sum_dz2_up[i],sum_dxz_up[i],sum_dx2_up[i])
-        dataSUMDOS.write(char)
+            st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % (E_f0i[i],sum_s_up_sum[i]+sum_p_up_sum[i]+sum_d_up_sum[i],sum_s_up_sum[i],sum_p_up_sum[i],sum_d_up_sum[i],sum_s_up[i],sum_py_up[i],sum_pz_up[i],sum_px_up[i],sum_dxy_up[i],sum_dyz_up[i],sum_dz2_up[i],sum_dxz_up[i],sum_dx2_up[i])
+        dataSUMDOS.write(st)
         dataSUMDOS.write("\n")
     dataSUMDOS.close()
-    os.system('mv SUM_ATOM.dat PDOS')
+    os.system(f'cp {fname} PDOS')
+    os.system(f'cp {fname} SUM_ATOM.dat')
 
 def pdos_orbital_analysis(fname='SUM_ATOM.dat', orbitals=1):
     '''
     d-band center theory : Nature, 376, 238 (1995)
     Fermi abundance      : J. Phys. Chem. C 121, 1530 (2017)
     highest peak         : Nat. Energy, 1, 16130 (2016)
+    orbitals    0 for 's', 1 for 'p', 2 for 'd'
     '''
     import os, sys, math
     import numpy as np
     from scipy.misc import derivative
  
-    def fermi_dirac(E, fermi=0, T=298.15):
-        return 1 / (1 + np.exp((E - fermi) / 0.4))
-
-    def d_fd(E):
-        deri_fd = derivative(fermi_dirac, E, dx=1e-6)
-        return deri_fd
-
     def find_index(data, target):
         res = []
         lis = data
@@ -916,19 +1140,20 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orbitals=1):
                 break
         return res
     
-    line_info, word_info = Vasp.file_read(fname)
+    ### Start of calculation
+    line_info, word_info = Vasp.read_file(fname)
     
     E = [] ; Orb = []
     
+    ### Obtain E and Orb from ortibals(s=0, p=1, etc)
     for i in range(len(word_info)):
         E.append(float(word_info[i][0]))
         Orb.append(float(word_info[i][orbitals]))
 
     for i in range(len(E)-1):
-        if E[i+1] * E[i] < 0 or E[i+1] * E[i] == 0:
-            Fermi_idx = i
-        else:
-            pass
+        if E[i] * E[i+1] <= 0:
+            Fermi_idx = i + 1   # i < E_fermi < i+1
+            break
     
     # find parameteres
     dE = E[1] - E[0]
@@ -944,6 +1169,7 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orbitals=1):
         print("The data is not consistent for spin up or dn")
     
     E_Orb_max = find_index(Orb_Ef, Orb_max)
+    print(f"density max indes {E_Orb_max}")
 
     if len(E_Orb_max) == 1:
         E_max = E[E_Orb_max[0]]
@@ -954,8 +1180,8 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orbitals=1):
     for i in range(Fermi_idx):
         n_Orb       = n_Orb      + dE * Orb_Ef[i]
         E_n_Orb     = E_n_Orb    + dE * Orb_Ef[i] * E[i]
-        df_n_Orb    = df_n_Orb   + dE * Orb_Ef[i] * d_fd(E[i])
-        df_E_n_Orb  = df_E_n_Orb + dE * Orb_Ef[i] * E[i] * d_fd(E[i])
+        df_n_Orb    = df_n_Orb   + dE * Orb_Ef[i] * derivative_fd(E[i])
+        df_E_n_Orb  = df_E_n_Orb + dE * Orb_Ef[i] * E[i] * derivative_fd(E[i])
 
     Orb_cent = E_n_Orb / n_Orb
     Ef_abund = df_E_n_Orb / df_n_Orb
