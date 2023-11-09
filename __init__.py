@@ -5,10 +5,10 @@
 '''
 from __future__ import print_function
 
-from .simulators    import vasp
-from .simulators    import siesta
+from .calculator    import vasp
+from .calculator    import siesta
 from .models        import surflab
 from .models        import carbonlab
 from .models        import interface
-from .solvers       import catalysis
-from .solvers       import qtnegf
+from .simulators       import catalysis
+from .simulators       import qtnegf

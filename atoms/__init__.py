@@ -11,7 +11,7 @@ from .atoms_aux import *
 from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
 import copy     # added by SH
-from ..ncio import convert_xyz2abc, convert_abc2xyz, read_xyz
+from ..inout import convert_xyz2abc, convert_abc2xyz, read_xyz
 from .atom_vector import Vector
 
 ## Class Atom, AtomsSystem, Vector (move to atom_vector), Trajectory ##
@@ -952,7 +952,7 @@ class AtomsSystem(object):
         >>> instance.angle('1 51 100')
         >>> instance.distance([1, 51, 100])
         """
-        from units import rad2deg
+        from utils.units import rad2deg
         
         # extract selected atom numbers
         if type(selected) is str:
@@ -989,7 +989,7 @@ class AtomsSystem(object):
         >>> instance.dihedral('1 51 71 100')
         >>> instance.dihedral([1, 51, 71, 100])
         """
-        from units import rad2deg
+        from utils.units import rad2deg
         from math import atan2
         # preparation & checking...
         if type(selected) is str:
@@ -1206,7 +1206,7 @@ class AtomsSystem(object):
         
     ## end define operators ##
 
-    ## aux. methods ##
+    ## aux methods ##
     def copy(self):
         """
         Make a copy of AtomsSystem instance
@@ -1267,7 +1267,7 @@ class AtomsSystem(object):
         self._atoms = atoms2
         #self.refresh_pointer()
 
-    ## end aux. methods ##
+    ## e...utils.auxil. methods ##
 
 
     #
