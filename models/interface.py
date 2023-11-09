@@ -1,8 +1,8 @@
 
 from . import carbonlab
-from ..ncio   import convert_xyz2abc ### for model, 1elec
+from ..inout   import convert_xyz2abc ### for model, 1elec
 from ..atoms   import *
-from ..aux.env import *
+from ..utils.env import *
 import os 
 
 def interface():

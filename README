@@ -15,11 +15,14 @@ export PATH=$path_to_oorinano/bin
 
 ###### Copy examples and refer to readme file in each example directory
 ### copy example directory to your_work_dir and run examples
-cp -r OORIexamples $work_dir
+cp -r Examples $work_dir
 
 ### or partly copy present working examples
-cp -r OORIexamples/catalysis  $your_work_dir
-cp -r OORIexamples/qtnegf     $your_work_dir
+cp -r Examples/catalysis  $your_work_dir
+cp -r Examples/qtnegf     $your_work_dir
+
+### Before run each example, check the vasp and siesta path in ~/utils/env.py
+
 
 
 

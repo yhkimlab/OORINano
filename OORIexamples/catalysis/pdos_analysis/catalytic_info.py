@@ -1,1 +1,0 @@
-../../bin/catalytic_info.py
