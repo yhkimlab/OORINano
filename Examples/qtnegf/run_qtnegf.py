@@ -5,9 +5,9 @@ import time
 from oorinano.utils.auxil import convert_time2human as time_convert
 
 from oorinano.calculator.siesta import Siesta
-from oorinano.simulators.qtnegf import qtNegf
-from oorinano.simulators.qtnegf.cellmodeling import model_electrode, model_channel
-from oorinano.simulators.qtnegf.qtplot import qtPlot
+from oorinano.simulator.qtnegf import qtNegf
+from oorinano.simulator.qtnegf.cellmodeling import model_electrode, model_channel
+from oorinano.simulator.qtnegf.qtplot import qtPlot
 
 def runQtNegf(job, ch_struct, ch_size, el_structs, junc_dist, in_yaml, out_yaml, fdf_params, model_path, nnode, nproc):
     '''
