@@ -1,6 +1,6 @@
 #from __future__ import print_function
 from ...atoms import *
-from ...inout import  get_unique_symbs, write_xsf #cleansymb,
+from ...rw import  get_unique_symbs, write_xsf #cleansymb,
 from ...utils.units import ang2bohr,  degrad, bohr2ang
 from glob import glob
 import re, sys, os

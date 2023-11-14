@@ -7,8 +7,8 @@ from __future__ import print_function
 
 from .calculator    import vasp
 from .calculator    import siesta
-from .models        import surflab
-from .models        import carbonlab
-from .models        import interface
-from .simulators       import catalysis
-from .simulators       import qtnegf
+from .modeler        import surflab
+from .modeler        import carbonlab
+from .modeler        import interface
+from .simulator       import catalysis
+from .simulator       import qtnegf

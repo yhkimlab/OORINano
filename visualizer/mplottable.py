@@ -5,40 +5,9 @@ import argparse
 import re
 import sys
 import numpy as np
-from myplot2D import mplot_levels
-from myplot2D import mplot_nvector as mplot_2d
-#from plot_level import mplot_levels
-from plot_job import get_jobtitle
-#from plot_job import Ni_6x
-from my_chem import *
-from common import *
+from .mplot2d import mplot_table_line
+from .pltcommon import *
 import csv
-
-def convert2value(st):
-    try:
-        val = float(st)
-    except:
-        if re.search('j', st):
-            val = j2cal
-            if re.search('-', st):
-                val *= -1
-        else:
-            print("Error:: No transform unit for y-scale")
-            sys.exit(2)
-    #print(f"return scale {val}")
-    return val
-
-def get_yv_scale(yscale):
-    ''' treat yscale, values as list '''
-    values=[]
-    for ys in yscale:
-        val = convert2value(ys)
-        values.append(val)
-    return values
-
-def get_title(name):
-    title = f_root(name)
-    return title.upper()
 
 def fwhite2table(inf, icx=1):
     '''
@@ -87,11 +56,12 @@ def fcsv2table(inf):
     return fields, rows
 
 
-def draw_table(inf,Llevel,icx,icy,job,title,xlabel,ylabel,ylegend_in,Lsave,yscale,colors,Ltwinx,icy_right,ylabel_r):
+def plot_dostable(inf,ix,icy,title,xlabel,ylabel,ylegend_in,colors,lvertical=None,orb=None, xlim=None):
     '''
     inf : table format
     fmt : white space or csv
     if file has column title, it will be ylabel
+    dict_vert: 'center', 'max'
     '''
     ### modify get title
     if not title:
@@ -105,7 +75,7 @@ def draw_table(inf,Llevel,icx,icy,job,title,xlabel,ylabel,ylegend_in,Lsave,yscal
             fmt = 'white'
     else:
         print(f"can't find extension using single . in {inf}")
-        sys.exit(1)
+        sys.exit(11)
     ### scan file list
 
     if fmt == 'white':
@@ -117,7 +87,7 @@ def draw_table(inf,Llevel,icx,icy,job,title,xlabel,ylabel,ylegend_in,Lsave,yscal
         tab = np.array(rows).T
         x   = tab[0,:]
         y2  = tab[1:,:]
-    #sys.exit(1)
+    
     ### change string to value
     #print(f"{y2}")
 
@@ -131,7 +101,7 @@ def draw_table(inf,Llevel,icx,icy,job,title,xlabel,ylabel,ylegend_in,Lsave,yscal
             xl = 'float'
             break
         xl = 'int'
-    print(f"xvalue type {xl}")
+    #print(f"xvalue type {xl}")
     if xl == 'float':
         x = [ float(i) for i in x ]
     elif xl == 'int':
@@ -140,28 +110,26 @@ def draw_table(inf,Llevel,icx,icy,job,title,xlabel,ylabel,ylegend_in,Lsave,yscal
     ### change y value to float
     y2value = [ [ float(y) for y in ys ] for ys in y2 ]
     #print(f"{y2value}")
-    print(f"size: x {len(x)}, y: {len(ylegend)}, shape of data {np.array(y2value).shape}")
+    #print(f"size: x {len(x)}, y: {len(ylegend)}, shape of data {np.array(y2value).shape}")
 
     ### var: x, y2, ylegend
     ys = []
-    y_legend = []
     if not ylegend:
         ylegend=ylegend_in
+    if not colors and ylegend:
+        colors = []
+        for yl in ylegend:
+            colors.append(getcolor_orbital(yl))
+
     if not icy:
         icy =  list(range(len(y2value)))
     for i in icy:
         ys.append(y2value[i-2][:])
-        #y_legend.append(ylegend[i])
         
-    print(f"title {title} xlabel {xlabel} ylabel {ylabel}")
-    print(f"ylegends {ylegend}")
-    #print(f"x {x}, ys {ys}, legend {y_legend}")
-    ### x, yplot, y_legend are lists
+    #print(f"title {title} xlabel {xlabel} ylabel {ylabel}")
+    #print(f"ylegends {ylegend}")
     ### x will be used for just len(x)
-    if Llevel:
-        mplot_levels(x, ys, title=title, xlabel=xlabel, ylabel=ylabel, legend=ylegend,colors=colors)
-    else:
-        mplot_2d(x, ys, title=title, xlabel=xlabel, ylabel=ylabel, legend=ylegend, colors=colors)
+    mplot_table_line(x, ys, title=title, xlabel=xlabel, ylabel=ylabel, legend=ylegend, colors=colors,lvert=lvertical, orb=orb, xlim=xlim)
     return 0
 
 def main():
@@ -178,9 +146,9 @@ def main():
     g_twin.add_argument('-tx', '--twinx', action="store_true", help='using two y-axes with twin x ticks')
     g_twin.add_argument('-icy2', '--second_iy', default=[2], nargs="+", type=int, help='designate the index of y for 2nd y-axis')
     g_twin.add_argument('-yl2', '--second_yl', default='G (eV)', help='input left y-axis title')
-    parser.add_argument('-j', '--job', help='job of qcmo|ai|gromacs')
+    #parser.add_argument('-j', '--job', help='job of qcmo|ai|gromacs')
     parser.add_argument('-t', '--title', default='PDOS', help='title of figure would be filename')
-    parser.add_argument('-xl', '--xlabel', default=r'E - E$_F$ [eV]', help='X title, label in mpl')
+    parser.add_argument('-xl', '--xlabel', default=r'E - E\$_F\$ [eV]', help='X title, label in mpl')
     parser.add_argument('-yl', '--ylabel', default='DOS', help='Y title, label in mpl')
     parser.add_argument('-yls', '--ylabels', nargs='*', help='Y labels for legend')
     parser.add_argument('-c', '--colors', nargs='*', help='Y label for legend')
@@ -188,7 +156,7 @@ def main():
     args = parser.parse_args()
 
     ### n columns in 1 file, twinx
-    draw_table(args.inf,args.level,args.icolumn_x,args.icolumn_y,args.job,args.title,args.xlabel,args.ylabel,args.ylabels,args.save,args.y_scale, args.colors, args.twinx, args.second_iy, args.second_yl)
+    draw_table(args.inf,args.level,args.icolumn_x,args.icolumn_y,args.title,args.xlabel,args.ylabel,args.ylabels,args.save,args.y_scale, args.colors, args.twinx, args.second_iy, args.second_yl)
     return 0
 
 if __name__=='__main__':

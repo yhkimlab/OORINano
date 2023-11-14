@@ -11,7 +11,7 @@ from .atoms_aux import *
 from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
 import copy     # added by SH
-from ..inout import convert_xyz2abc, convert_abc2xyz, read_xyz
+from ..rw import convert_xyz2abc, convert_abc2xyz, read_xyz
 from .atom_vector import Vector
 
 ## Class Atom, AtomsSystem, Vector (move to atom_vector), Trajectory ##

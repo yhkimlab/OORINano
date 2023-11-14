@@ -1,5 +1,5 @@
 import sys, os, re, importlib
-from ...models.interface import twoInterfaces
+from ...modeler.interface import twoInterfaces
 
 '''
 modeling electrode
