@@ -3,7 +3,7 @@
 """
 
 from ..atoms import *
-from ..inout import cleansymb, get_unique_symbs
+from ..rw import cleansymb, get_unique_symbs
 from ..utils.units import ang2bohr; bohr2ang = 1/ang2bohr
 
 

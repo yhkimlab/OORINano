@@ -70,8 +70,8 @@ if __name__ =='__main__':
 
     ec = elec2.get_cell()
     mc = modelA.get_cell()
-    elec_cell = oori.inout.convert_xyz2abc(ec[0], ec[1], ec[2])
-    model_cell = oori.inout.convert_xyz2abc(mc[0], mc[1], mc[2])
+    elec_cell = oori.rw.convert_xyz2abc(ec[0], ec[1], ec[2])
+    model_cell = oori.rw.convert_xyz2abc(mc[0], mc[1], mc[2])
     ratio = elec_cell[0] / model_cell[0]
     modelA2 = modelA.adjust_cell_size(ratio, 4)
     modelB2 = modelB.adjust_cell_size(ratio, 4)

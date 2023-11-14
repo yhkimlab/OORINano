@@ -1,5 +1,5 @@
 from ...atoms   import *
-from ...inout    import cleansymb, get_unique_symbs, convert_xyz2abc
+from ...rw    import cleansymb, get_unique_symbs, convert_xyz2abc
 from ...utils.units   import R
 from ...utils.fermidirac import fd_derivative_weight
 from glob import glob
@@ -947,6 +947,7 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb='p', plot_option=None):
     
     ### select orbital column
     dat_ncolumn5 = {'s': 1, 'p': 2, 'd': 3, 't': 4}   # in case up and down is summed
+    print(f"orb {orb}")
     if not orb.isalpha():   # cN
         icol=int(orb.isalpha[1]) # take N in cN
     else:

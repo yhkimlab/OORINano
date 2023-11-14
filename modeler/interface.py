@@ -1,6 +1,6 @@
 
 from . import carbonlab
-from ..inout   import convert_xyz2abc ### for model, 1elec
+from ..rw   import convert_xyz2abc ### for model, 1elec
 from ..atoms   import *
 from ..utils.env import *
 import os 

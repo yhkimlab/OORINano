@@ -1,4 +1,4 @@
-from oorinano.models import carbonlab
+from oorinano.modeler import carbonlab
 from oorinano.calculator.siesta import Siesta, readAtomicStructure, writeAtomicStructure
 from oorinano.calculator.siesta import default_location
 from oorinano.utils.auxil import convert_xyz2abc
