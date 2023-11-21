@@ -443,7 +443,7 @@ def auto_nvector(x,y):
     plt.show()
     return 0
 ### most1
-def mplot_table_line(x, y, dx=1.0, title=None, xlabel=None, ylabel=None, legend=None,Lsave=False, colors=None, lvert=None, v_legend=None, orb=None, xlim=None):
+def mplot_table_line(x, y, dx=1.0, title=None, xlabel=None, ylabel=None, legend=None,Lsave=False, colors=None, lvert=None, v_legend=None, orb=None, xlim=None, plot_option=None):
     '''
     call with x=[] and y=[ [...
     x:: [] or [size]
@@ -463,7 +463,7 @@ def mplot_table_line(x, y, dx=1.0, title=None, xlabel=None, ylabel=None, legend=
         x=range(xsize)
     #print(f"x={len(x)} y={ys.shape} in {whereami()}()")
     plt.title(title)
-    xlabel = 'E - E$_F$ [eV]'
+    #xlabel = 'E - E$_F$ [eV]'
     plt.xlabel(xlabel, fontsize=12)
     plt.ylabel(ylabel, fontsize=12)
     print(f"xlabel: {xlabel} ")
@@ -478,7 +478,20 @@ def mplot_table_line(x, y, dx=1.0, title=None, xlabel=None, ylabel=None, legend=
                 ax.fill_between(x, ys[i,:], where=ys[i,:]>=d, color=colors[i])
                 plt.plot(x,ys[i,:],  label='TDOS' , color=colors[i])
             else:
-                plt.plot(x,ys[i,:],  label=legend[i] , color=colors[i])
+                ### split
+                print(f"plot option {plot_option}")
+                if re.search('sp', plot_option):
+                    if re.search('dn', legend[i]):
+                        plt.plot(x,ys[i,:],  label=legend[i] , color=colors[i], linestyle='dashed')
+                    else:
+                        plt.plot(x,ys[i,:],  label=legend[i] , color=colors[i])
+                ### polar plot
+                elif re.search('op',plot_option):
+
+                    if re.search('dn', legend[i]):
+                        plt.plot(x, -ys[i,:],  label=legend[i] , color=colors[i], linestyle='dashed')
+                    else:
+                        plt.plot(x,ys[i,:],  label=legend[i] , color=colors[i])
 
     else:
         print(f"Error:: obscure in y-dim {ys.ndim}")
@@ -495,7 +508,10 @@ def mplot_table_line(x, y, dx=1.0, title=None, xlabel=None, ylabel=None, legend=
     plt.legend(loc=1)               # locate after plot
     #plt.xlim([-20.0, 15.0])
     #ax.set_xlim([-25, 15])
-    ax.set_ylim([0.0, ylim[1]])     # set ymin=0 after get ymax
+    if plot_option and re.search('op', plot_option):
+        ax.set_ylim([-ylim[1], ylim[1]])
+    else:
+        ax.set_ylim([0.0, ylim[1]])     # set ymin=0 after get ymax
     if xlim:
         ax.set_xlim(xlim)
     ax.xaxis.set_major_locator(ticker.AutoLocator())

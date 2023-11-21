@@ -6,6 +6,7 @@ from glob import glob
 import os, math, sys
 import numpy as np
 from ...utils.auxil import parse_line, parse_lines
+from .file_format import *
  
 ### import io.read, io.write inside Vasp class
 
@@ -699,13 +700,13 @@ def get_magmom_4pos(pos='POSCAR', magin=None):
     if Lmag: return magstr + "100*0"
     else:    return "# " + magstr
 
-def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
+def calc_pdos(fname = 'DOSCAR', atom_list=[1], Lspin=False):
     '''
     DOSCAR: 5 [preline] + (ngrid + 1 [energy headline]) * (natom + 1 [total DOS])
         ngrid   number of energy grid
     
     atom_list should starts from 1
-    option: in case of spin = 2
+    Lspin: True in case of spin = 2
         None    sum spin-up and spin-down
         split   write spin-up and spin-down with two columns
     '''
@@ -880,8 +881,8 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
         froot = f"Atoms{atom_list[0]}"
     else:
         froot = f"Atoms{atom_list[0]}-{atom_list[-1]}_N{len(atom_list)}"
-    if option:
-        froot += option[:3]
+    if Lspin:
+        froot += 'pol'
     outfile = froot + '.dat'
     outf = open(outfile, 'w')
     lsum_p = []
@@ -898,13 +899,13 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
         else:
             lsum_p_dn.append(lsum_px_dn[i]+lsum_py_dn[i]+lsum_pz_dn[i])
             lsum_d_dn.append(lsum_dx2_dn[i]+lsum_dxy_dn[i]+lsum_dxz_dn[i]+lsum_dyz_dn[i]+lsum_dz2_dn[i])
-            if option == 'split':
+            if Lspin:
                 ### format:: E, lsum_s_up, lsum_s_dn, lsum_p, lsum_p_dn, lsum_d, lsum_d_dn, lsum(s+p+d), lsum(s+p+d)_dn 
                 st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % \
                     (Ei_f0[i],lsum_s_up[i],lsum_s_dn[i],lsum_p[i],lsum_p_dn[i],lsum_d[i],lsum_d_dn[i],lsum_s_up[i]+lsum_p[i]+lsum_d[i],lsum_s_dn[i]+lsum_p_dn[i]+lsum_d_dn[i])
-            elif option == 'polar':
-                st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % \
-                    (Ei_f0[i],lsum_s_up[i],-lsum_s_dn[i],lsum_p[i],-lsum_p_dn[i],lsum_d[i],-lsum_d_dn[i],lsum_s_up[i]+lsum_p[i]+lsum_d[i],-(lsum_s_dn[i]+lsum_p_dn[i]+lsum_d_dn[i]))           
+            #elif option == 'polar':
+            #    st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % \
+            #        (Ei_f0[i],lsum_s_up[i],-lsum_s_dn[i],lsum_p[i],-lsum_p_dn[i],lsum_d[i],-lsum_d_dn[i],lsum_s_up[i]+lsum_p[i]+lsum_d[i],-(lsum_s_dn[i]+lsum_p_dn[i]+lsum_d_dn[i]))           
             ### No option: lsum up and down ### format:: E, lsum_s, lsum_p, lsum_d, lsum(s+p+d)
             else:
                 st = "%15.8f %15.8f %15.8f %15.8f %15.8f" % (Ei_f0[i],lsum_s_up[i]+lsum_s_dn[i],lsum_p[i]+lsum_p_dn[i],lsum_d[i]+lsum_d_dn[i],lsum_s_up[i]+lsum_p[i]+lsum_d[i]+lsum_s_dn[i]+lsum_p_dn[i]+lsum_d_dn[i])
@@ -915,12 +916,13 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
     os.system(f'cp {outfile} SUM_ATOM.dat')
 
 
-def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb='p', plot_option=None):
+def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb=3, plot_option=None):
     '''
     d-band center theory : Nature, 376, 238 (1995)
     Fermi abundance      : J. Phys. Chem. C 121, 1530 (2017), optimal value RT = 0.4 eV
     highest peak         : Nat. Energy, 1, 16130 (2016)
-    orbitals    0 for 's', 1 for 'p', 2 for 'd'
+    orb     receives column index which starts from 1
+    # Do not receive orbital symbol    0 for 's', 1 for 'p', 2 for 'd'
     SUM_ATOM.dat format: ene, s, p, d. s+p+d
     '''
     import os, sys, math
@@ -946,8 +948,9 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb='p', plot_option=None):
     line_info, word_info = Vasp.read_file(fname)
     
     ### select orbital column
+    '''
     dat_ncolumn5 = {'s': 1, 'p': 2, 'd': 3, 't': 4}   # in case up and down is summed
-    print(f"orb {orb}")
+    print(f"orb {orb} in table index")
     if not orb.isalpha():   # cN
         icol=int(orb.isalpha[1]) # take N in cN
     else:
@@ -957,6 +960,8 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb='p', plot_option=None):
             print(f"{word_info[0]}")
             print(f"not prepared for other file format with length {len(word_info[0])}")
             sys.exit(11)
+    '''
+    icol = orb - 1  # from table index to list index
 
     E = [] ; dos = []
     

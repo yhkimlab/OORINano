@@ -56,12 +56,13 @@ def fcsv2table(inf):
     return fields, rows
 
 
-def plot_dostable(inf,ix,icy,title,xlabel,ylabel,ylegend_in,colors,lvertical=None,orb=None, xlim=None):
+def plot_dostable(inf,ix,icy,title,xlabel,ylabel,ylegend_in,colors,plot_option=None,lvertical=None,orb=None, xlim=None):
     '''
     inf : table format
     fmt : white space or csv
     if file has column title, it will be ylabel
     dict_vert: 'center', 'max'
+    plot_option: split or opposite for spin up & dn
     '''
     ### modify get title
     if not title:
@@ -129,7 +130,7 @@ def plot_dostable(inf,ix,icy,title,xlabel,ylabel,ylegend_in,colors,lvertical=Non
     #print(f"title {title} xlabel {xlabel} ylabel {ylabel}")
     #print(f"ylegends {ylegend}")
     ### x will be used for just len(x)
-    mplot_table_line(x, ys, title=title, xlabel=xlabel, ylabel=ylabel, legend=ylegend, colors=colors,lvert=lvertical, orb=orb, xlim=xlim)
+    mplot_table_line(x, ys, title=title, xlabel=xlabel, ylabel=ylabel, legend=ylegend, colors=colors,lvert=lvertical, plot_option=plot_option, orb=orb, xlim=xlim)
     return 0
 
 def main():
