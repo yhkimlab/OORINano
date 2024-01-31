@@ -6,6 +6,7 @@ auxiliary functions
     
 '''
 import re, inspect, os, glob
+import numpy as np
 
 def parse_line(line):
     '''
@@ -80,6 +81,10 @@ def print_list(li):
     st = list2str(li)
     print(st)
     return st
+
+def list2_2f(li, decimal=2):
+    return list(np.around(np.array(li), decimal))
+
 
 def f_ext(fname):
     return fname.split('.')[-1]

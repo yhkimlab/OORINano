@@ -94,11 +94,11 @@ def main():
             \n\t\t    -e   Au| Au.psf and/or left.fdf right.fdf\
             \n\t\t    -p   input parameters in 'param_elec.fdf', 'param_scat.fdf' in wdir\
             \n\t    Job scheduler: slurm\
-            \n\t\tsbatch -J test -p {args.partition} -N {args.nnode} -n {args.nproc} slm_qtnegf.sh     # running in main directory\
-            \n\t\tsbatch -J test -p {args.partition} -N {args.nnode} -n {args.nproc} --export=sub=0 slm_qtnegf.sh # making subdirectory\
+            \n\t\tsbatch -J test -p {args.partition} -N {args.nnode} -n {args.nproc} slm_qtnegf.sh     # making subdirectory\
+            \n\t\tsbatch -J test -p {args.partition} -N {args.nnode} -n {args.nproc} --export=sub=0 slm_qtnegf.sh # running in main directory\
             \n\t\tAs for customized input models, modify slm_qtnegf.sh\
             \n\t\tOptions for sbatch:\
-            \n\t\t    -p    partition\
+            \n\t\t    -x    partition\
             \n\t\t    -N    number of nodes\
             \n\t\t    -n    number of total process\
             \n\t\t    * Modify python argument inside 'slm_qtnegf.sh'\

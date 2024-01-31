@@ -82,8 +82,14 @@ class Vasp(object):
             'LASPH'     :        'T',       # non-spherical contribtuion
             'LMAXMIX'   :          4,       # Density Mixer handles quantumNumber upto (4: d-elements, 6: f-elements)
             'ISPIN'     :          1,       # 1 = Spin-restricted, 2 = spin-unrestricted
-            'MAGMOM'    :         None,       # can be in or use default
+            'MAGMOM'    :       None,       # can be in or use default
+            # 4. Postprocess: DOS calculation
+            'LORBIT'    :         11,       # lm-decomposed DOSCAR
+            'NEDOS'     :       4001,       # number of Egrid between EMAX and EMIN
+            'EMIN'      :        -25,       # Emin for DOS cal.
+            'EMAX'      :         15,       # Emax for DOS cal.
             }
+        
 
     def get_options(self):
         """
@@ -100,18 +106,6 @@ class Vasp(object):
         >>> sim.get_options()
         """
         return self._params.items()
-    ### useless: deprecate
-    def read_file(fname):
-        lineinfo = []
-        wordinfo = []
-        with open(fname) as f:
-            for i, l in enumerate(f):
-                line = l
-                word = line.split()
-                lineinfo.append(line)
-                wordinfo.append(word)
-
-        return lineinfo, wordinfo
     
     def set_option(self, key, value):
         
@@ -258,63 +252,78 @@ class Vasp(object):
         cmd = cmd + ' > POTCAR'
         os.system('%s' % cmd)
 
-    def write_INCAR(self):
+    def write_INCAR(self, mode=None):
         #-------------INCAR---------------------
+        '''
+        INCAR is 1st assinged here
+        More modified in run_calculator() using mode=[sp|opt|vib|dos]
+        '''
         p = self._params
         #print(f"in writing INCAR {p['NPAR']}")
-        INCAR = open('INCAR', 'w')
-        INCAR.write("# VASP basic control parameters\n\n")
-        INCAR.write("SYSTEM        =   %s\n" % p['SYSTEM'])
-        INCAR.write("ISTART        =   %i\n" % p['ISTART']) 
-        INCAR.write("ICHARG        =   %i\n" % p['ICHARG']) 
-        INCAR.write("ISIF          =   %i\n\n" % p['ISIF']) 
-        INCAR.write("IBRION        =   %i\n" % int(p['IBRION']))
-        INCAR.write("NSW           =   %i\n" % p['NSW']) 
-        INCAR.write("PREC          =   %s\n" % p['PREC']) 
-        INCAR.write("ALGO          =   %s\n" % p['ALGO'])
-
-        if p['NCORE'] :
-            INCAR.write(f"{'NCORE':<15}={p['NCORE']:5d}\n")
-        else:
-            INCAR.write(f"{'NPAR':<15}={p['NPAR']:5d}\n")
         
-        INCAR.write("LWAVE         =   %s\n" % p['LWAVE']) 
-        INCAR.write("LCHARG        =   %s\n" % p['LCHARG']) 
+        incar = open('INCAR', 'w')
+        all_params=[]               # contains already list params
+        
+        list_basic = [ 'SYSTEM', 'ISTART', 'ICHARG', 'ISIF', 'IBRION', 'NSW', 'PREC', 'ALGO', 'LWAVE', 'LCHARG']
+        incar.write("# VASP basic control parameters\n\n")
+        for key in list_basic:
+            incar.write(f"{key:<12}=    {p[key]}\n")
+        if p['NCORE'] :
+            incar.write(f"{'NCORE':<12}=    {p['NCORE']}\n")
+        else:
+            incar.write(f"{'NPAR':<12}=    {p['NPAR']}\n")
+        all_params.extend(list_basic)
+        all_params.extend(['NCORE', 'NPAR'])
+        
 
-        INCAR.write("# VASP convergence parameters \n\n")
-        INCAR.write("ENCUT         =   %f\n" % float(p['ENCUT']))
-        INCAR.write("ISMEAR        =   %i\n" % p['ISMEAR'])
-        INCAR.write("SIGMA         =   %f\n" % p['SIGMA'])
-        INCAR.write("NSIM          =   %i\n" % p['NSIM'])
-        INCAR.write("NELMIN        =   %i\n" % p['NELMIN'])
-        INCAR.write("NELM          =   %i\n" % p['NELM'])
-        INCAR.write("EDIFF         =   %f\n" % float(p['EDIFF']))
-        INCAR.write("EDIFFG        =   %f\n" % float(p['EDIFFG']))
-        INCAR.write("%s           =   %s\n\n" % (p['XC'], p['XCAUTHOR']))
-        INCAR.write("# VASP optional parameters \n\n")
-        INCAR.write("POTIM         =   %f\n" % float(p['POTIM']))
-        INCAR.write("IVDW          =   %i\n" % int(p['IVDW']))
-        INCAR.write("LDIPOL        =   %s\n" % p['LDIPOL'])
-        INCAR.write("IDIPOL        =   %i\n" % int(p['IDIPOL']))
-        INCAR.write("LPLANE        =   %s\n" % p['LPLANE'])
-        INCAR.write("ADDGRID       =   %s\n" % p['ADDGRID'])
-        INCAR.write("LREAL         =   %s\n" % p['LREAL'])
-        INCAR.write("ISYM          =   %i\n" % p['ISYM'])
-        INCAR.write("LASPH         =   %s\n" % p['LASPH'])
-        INCAR.write("LMAXMIX       =   %i\n" % p['LMAXMIX'])
-        INCAR.write("ISPIN         =   %i\n\n" % p['ISPIN'])
+        list_converge = ['ENCUT', 'ISMEAR', 'SIGMA', 'NSIM', 'NELMIN', 'NELM', 'EDIFF', 'EDIFFG']
+        incar.write("\n# VASP convergence parameters \n\n")
+        for key in list_converge:
+            incar.write(f"{key:<12}=    {p[key]}\n")
+        incar.write(f"{p['XC']:<12}=    {p['XCAUTHOR']}\n\n")
+        all_params.extend(list_converge)
+        all_params.extend(['XC', 'XCAUTHOR'])
+
+        list_optional = ['POTIM', 'IVDW', 'LDIPOL', 'IDIPOL', 'LPLANE', 'ADDGRID', 'LREAL', 'ISYM', 'LASPH', 'LMAXMIX', 'ISPIN']
+        incar.write("# VASP optional parameters \n\n")
+        for key in list_optional:
+            incar.write(f"{key:<12}=    {p[key]}\n")
+        all_params.extend(list_optional)
+
         if p['ISPIN'] == 2:
             if p['MAGMOM']:
                 #print(f"True {p['MAGMOM']}"), do no pass p['MAGMOM'] if it is {} -> it became True
                 str_mag = get_magmom_4pos(pos="POSCAR", magin=f"{p['MAGMOM']}")
             else:
                 str_mag = get_magmom_4pos(pos="POSCAR")
-            INCAR.write(f"{str_mag}")
-        INCAR.close()
+            incar.write(f"{str_mag}\n")
+        all_params.append('MAGMOM')
+
+        ### Additional incar params: DOS
+        list_dos = ['LORBIT', 'NEDOS', 'EMAX', 'EMIN']
+        if mode == 'dos':            
+            incar.write("\n### DOSCAR calculation\n")
+            for key in list_dos:
+                incar.write(f"{key:<12}=    {p[key]}\n")
+        all_params.extend(list_dos)
+        
+        ### treat not listed params <- user input params
+        ### if there are keys not listed in writing INCAR
+
+        res = list (filter (lambda i: i not in all_params, p.keys()))
+        if len(res):
+            print(f"There are {len(res)} user-added params")
+            incar.write("\nUser-added params\n")
+            for key in res:
+                incar.write(f"{key:<12}=    {p[key]}\n")
+    
+        incar.close()
+        
+        return 0
 
 
 
-    def run_catalysis(self, mode='sp', fix=None):
+    def run_calculator(self, mode='sp', fix=None):
         """ 
         Run VASP with options
         mode    opt for optimization
@@ -360,6 +369,14 @@ class Vasp(object):
             p['IBRION'] = 5
             p['POTIM']  = 0.015
             p['NSW']    = 1
+        
+        if mode == 'dos':
+            p['IBRION'] = -1
+            p['ISTART'] = 1
+            p['ICHARG'] = 11
+            p['NSW']    = 0
+            p['ALGO']   = "Normal"
+            p['LCHARG'] = ".False."
 
         # run_simulation
         cmd = f'mpirun -np {nproc}  {executable} > stdout.txt'
@@ -368,7 +385,7 @@ class Vasp(object):
         self.write_KPOINTS()
         del p['KPOINTS']        # remove params not in INCAR
         self.write_POTCAR() 
-        self.write_INCAR()      # remove p['SERVER']
+        self.write_INCAR(mode=mode)      # remove p['SERVER']
         
         os.system(cmd)
     
@@ -384,7 +401,7 @@ class Vasp(object):
 
     def get_total_energy(self, output_name='OUTCAR'):
         
-        line_info, word_info = Vasp.read_file(output_name)
+        line_info, word_info = read_file(output_name)
         
         VASP_E = []
         for i in range(len(line_info)):
@@ -406,7 +423,7 @@ class Vasp(object):
         ZPE, TS = vasp.get_vibration_energy(Temp=300)
         """
         
-        line_info, word_info = Vasp.read_file(output_name)
+        line_info, word_info = read_file(output_name)
 
         ZPE = 0.0; TS = 0.0
         RT  = R * Temp
@@ -428,15 +445,15 @@ class Vasp(object):
             vlog    = 1 - math.exp(-x)
             v2      = -math.log(vlog)
 
-            #E_TS   = RT * (v1 + v2)
-            E_TS   = RT * v2
+            E_TS   = RT * (v1 + v2) # this is Norskov scheme of G=E+ZPE-TS
+            #E_TS   = RT * v2       # this is exact scheme from Schffler and 
             #print(f"Eentropy: freq {energy*1000:10.5f} : {RT*v1:10.5f} {RT*v2:10.5f}")
             ZPE = ZPE + 0.5*energy
             TS  = TS  + E_TS
         
         return ZPE, TS
 
-    def get_vibration_spectrum(output_name='OUTCAR', start=0, end=6000, npts=None, width=20.0, matplot=1):               
+    def get_vibration_spectrum(self, output_name='OUTCAR', start=0, end=3500, npts=None, width=20.0, matplot=1):               
         """
         Example:
         --------
@@ -445,18 +462,7 @@ class Vasp(object):
         at2 = vasp2.Vasp(at)
         at2.get_vibration_specctrum(output_name='OUTCAR_imag', matplot=1, start=-2000, end=6000)
         """
-                                                                                                                          
-        def read_file(fname):
-            lineinfo = []
-            wordinfo = []
-            with open(fname) as f:
-                for i, l in enumerate(f):
-                    line = l
-                    word = line.split()
-                    lineinfo.append(line)
-                    wordinfo.append(word)
-         
-            return lineinfo, wordinfo 
+                                                                                                                    
         
         line_info, word_info = read_file(output_name) 
                                                                                                                           
@@ -511,6 +517,18 @@ class Vasp(object):
             plt.savefig('VDOS.png', format='png', dpi=600, bbox_inches='tight')
         else:
             pass
+### useless: deprecate
+def read_file(fname):
+    lineinfo = []
+    wordinfo = []
+    with open(fname) as f:
+        for i, l in enumerate(f):
+            line = l
+            word = line.split()
+            lineinfo.append(line)
+            wordinfo.append(word)
+
+    return lineinfo, wordinfo
 
 ### functions inside module vasp
 def readAtomicStructure(file_name):
@@ -945,7 +963,7 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb=3, plot_option=None):
     
     
     ### Start of calculation
-    line_info, word_info = Vasp.read_file(fname)
+    line_info, word_info = read_file(fname)
     
     ### select orbital column
     '''

@@ -18,9 +18,9 @@ outfile=$pdir/${SLURM_JOB_ID}.${jobname}.out
 partname=$SLURM_JOB_PARTITION
 nodelist=$SLURM_JOB_NODELIST
 
-if [ $partname == 'X1' ]; then
+if [ $partname == 'X1' -o $partname == 'X1c' ]; then
     par=2; SLURM_CPUS_PER_NODE=8
-elif [ $partname == 'X2' ]; then
+elif [ $partname == 'X2' -o $partname == 'X2c']; then
     par=2; SLURM_CPUS_PER_NODE=12
 elif [ $partname == 'X3' ]; then
     par=4; SLURM_CPUS_PER_NODE=20

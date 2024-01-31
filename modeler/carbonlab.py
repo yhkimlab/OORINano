@@ -15,7 +15,6 @@ from __future__ import print_function
 from ..atoms import *
 import numpy as np
 
-
 def dmax(a,b):
     """
     Return the G.C.D of A and B
@@ -48,6 +47,8 @@ def grp(n, m, bl=1.415, vacuum=10.0):
         for atom in temp: grp2.append(atom.copy())
         i += 1
     return AtomsSystem(grp2, cell=cell)
+
+graphene = grp
 
 def SC_2d(n, m, basis, uc):
     sc_basis = []

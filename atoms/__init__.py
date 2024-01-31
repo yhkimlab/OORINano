@@ -212,8 +212,8 @@ class AtomsSystem(object):
 
         if not atoms: # 110924 empty AtomsSystem is allowed.
             self._atoms = []
-            self._cell = None
-            self._pbc = None
+            self._cell = []     # change from None
+            self._pbc = []      # change from None
             self._pointer = {}
             return
             #raise ValueError
@@ -1180,7 +1180,7 @@ class AtomsSystem(object):
         print ('Contents =>', contents); i=0
         info_cell = self.get_cell(); pbc_info = self.get_pbc()
         #if self._cell != None:
-        if self._cell.any():
+        if self._cell.any():   # error with NoneType -> self._cell = [] initially
             print ("\nCell & Periodic Boundary Condition Infomation")
             print ("v1  (%10.6f, %10.6f, %10.6f)" % tuple(info_cell[0]))
             print ("v2  (%10.6f, %10.6f, %10.6f)" % tuple(info_cell[1]))

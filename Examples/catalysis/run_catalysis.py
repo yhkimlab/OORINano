@@ -7,7 +7,7 @@ from oorinano.calculator.vasp import Vasp
 from oorinano.calculator.vasp import readAtomicStructure as read_geo
 from oorinano import surflab
 
-def run_catalysis(job, cat_kind, flabel, poscar, mode, Lvib, fix, nnode, nproc, sparallel):
+def run_catalysis(job, cat_kind, pH, flabel, poscar, mode, Lvib, fix, nnode, nproc, sparallel):
     '''
     job         [ORR(default=orr), HER, OER]
     subjob      [VASP run, show INCAR, plot Gibbs]
@@ -56,20 +56,22 @@ def run_catalysis(job, cat_kind, flabel, poscar, mode, Lvib, fix, nnode, nproc, 
     else:
         npar=int(sparallel[1:])
 
-    if cat_kind == 'orr':
-        ### INCAR params: 
+    if cat_kind == 'orr' or cat_kind == 'oer':
+        ### INCAR params for Run and Dos calc.
         ###     magmom = dict or list: ispin=2, magmom=['N',2]
+        incar_params = dict(kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
+        ### user incar test
+        #incar_params['kband'] = "67 68 69 70"
         if 'npar' in locals():
-            incar_params = dict(npar=npar, kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
+            incar_params['npar']  = npar
         else:
-            incar_params = dict(ncore=ncore, kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
-
+            incar_params['ncore'] = ncore
         sim_params   = dict(nproc=nproc)
         sim_params.update(incar_params)
     elif cat_kind == 'her':
         sim_params  = dict(npar=npar, kpoints=[1,1,1], nproc=nproc, ediff=0.01, ediffg=-0.04, encut=400, ispin=1)
     else:
-        print(f"Error:: {cat_kind} should be 'orr'|'her'")
+        print(f"Error:: {cat_kind} should be orr|oer|her")
         sys.exit(1)
 
     ### 3. Make Vasp instance and pass to runORR to make Vasp instance inside module 
@@ -79,10 +81,10 @@ def run_catalysis(job, cat_kind, flabel, poscar, mode, Lvib, fix, nnode, nproc, 
     #calc.write_POSCAR(file_name='POSCAR.test')
     #sys.exit(10)
 
-    ### 4. Run VASP | Show INCAR | Plot
+    ### 4. Run catalysis (VASP) | Show INCAR | Plot | DOS cal
     if job == 'run':
-        if cat_kind == 'orr':
-            catalysis.runORR(calc, sim_params, mode='opt', vib=Lvib, fix=fix, label=flabel, pH=0)    #pivot = 24 (atom index)
+        if cat_kind == 'orr' or cat_kind ==  'oer':
+            catalysis.runORR(calc, sim_params, mode='opt', vib=Lvib, fix=fix, label=flabel, pH=pH, job=cat_kind)    #pivot = 24 (atom index)
         elif cat_kind == 'her':
             catalysis.runHER(calc, sim_params, mode='opt', vib=Lvib, fix=fix, label=flabel)
     elif job == 'model':
@@ -90,27 +92,32 @@ def run_catalysis(job, cat_kind, flabel, poscar, mode, Lvib, fix, nnode, nproc, 
     elif job == 'incar':
         for k, v in calc.get_options():
             print(f"{k:>10}\t{v}")
-    elif job == 'plot':
-        ## To plot: get values of totE, zpe, TS and plot
-        totE, zpe, TS = catalysis.runORR(calc, sim_params, mode=mode, vib=True, fix=fix, label=flabel, pH=14)
-        print(totE)
-        print(zpe)
-        print(TS)
-        #catalysis.plot_ORR_4e_acid(G_ORR_vib, U=0.7, legend=['U=1.23V', 'U=0.70V', 'U=0.00V'])
-    elif job == 'dos':
-        pass
+    elif re.search('dos', job):
+        ### make directory in shell script
+        if job == 'spdos':
+            incar_params = dict(lcharg = True)     # Lwave = True
+            sim_params.update(incar_params)
+            calc.set_options(**sim_params)
+            calc.run_calculator(mode='sp')
+        else:
+            incar_params = dict(kpoints=[8,8,1], nedos=4001, emin=-25, emax=15)            # increase kpoints for dos cal (post-process)
+            sim_params.update(incar_params)
+            calc.set_options(**sim_params)
+            calc.run_calculator(mode='dos')
     else:
-        pass
+        print(f"Job error: select job in [run, model, incar, plot, dos ]")
+        sys.exit(1)
     return 0
 
 def main():
     parser = argparse.ArgumentParser(description="Running catalysis::\
                         \n\tselect catalytic job, subjob [run, show incar, ...], some options for vib, overwrite\
                         \n\tsystem params partition, node, etc are applied to specific system")
-    parser.add_argument('-j', '--job', default='run', choices=['run', 'model','incar', 'plot'], help='incar: show default params')
+    parser.add_argument('-j', '--job', default='run', choices=['run', 'model','incar', 'dos', 'spdos'], help='incar: show default params')
     parser.add_argument('-c', '--cat_kind', default='orr', choices=['orr', 'her', 'oer'], help='catalytic reactions')
+    parser.add_argument('-ph', '--pH', default=0, type=int, help='get pH from command line')
     parser.add_argument('-l', '--flabel', default='test', help='label for dirname')
-    parser.add_argument('-p', '--poscar', nargs='*', help="use any poscar or generate surface: ['Pt', '111', (3,3,3)]=[metal, surface index, size]")
+    parser.add_argument('-p', '--poscar', nargs='*', default=['POSCAR'], help="use any poscar or generate surface: ['Pt', '111', (3,3,3)]=[metal, surface index, size]")
     parser.add_argument('-t', '--test', action='store_true', help="change all the defaults")
     group_cat  = parser.add_argument_group(title='catalysis running options')
     group_cat.add_argument('-m', '--mode', default='opt', choices=['opt', 'sp'], help='Opt mode')
@@ -133,19 +140,30 @@ def main():
                 \n    Check 'readme.txt' to set VASP envirionment\
                 \n    Run:\
                 \n\t1. Submit jobscript with jobname, (slurm: partition, nnode, nproc) with variables\
-                \n\t    (slurm)::\
-                \n\t\t$sbatch -J {args.jname} -p {args.partition} -N {args.nnode} -n {args.nproc}  slurm_sbatch_nc.sh\
-                \n\t\t$sbatch -J {args.jname} -p {args.partition} -N {args.nnode} -n {args.nproc} --export=cat='{args.cat_kind}' --export=pos='cp' slurm_sbatch_nc.sh\
-                \n\t\t$sbatch -J {args.jname} -p {args.partition} -N {args.nnode} -n {args.nproc} --export=cat='{args.cat_kind}' --export=pos='gen' slurm_sbatch_nc.sh\
-                \n\t\t    - cp for copy & other char for slab generation\
-                \n\t    ( pbs )::\
+                \n\t    slurm-cat::\
+                \n\t\t$sbatch -J {args.jname} -p {args.partition} -N {args.nnode} -n {args.nproc}  slm_catalysis.sh\
+                \n\t\t$sbatch -J {args.jname} -p {args.partition} -N {args.nnode} -n {args.nproc} --export=cat='{args.cat_kind}',pos='cp' slm_catalysis.sh\
+                \n\t\t$sbatch -J {args.jname} -p {args.partition} -N {args.nnode} -n {args.nproc} --export=cat='{args.cat_kind}',pos='gen' slm_catalysis.sh\
+                \n\t\t    - pos='cp' for copy existing poscar & other char for slab generation\
+                \n\t    Postprocess: run dos\
+                \n\t\t: Make CHGCAR and run dos\
+                \n\t\t$sbatch -J {args.jname}sp -p {args.partition} -N {args.nnode} -n {args.nproc} --export=job='spdos',pos='{args.jname}/CONTCAR_test_0_cat' slm_dos.sh\
+                \n\t\t: In case CHGCAR, run dos\
+                \n\t\t$sbatch -J {args.jname}sp -p {args.partition} -N {args.nnode} -n {args.nproc} --export=job='dos',pos='{args.jname}/CONTCAR_test_0_cat',chg='{args.jname}/CONTCAR_test_0_cat' slm_dos.sh\
+                \n\t    pbs  ::\
                 \n\t\t$qsub -N {args.jname} pbs_vasp_kisti_skl.sh\
-                \n\t    /test     job directory is generated\
-                \n\t    run_catalysis.py is run inside job script\
+                \n\t    Output::\
+                \n\t\t/test     job directory is generated\
+                \n\t\trun_catalysis.py is run inside job script\
+                \n\t\tjob is running in subdir(jobname) & logfile is written in workdir (submit dir)\
+                \n\t\tjob finishes: jobname.log -> jobname.out\
                 \n\t2. Direct run inside job directory\
-                \n\t\trun_catalysis.py -c orr -j run -np {args.nproc} [--npar $npar|--ncore $ncore] integer\
-                \n\t** job is running in subdir(jobname) & logfile is written in workdir (submit dir)\
-                \n\t** job finishes: jobname.log -> jobname.out\
+                \n\t    ORR with POSCAR\
+                \n\t\t$python ../run_catalysis.py -j run -np {args.nproc} --npar $npar [--ncore $ncore]\
+                \n\t\t$python ../run_catalysis.py -j spdos -np 24 --npar 4\
+                \n\t\t$python ../run_catalysis.py -j dos -np 24 --npar 4\
+                \n\t3. Plot in the job directory\
+                \n\t\t$python ../run_catalysis.py -c orr[oer] -ph 14\
             ")
         sys.exit(0)
     if args.ncore:
@@ -156,7 +174,7 @@ def main():
         args.mode = 'sp'
         args.novib = False
 
-    run_catalysis(args.job, args.cat_kind, args.flabel, args.poscar, args.mode, args.novib, args.fix, args.nnode, args.nproc, nparallel)
+    run_catalysis(args.job, args.cat_kind, args.pH, args.flabel, args.poscar, args.mode, args.novib, args.fix, args.nnode, args.nproc, nparallel)
 
 if __name__ == "__main__":
     main()

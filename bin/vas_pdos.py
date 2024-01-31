@@ -28,15 +28,10 @@ def post_process(job, inf, latoms, Lspin, fname_pdos, orb, lplots, plot_option):
     ###### File format: spin (un)polarized
     ### unploarized: iene s    p    d    t
     ### poloarized : iene s_up s_dn p_up p_dn d_up d_dn t_up t_dn
-    
 
     ### Make ylegends to be plotted
     ### list of 0,1,2,...,s,s_up,s_dn,p,p_up,p_dn,d,d_up,d_dn,up,dn,all
     ### redefine Lspin using input file of PDOS
-
-    
-    
-
 
     if re.search('pd', job):    # pdos calculation
         if not latoms:
@@ -56,7 +51,8 @@ def post_process(job, inf, latoms, Lspin, fname_pdos, orb, lplots, plot_option):
             ### For polarized cal
             if Lspin:
                 if orb in pdos_polar_index.keys():
-                    corb = pdos_polar_index['orb']
+                    lorb = orb
+                    corb = pdos_polar_index[orb]
                 else:
                     print(f"select one of orbital index for polarized cal: {pdos_polar_index}")
                     sys.exit(2)
@@ -77,6 +73,7 @@ def post_process(job, inf, latoms, Lspin, fname_pdos, orb, lplots, plot_option):
 
     if re.search('pl', job):    # plot with control
         Lspin = redefine_spin4file(fname_pdos)
+        print(f"Lspin {Lspin}")
         ylegends=[]
         iys=[]
         if Lspin:
@@ -122,9 +119,8 @@ def main():
     gorb.add_argument('-l', '--anal_lorbital', help='l up or dn for analysis:[0|1|2|s|s_up|s_dn|p|p_up|p_dn|d|d_up|d_dn]')
     gorb.add_argument('-c', '--anal_column', type=int, help='column index of SUM_ATOM.dat' )
     gplot=parser.add_argument_group(title="select ortial to analysis and plot")
-    gplot.add_argument('-p', '--plot_orbs', nargs='*', help='list of 0,1,2,...,s,s_up,s_dn,p,p_up,p_dn,d,d_up,d_dn,up,dn to be plotted')
-    gplot.add_argument('-po', '--plot_option', default='split', help='plot up/dn split or opposite side')
-    #gplot.add_argument('-pl', '--dos_line', nargs='*', choices=['m', 'c', 'a', 'b'], help='options to plot, max, center, all')
+    gplot.add_argument('-p', '--plot_orbs', default=['a'], nargs='*', help='list of 0,1,2,...,s,s_up,s_dn,p,p_up,p_dn,d,d_up,d_dn,up,dn to be plotted')
+    gplot.add_argument('-po', '--plot_option', default=None, help='plot up/dn split or opposite side')
     parser.add_argument('-u', '--usage', action='store_true', help='usage for main script')
     args = parser.parse_args()
 
@@ -143,17 +139,18 @@ def main():
             \n\t\t-p    plot orbitals: list of 0,1,2,...,s,s_up,s_dn,p,p_up,p_dn,d,d_up,d_dn,up,dn to be plotted\
             \n\t\t-po   plot option for spin up & dn, 'sp'lit or drawn in 'op'posite side\
             \n\t    E.g.:\
-            \n\t\t    python vas_pdos.py -a 43 -l p\
+            \n\t\t    python ../vas_pdos.py -a 43 -l p\
             \n\t\tpdos calculation\
             \n\t\t    python vas_pdos.py -j pd    -a 43\
             \n\t\torbital analysis\
-            \n\t\t    python vas_pdos.py -j pdan  -a 43   -l p\
-            \n\t\t    python vas_pdos.py -j an            -l 1\
+            \n\t\t    python ../vas_pdos.py -j pdan  -a 43   -l p\
+            \n\t\t    python ../vas_pdos.py -j an            -l 1\
             \n\t\tplot orbital\
-            \n\t\t    python vas_pdos.py -j pdanpl -a 43  -l p -p a\
-            \n\t\t    python vas_pdos.py -j anpl          -l p -p a\
-            \n\t\t    python vas_pdos.py -j pl                 -p t s p\
-            \n\t\t    python vas_pdos.py -j pdpl -a 43  -p a -s -po op[sp]\
+            \n\t\t    python ../vas_pdos.py -j pdanpl -a 43  -l p -p a\
+            \n\t\t    python ../vas_pdos.py -j anpl          -l p -p a\
+            \n\t\t    python ../vas_pdos.py -j pl                 -p t s p\
+            \n\t\t    python ../vas_pdos.py -j pdpl -a 43  -p a -s -po op[sp]\
+            \n\t\t    python ../vas_pdos.py -j pdanpl -a 18 -l d_up  -p dn -s\
             ")
         sys.exit(0)
     

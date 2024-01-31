@@ -511,7 +511,7 @@ class Siesta(object):
         self._inputs[fname] = lines
         return lines
 
-    def runQtNegf(self, nproc, **option):
+    def run_calculator(self, nproc, **option):
 
         """
         Run a quantum transport simulation based on the information saved in this simulation object

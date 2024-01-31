@@ -467,6 +467,7 @@ def mplot_table_line(x, y, dx=1.0, title=None, xlabel=None, ylabel=None, legend=
     plt.xlabel(xlabel, fontsize=12)
     plt.ylabel(ylabel, fontsize=12)
     print(f"xlabel: {xlabel} ")
+    print(f"plot option {plot_option}")
     if ys.ndim == 1:
         plt.plot(x, y, '-')
         #plt.scatter(x, y)
@@ -478,9 +479,11 @@ def mplot_table_line(x, y, dx=1.0, title=None, xlabel=None, ylabel=None, legend=
                 ax.fill_between(x, ys[i,:], where=ys[i,:]>=d, color=colors[i])
                 plt.plot(x,ys[i,:],  label='TDOS' , color=colors[i])
             else:
+                ### sum or non-polarized
+                if not plot_option:
+                    plt.plot(x,ys[i,:],  label=legend[i] , color=colors[i])
                 ### split
-                print(f"plot option {plot_option}")
-                if re.search('sp', plot_option):
+                elif re.search('sp', plot_option):
                     if re.search('dn', legend[i]):
                         plt.plot(x,ys[i,:],  label=legend[i] , color=colors[i], linestyle='dashed')
                     else:
