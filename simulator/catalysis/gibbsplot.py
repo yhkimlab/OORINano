@@ -31,7 +31,7 @@ def common_format(plt):
     return 0
 
 
-def plot_HER(Gibbs_H, legend=None, ymin=-1, ymax=1, label="HER", y_ticks=[-1.0, -0.5, 0, 0.5, 1.0], dpi=600):
+def plot_HER(Gibbs_H, legend=None, ymin=-1, ymax=1, label="HER", y_ticks=[-1.0, -0.5, 0, 0.5, 1.0], dpi=600, pH=0, Temp=298.15):
     """
     plot HER profile with python-matplotlib
     this module is independent, so if you can use only hand-shaved values

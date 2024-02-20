@@ -37,11 +37,16 @@ c. direct run
     run_catalysis.py -j orr -sj run -n 1 -np 24 [--npar $npar|--ncore $ncore] 
 
 3. Postprocess: DOS calculation
-    After catalysis calculation
+    copy CONTCAR to ${old_dir}[sp|dos] directory
+    if CHGCAR, run dos, if not, run spdos which makes ${old_dir}sp and ${old_dir}spdos directories consecutively
+    Usage:: python run_vaspdos.py -u 
     3.1 sbatch
+        sbatch -J orrsac -p X2 -N 6 -n 72 --export=job=sp,pos='orrsac/CONTCAR_test_0_cat' slm_vaspdos.sh
+            -J  old directory of catalysis calculation
+            job can be ['sp', 'spdos', 'dos'] in shell script but run_vaspdos.py gets only ['sp','dos']
 
     3.2 Direct run
         3.2a Make a new dir and copy a poscar and run sp to make CHGCAR
-            $python ../run_catalysis.py -j spdos -np 24 --npar 4
-        3.2b In a new dir, run dos calculation with large k-points
+            $python ../run_catalysis.py -j sp -np 24 --npar 4
+        3.2b In a new dir, copy CONTCAR and CHGCAR, then run dos calculation with large k-points
             $python ../run_catalysis.py -j dos -np 24 --npar 4

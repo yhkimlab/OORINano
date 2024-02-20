@@ -76,54 +76,6 @@ def get_vasp_repository():
         exit(1)
     return ini_dvasp
 
-def get_atoms_4pos(pos='POSCAR'):
-    with open(pos, 'r') as f:
-        lines = f.readlines()
-        for index, line in enumerate(lines):
-            if index <= 4: continue
-            if line.strip().replace(' ','').isalpha():
-                atoms=line.strip().split()
-                continue
-            if 'atoms' in locals():
-                natoms=line.strip().split()
-                break
-    if 'atoms' in locals() and 'natoms' in locals():
-        return natoms, atoms
-    else:
-        return 'err' 
-                
-
-def make_magmom_4pos(pos='POSCAR', magin=None):
-    '''
-    Read POSCAR [and input magmom]
-    Return string of MAGMOM
-    
-    pos     POSCAR
-    magin   MAGMOM input list of [ 'atom symbol', magmom, ... ]
-
-    '''
-    magmom = {}
-    if magin:
-        li = iter(magin)
-        magmom = dict(zip(li, int(li)))
-    natoms, atoms = get_atoms_4pos(pos)
-    magstr="MAGMOM = "
-    Lmag = False
-    for index, atom in enumerate(atoms):
-        if magin and atom in magin.keys():
-            magstr += f"{natoms[index]}*{magin[atom]*1.5} "
-            Lmag = True
-        elif atom in ncatoms.atom_prop.keys():
-            magstr += f"{natoms[index]}*{ncatoms.atom_prop[atom][1]*1.5} "
-            Lmag = True
-        else:
-            print("ERROR: no magmom in input and repo")
-            sys.exit(10)
-            #magstr += f"{natoms[index]}*0 "
-    if Lmag: return magstr + "100*0"
-    else:    return "# " + magstr
-
-
 def make_kpoints(kp, method):
     """ 
         Make KPOINTS file 

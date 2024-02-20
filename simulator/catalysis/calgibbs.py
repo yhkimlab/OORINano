@@ -45,27 +45,31 @@ def mol_free_energies(Temp=298.15, pH=0, p=0.035, sol=0):
     #print(f"G_H2O(l) {G_H2O_l:10.3f}, G_O2(g) {G_O2_g:10.3f}, G_H+ {G_H_ion:10.3f}, G_OH- {G_OH_ion:10.3f}")
     return G_H2O_l, G_O2_g, G_H_ion, G_OH_ion
 
-def calc_gibbs_HER(Sys, SysH, ZPE=None, TS=None, Temp=298.15):
+def calc_gibbs_HER(Sys, SysH, ZPE=None, TS=None, pH=0, Temp=298.15):
+    '''
+    removed Sys list expression & novib
+    '''
     E_H2   =  -6.760;  ZPE_H2   = 0.270; TS_H2   = 0.410 
     
-    n_component = len(Sys)
+    
+    #n_component = len(Sys)
 
     if ZPE is None or TS is None:
-        ZPE = []
-        for i in range(n_component):
-            ZPE_default = 0.04 + 0.5*ZPE_H2  # Cu111 + H (Norskov) J. Electro. Soc. 152(3), J23 (2005)
-            ZPE.append(ZPE_default)
+        #ZPE = []
+        #for i in range(n_component):
+        ZPE = 0.04 + 0.5*ZPE_H2  # Cu111 + H (Norskov) J. Electro. Soc. 152(3), J23 (2005)
+        #    ZPE.append(ZPE_default)
     else:
         ZPE = ZPE
 
     if TS is None:
-        TS = []
-        for i in range(n_component):
-            TS_default  = 0.20 + 0.5*TS_H2   # Cu111 + H (Norskov)
-            TS.append(TS_default)
+        #TS = []
+        #for i in range(n_component):
+        TS  = 0.20 + 0.5*TS_H2   # Cu111 + H (Norskov)
+        #    TS.append(TS_default)
     else:
         TS = TS
-
+    '''
     if len(SysH) + len(ZPE) + len(TS) - 3*n_component == 0:
         pass
     else:
@@ -79,13 +83,15 @@ def calc_gibbs_HER(Sys, SysH, ZPE=None, TS=None, Temp=298.15):
     Gibbs_H = []
 
     for i in range(n_component):
-        delta_E    = SysH[i] - (Sys[i] + 0.5*E_H2)
-        delta_ZPE  = ZPE[i] - 0.5*ZPE_H2
-        delta_TS   = TS[i]  - 0.5*TS_H2
-        delta_G    = delta_E + delta_ZPE + delta_TS
-        Gibbs_H.append(delta_G)
+    '''
+    
+    delta_E    = SysH - (Sys + 0.5*E_H2)
+    delta_ZPE  = ZPE - 0.5 * ZPE_H2
+    delta_TS   = TS  - 0.5 * TS_H2
+    delta_G    = delta_E + delta_ZPE + delta_TS
+    #Gibbs_H.append(delta_G)
 
-    return Gibbs_H
+    return delta_G #Gibbs_H
 
 def calc_gibbs_ORR_4e_pH(totE, ZPE=None, TS=None, Temp=298.15, pH=0, p=0.035, sol=0):
     '''

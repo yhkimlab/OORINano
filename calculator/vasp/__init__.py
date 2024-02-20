@@ -1,4 +1,5 @@
 from ...atoms   import *
+from ...atoms.atomic_data import *
 from ...rw    import cleansymb, get_unique_symbs, convert_xyz2abc
 from ...utils.units   import R
 from ...utils.fermidirac import fd_derivative_weight
@@ -140,7 +141,7 @@ class Vasp(object):
         self.atoms = readAtomicStructure(contcar)
 
     ### might be redundant with vasp.write_poscar
-    def write_POSCAR(self, file_name='POSCAR', mode='cartesian', fix=None):
+    def write_POSCAR(self, file_name='POSCAR', coord_type='cartesian', fix=None):
         components = self.atoms.get_contents().items()
         message  = ' '
         for i in components:
@@ -165,9 +166,9 @@ class Vasp(object):
             len_line = len_line + str(num) + '   ' 
             for atom in self.atoms:
                 x = 0. ; y = 0.; z = 0.
-                if mode == 'cartesian':
+                if coord_type == 'cartesian':
                    x, y, z = Vector(atom.get_position())
-                elif mode == 'direct':
+                elif coord_type == 'direct':
                    x, y, z = Vector(atom.get_position())
                    x = x/(cell1[0] + cell1[1] + cell1[2])
                    y = y/(cell2[0] + cell2[1] + cell2[2])
@@ -180,9 +181,9 @@ class Vasp(object):
         fout.write(len_line)
         fout.write("Selective Dynamics # constraints enabled\n")
 
-        if mode == "cartesian":
+        if coord_type == "cartesian":
             fout.write("Cartesian \n")
-        elif mode == "direct":
+        elif coord_type == "direct":
             fout.write("Direct \n")
         
         for i in range(len(lines)):
@@ -708,11 +709,11 @@ def get_magmom_4pos(pos='POSCAR', magin=None):
         if magin and atom in magmom.keys():
             magstr += f"{natoms[index]}*{magmom[atom]*1.5} "
             Lmag = True
-        elif atom in atom_prop.keys():
-            magstr += f"{natoms[index]}*{atom_prop[atom][1]*1.5} "
+        elif atom in reference_state.keys():
+            magstr += f"{natoms[index]}*{reference_state[atom]['magmom']*1.5} "
             Lmag = True
         else:
-            print("ERROR: no magmom in input and repo")
+            print(f"ERROR: no magmom in input and repo for {atom}")
             sys.exit(10)
             #magstr += f"{natoms[index]}*0 "
     if Lmag: return magstr + "100*0"
