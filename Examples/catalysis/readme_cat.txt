@@ -1,29 +1,30 @@
 ### Order for test
-1. download NanoCore and change dirname to nanocore
-    git clone https://github.com/yhkimlab/NanoCore nanocore
-2. set PYTHONPATH upto parent directory of nanocore
+1. download OORINano and change dirname to oorinano
+    git clone https://github.com/yhkimlab/OORINano oorinano
+2. set PYTHONPATH upto parent directory of oorinano
 3. copy ECexamples to your working directory
 4. run job script as follows
 
 ### Details for Running
 
 1. Set VASP env
-OORIHOME = OORINano home directory
+OORIHOME = oorinano home directory
 $OORIHOME/utils/env.py or your_env.py
     e.g.
         $ln -s your_env.py env.py
     set vasp_calculator -> to your vasp binary file
     set vasp_POTCAR_dft -> to your POTCAR directory
 
-2. How to run
+2. How to run catalysis
 'orr'   ORR (Oxygen   Reduction Reaction)
 'her'   HER (Hydrogen Evolution Reaction)
+'oer'   OER (Oxygen   Evolution Reaction)
 also check run_catalysis.py
     $python run_catalysis.py -u
 
 a. slurm with partition
-    sbatch -J testorr -p X5 -n 1 -n 32 [--export=cat='orr'] [--export=pos='cp'] slurm_sbatch_nc.sh
-    sbatch -J testher -p X5 -n 1 -n 32  --export=cat='her'   --export=pos='gen' slurm_sbatch_nc.sh
+    sbatch -J testorr -p X5 -N 1 -n 32 [--export=cat='orr'] [--export=pos='cp'] slm_catalysis.sh
+    sbatch -J testher -p X5 -N 1 -n 32  --export=cat='her',pos='gen' slm_catalysis.sh
         qname       -J      make dir in the qname and vasp runs in the dir       
         partition   -p
         nNode       -n
@@ -34,3 +35,18 @@ b. pbs without partition
     qsub -N testorr [-v cat='orr'] pbs_vasp_kisti_skl.sh
 c. direct run
     run_catalysis.py -j orr -sj run -n 1 -np 24 [--npar $npar|--ncore $ncore] 
+
+3. Postprocess: DOS calculation
+    copy CONTCAR to ${old_dir}[sp|dos] directory
+    if CHGCAR, run dos, if not, run spdos which makes ${old_dir}sp and ${old_dir}spdos directories consecutively
+    Usage:: python run_vaspdos.py -u 
+    3.1 sbatch
+        sbatch -J orrsac -p X2 -N 6 -n 72 --export=job=sp,pos='orrsac/CONTCAR_test_0_cat' slm_vaspdos.sh
+            -J  old directory of catalysis calculation
+            job can be ['sp', 'spdos', 'dos'] in shell script but run_vaspdos.py gets only ['sp','dos']
+
+    3.2 Direct run
+        3.2a Make a new dir and copy a poscar and run sp to make CHGCAR
+            $python ../run_catalysis.py -j sp -np 24 --npar 4
+        3.2b In a new dir, copy CONTCAR and CHGCAR, then run dos calculation with large k-points
+            $python ../run_catalysis.py -j dos -np 24 --npar 4

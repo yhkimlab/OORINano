@@ -1,18 +1,15 @@
 from ...atoms   import *
+from ...atoms.atomic_data import *
 from ...rw    import cleansymb, get_unique_symbs, convert_xyz2abc
 from ...utils.units   import R
 from ...utils.fermidirac import fd_derivative_weight
 from glob import glob
 import os, math, sys
 import numpy as np
-from ...utils.auxil import parse_line, parse_lines
+from ...utils.auxil import parse_line, parse_lines, whereami
+from .file_format import *
  
 ### import io.read, io.write inside Vasp class
-
-# VASP Simulation Object
-# made by Noh           2021. 8.
-# modified by J. Park   2021.10. class Vasp, PDOS[nonmag]
-#
 
 class Vasp(object):
 
@@ -81,8 +78,14 @@ class Vasp(object):
             'LASPH'     :        'T',       # non-spherical contribtuion
             'LMAXMIX'   :          4,       # Density Mixer handles quantumNumber upto (4: d-elements, 6: f-elements)
             'ISPIN'     :          1,       # 1 = Spin-restricted, 2 = spin-unrestricted
-            'MAGMOM'    :         None,       # can be in or use default
+            'MAGMOM'    :       None,       # can be in or use default
+            # 4. Postprocess: DOS calculation
+            'LORBIT'    :         11,       # lm-decomposed DOSCAR
+            'NEDOS'     :       4001,       # number of Egrid between EMAX and EMIN
+            'EMIN'      :        -25,       # Emin for DOS cal.
+            'EMAX'      :         15,       # Emax for DOS cal.
             }
+        
 
     def get_options(self):
         """
@@ -99,18 +102,6 @@ class Vasp(object):
         >>> sim.get_options()
         """
         return self._params.items()
-    ### useless: deprecate
-    def read_file(fname):
-        lineinfo = []
-        wordinfo = []
-        with open(fname) as f:
-            for i, l in enumerate(f):
-                line = l
-                word = line.split()
-                lineinfo.append(line)
-                wordinfo.append(word)
-
-        return lineinfo, wordinfo
     
     def set_option(self, key, value):
         
@@ -145,7 +136,7 @@ class Vasp(object):
         self.atoms = readAtomicStructure(contcar)
 
     ### might be redundant with vasp.write_poscar
-    def write_POSCAR(self, file_name='POSCAR', mode='cartesian', fix=None):
+    def write_POSCAR(self, file_name='POSCAR', coord_type='cartesian', fix=None):
         components = self.atoms.get_contents().items()
         message  = ' '
         for i in components:
@@ -170,9 +161,9 @@ class Vasp(object):
             len_line = len_line + str(num) + '   ' 
             for atom in self.atoms:
                 x = 0. ; y = 0.; z = 0.
-                if mode == 'cartesian':
+                if coord_type == 'cartesian':
                    x, y, z = Vector(atom.get_position())
-                elif mode == 'direct':
+                elif coord_type == 'direct':
                    x, y, z = Vector(atom.get_position())
                    x = x/(cell1[0] + cell1[1] + cell1[2])
                    y = y/(cell2[0] + cell2[1] + cell2[2])
@@ -185,9 +176,9 @@ class Vasp(object):
         fout.write(len_line)
         fout.write("Selective Dynamics # constraints enabled\n")
 
-        if mode == "cartesian":
+        if coord_type == "cartesian":
             fout.write("Cartesian \n")
-        elif mode == "direct":
+        elif coord_type == "direct":
             fout.write("Direct \n")
         
         for i in range(len(lines)):
@@ -257,63 +248,80 @@ class Vasp(object):
         cmd = cmd + ' > POTCAR'
         os.system('%s' % cmd)
 
-    def write_INCAR(self):
+    def write_INCAR(self, mode=None):
         #-------------INCAR---------------------
+        '''
+        INCAR is 1st assinged here
+        More modified in run_calculator() using mode=[sp|opt|vib|dos]
+        '''
         p = self._params
         #print(f"in writing INCAR {p['NPAR']}")
-        INCAR = open('INCAR', 'w')
-        INCAR.write("# VASP basic control parameters\n\n")
-        INCAR.write("SYSTEM        =   %s\n" % p['SYSTEM'])
-        INCAR.write("ISTART        =   %i\n" % p['ISTART']) 
-        INCAR.write("ICHARG        =   %i\n" % p['ICHARG']) 
-        INCAR.write("ISIF          =   %i\n\n" % p['ISIF']) 
-        INCAR.write("IBRION        =   %i\n" % int(p['IBRION']))
-        INCAR.write("NSW           =   %i\n" % p['NSW']) 
-        INCAR.write("PREC          =   %s\n" % p['PREC']) 
-        INCAR.write("ALGO          =   %s\n" % p['ALGO'])
-
-        if p['NCORE'] :
-            INCAR.write(f"{'NCORE':<15}={p['NCORE']:5d}\n")
-        else:
-            INCAR.write(f"{'NPAR':<15}={p['NPAR']:5d}\n")
         
-        INCAR.write("LWAVE         =   %s\n" % p['LWAVE']) 
-        INCAR.write("LCHARG        =   %s\n" % p['LCHARG']) 
+        incar = open('INCAR', 'w')
+        all_params=[]               # contains already list params
+        
+        list_basic = [ 'SYSTEM', 'ISTART', 'ICHARG', 'ISIF', 'IBRION', 'NSW', 'PREC', 'ALGO', 'LWAVE', 'LCHARG']
+        incar.write("# VASP basic control parameters\n\n")
+        for key in list_basic:
+            incar.write(f"{key:<12}=    {p[key]}\n")
+        if p['NCORE'] :
+            incar.write(f"{'NCORE':<12}=    {p['NCORE']}\n")
+        else:
+            incar.write(f"{'NPAR':<12}=    {p['NPAR']}\n")
+        all_params.extend(list_basic)
+        all_params.extend(['NCORE', 'NPAR'])
+        
 
-        INCAR.write("# VASP convergence parameters \n\n")
-        INCAR.write("ENCUT         =   %f\n" % float(p['ENCUT']))
-        INCAR.write("ISMEAR        =   %i\n" % p['ISMEAR'])
-        INCAR.write("SIGMA         =   %f\n" % p['SIGMA'])
-        INCAR.write("NSIM          =   %i\n" % p['NSIM'])
-        INCAR.write("NELMIN        =   %i\n" % p['NELMIN'])
-        INCAR.write("NELM          =   %i\n" % p['NELM'])
-        INCAR.write("EDIFF         =   %f\n" % float(p['EDIFF']))
-        INCAR.write("EDIFFG        =   %f\n" % float(p['EDIFFG']))
-        INCAR.write("%s           =   %s\n\n" % (p['XC'], p['XCAUTHOR']))
-        INCAR.write("# VASP optional parameters \n\n")
-        INCAR.write("POTIM         =   %f\n" % float(p['POTIM']))
-        INCAR.write("IVDW          =   %i\n" % int(p['IVDW']))
-        INCAR.write("LDIPOL        =   %s\n" % p['LDIPOL'])
-        INCAR.write("IDIPOL        =   %i\n" % int(p['IDIPOL']))
-        INCAR.write("LPLANE        =   %s\n" % p['LPLANE'])
-        INCAR.write("ADDGRID       =   %s\n" % p['ADDGRID'])
-        INCAR.write("LREAL         =   %s\n" % p['LREAL'])
-        INCAR.write("ISYM          =   %i\n" % p['ISYM'])
-        INCAR.write("LASPH         =   %s\n" % p['LASPH'])
-        INCAR.write("LMAXMIX       =   %i\n" % p['LMAXMIX'])
-        INCAR.write("ISPIN         =   %i\n\n" % p['ISPIN'])
+        list_converge = ['ENCUT', 'ISMEAR', 'SIGMA', 'NSIM', 'NELMIN', 'NELM', 'EDIFF', 'EDIFFG']
+        incar.write("\n# VASP convergence parameters \n\n")
+        for key in list_converge:
+            incar.write(f"{key:<12}=    {p[key]}\n")
+        incar.write(f"{p['XC']:<12}=    {p['XCAUTHOR']}\n\n")
+        all_params.extend(list_converge)
+        all_params.extend(['XC', 'XCAUTHOR'])
+
+        list_optional = ['POTIM', 'IVDW', 'LDIPOL', 'IDIPOL', 'LPLANE', 'ADDGRID', 'LREAL', 'ISYM', 'LASPH', 'LMAXMIX', 'ISPIN']
+        incar.write("# VASP optional parameters \n\n")
+        for key in list_optional:
+            incar.write(f"{key:<12}=    {p[key]}\n")
+        all_params.extend(list_optional)
+
+        #print(f"p[ISPIN] = {p['ISPIN']} : {p['MAGMOM']} in {whereami()}")
         if p['ISPIN'] == 2:
             if p['MAGMOM']:
                 #print(f"True {p['MAGMOM']}"), do no pass p['MAGMOM'] if it is {} -> it became True
                 str_mag = get_magmom_4pos(pos="POSCAR", magin=f"{p['MAGMOM']}")
             else:
                 str_mag = get_magmom_4pos(pos="POSCAR")
-            INCAR.write(f"{str_mag}")
-        INCAR.close()
+            #print(f"{str_mag}")
+            incar.write(f"{str_mag}\n")
+        all_params.append('MAGMOM')
+
+        ### Additional incar params: DOS
+        list_dos = ['LORBIT', 'NEDOS', 'EMAX', 'EMIN']
+        if mode == 'dos':            
+            incar.write("\n### DOSCAR calculation\n")
+            for key in list_dos:
+                incar.write(f"{key:<12}=    {p[key]}\n")
+        all_params.extend(list_dos)
+        
+        ### treat not listed params <- user input params
+        ### if there are keys not listed in writing INCAR
+
+        res = list (filter (lambda i: i not in all_params, p.keys()))
+        if len(res):
+            print(f"There are {len(res)} user-added params")
+            incar.write("\nUser-added params\n")
+            for key in res:
+                incar.write(f"{key:<12}=    {p[key]}\n")
+    
+        incar.close()
+        
+        return 0
 
 
 
-    def run_catalysis(self, mode='sp', fix=None):
+    def run_calculator(self, mode='sp', fix=None):
         """ 
         Run VASP with options
         mode    opt for optimization
@@ -359,6 +367,14 @@ class Vasp(object):
             p['IBRION'] = 5
             p['POTIM']  = 0.015
             p['NSW']    = 1
+        
+        if mode == 'dos':
+            p['IBRION'] = -1
+            p['ISTART'] = 1
+            p['ICHARG'] = 11
+            p['NSW']    = 0
+            p['ALGO']   = "Normal"
+            p['LCHARG'] = ".False."
 
         # run_simulation
         cmd = f'mpirun -np {nproc}  {executable} > stdout.txt'
@@ -367,7 +383,7 @@ class Vasp(object):
         self.write_KPOINTS()
         del p['KPOINTS']        # remove params not in INCAR
         self.write_POTCAR() 
-        self.write_INCAR()      # remove p['SERVER']
+        self.write_INCAR(mode=mode)      # remove p['SERVER']
         
         os.system(cmd)
     
@@ -383,7 +399,7 @@ class Vasp(object):
 
     def get_total_energy(self, output_name='OUTCAR'):
         
-        line_info, word_info = Vasp.read_file(output_name)
+        line_info, word_info = read_file(output_name)
         
         VASP_E = []
         for i in range(len(line_info)):
@@ -405,7 +421,7 @@ class Vasp(object):
         ZPE, TS = vasp.get_vibration_energy(Temp=300)
         """
         
-        line_info, word_info = Vasp.read_file(output_name)
+        line_info, word_info = read_file(output_name)
 
         ZPE = 0.0; TS = 0.0
         RT  = R * Temp
@@ -427,15 +443,15 @@ class Vasp(object):
             vlog    = 1 - math.exp(-x)
             v2      = -math.log(vlog)
 
-            #E_TS   = RT * (v1 + v2)
-            E_TS   = RT * v2
+            E_TS   = RT * (v1 + v2) # this is Norskov scheme of G=E+ZPE-TS
+            #E_TS   = RT * v2       # this is exact scheme from Schffler and 
             #print(f"Eentropy: freq {energy*1000:10.5f} : {RT*v1:10.5f} {RT*v2:10.5f}")
             ZPE = ZPE + 0.5*energy
             TS  = TS  + E_TS
         
         return ZPE, TS
 
-    def get_vibration_spectrum(output_name='OUTCAR', start=0, end=6000, npts=None, width=20.0, matplot=1):               
+    def get_vibration_spectrum(self, output_name='OUTCAR', start=0, end=3500, npts=None, width=20.0, matplot=1):               
         """
         Example:
         --------
@@ -444,18 +460,7 @@ class Vasp(object):
         at2 = vasp2.Vasp(at)
         at2.get_vibration_specctrum(output_name='OUTCAR_imag', matplot=1, start=-2000, end=6000)
         """
-                                                                                                                          
-        def read_file(fname):
-            lineinfo = []
-            wordinfo = []
-            with open(fname) as f:
-                for i, l in enumerate(f):
-                    line = l
-                    word = line.split()
-                    lineinfo.append(line)
-                    wordinfo.append(word)
-         
-            return lineinfo, wordinfo 
+                                                                                                                    
         
         line_info, word_info = read_file(output_name) 
                                                                                                                           
@@ -510,6 +515,18 @@ class Vasp(object):
             plt.savefig('VDOS.png', format='png', dpi=600, bbox_inches='tight')
         else:
             pass
+### useless: deprecate
+def read_file(fname):
+    lineinfo = []
+    wordinfo = []
+    with open(fname) as f:
+        for i, l in enumerate(f):
+            line = l
+            word = line.split()
+            lineinfo.append(line)
+            wordinfo.append(word)
+
+    return lineinfo, wordinfo
 
 ### functions inside module vasp
 def readAtomicStructure(file_name):
@@ -689,25 +706,32 @@ def get_magmom_4pos(pos='POSCAR', magin=None):
         if magin and atom in magmom.keys():
             magstr += f"{natoms[index]}*{magmom[atom]*1.5} "
             Lmag = True
-        elif atom in atom_prop.keys():
-            magstr += f"{natoms[index]}*{atom_prop[atom][1]*1.5} "
+        elif atom in reference_state.keys():
+            magstr += f"{natoms[index]}*{reference_state[atom]['magmom']*1.5} "
             Lmag = True
         else:
-            print("ERROR: no magmom in input and repo")
+            print(f"ERROR: no magmom in input and repo for {atom}")
             sys.exit(10)
             #magstr += f"{natoms[index]}*0 "
     if Lmag: return magstr + "100*0"
     else:    return "# " + magstr
 
-def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
+def calc_pdos(fname = 'DOSCAR', atom_list=[1], Lspin=False):
     '''
     DOSCAR: 5 [preline] + (ngrid + 1 [energy headline]) * (natom + 1 [total DOS])
         ngrid   number of energy grid
     
     atom_list should starts from 1
-    option: in case of spin = 2
-        None    sum spin-up and spin-down
-        split   write spin-up and spin-down with two columns
+    Lspin   True    write spin-up and spin-down with two columns in case of spin = 2
+            False   sum spin-up and spin-down
+            
+    TDOS.dat format             ene = E - EF
+        unpolar                 iene    dos(E)  accum
+        polar                   iene    dos_up(E) dos_dn(E)
+    Atom...dat format
+        unpolar                 iene    s   p   d   s+p+d
+        polar w. Lspin = False  iene    s   p   d   s+p+d
+        polar w. Lspin = True   iene    s_up    s_dn    p_up    p_dn    d_up    d_dn    s+p+d_up    s+p+d_dn 
     '''
 
     nline_pre = 5
@@ -722,19 +746,19 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
 
     ### parse energy title
     elist   = parse_line(lines[5])
-    Emax    = float(elist[0])
-    Emin    = float(elist[1])
+    #Emax    = float(elist[0])
+    #Emin    = float(elist[1])
     ngrid   = int(elist[2])                     # number of Ene grid
     E_fermi  = float(elist[3])
 
-    ### test parsing of one line in energy block
-    if len(parse_line(lines[6])) == 5:
+    ### get spin in one line in energy block
+    if len(parse_line(lines[10])) == 5:
         spin = 2    # spin polarized
     else:           # ncol = 3
         spin = 1
     
     ### Obtain TDOS = [nline_pre+1: nline_pre + ngrid +1] 
-
+    ### required to obtain Ei_f0[]
     Ei_f0   = []         # E w.r.t. E_fermi
     tdos    = []        # non-spin or spin-up
     tdos_cum = []
@@ -742,22 +766,21 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
         tdos_dn     = []
         tdos_cum_dn = []
 
-    ### for TDOS
     for i, line in enumerate(lines[nline_pre+1:nline_pre+1+ngrid]):
         lele = parse_line(line)
-        Ei_f0.append(float(lele[0])-E_fermi)
-        tdos.append(float(lele[1]))
+        Ei_f0.append(float(lele[0])-E_fermi)        # iene
+        tdos.append(float(lele[1]))                 # tdos(E)
         if spin == 1:
-            tdos_cum.append(float(lele[2]))       # Tdos total
+            tdos_cum.append(float(lele[2]))         # tdos_acc 
         ### wrong order for spin==2, by J. Park
         else: # spin == 2:
-            tdos_dn.append(float(lele[2]))    # this is TDOS-up-acc if spin == 2
-            tdos_cum.append(float(lele[3]))
-            tdos_cum_dn.append(float(lele[4]))    # TDOS-down-acc   if spin == 2
+            tdos_dn.append(float(lele[2]))          
+            tdos_cum.append(float(lele[3]))         # tdos-up-acc 
+            tdos_cum_dn.append(float(lele[4]))      # tdos-dn-acc
     
     with open('TDOS.dat', 'w') as f:
         for i in range(len(Ei_f0)):
-            st = f"{Ei_f0[i]:11.3f}  {tdos[i]:10.4g}"
+            st = f"{Ei_f0[i]:11.3f}  {tdos[i]:10.4g}" 
             if spin == 1:
                 st += f"  {tdos_cum[i]:10.4g}"
             else: # spin == 2:
@@ -777,8 +800,7 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
     atoms_dx2_up   = []   ;    atoms_dx2_dn   = []
     
         
-    ### scan atom_list:: Make 2D atoms list
-    #print(f"atom list {atom_list}")
+    ### Make 2D atoms list :: scan atom_list
     for iatom in atom_list:
         ### Initialize for atom ###
         s_up     = []   ;    s_dn   = []
@@ -821,9 +843,8 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
             atoms_py_dn.append(py_dn)   ;   atoms_pz_dn.append(pz_dn)   ; atoms_px_dn.append(px_dn)  
             atoms_dxy_dn.append(dxy_dn) ;   atoms_dyz_dn.append(dyz_dn) ; atoms_dz2_dn.append(dz2_dn) 
             atoms_dxz_dn.append(dxz_dn) ;   atoms_dx2_dn.append(dx2_dn)
-    ### you might extract dos for each atom
-
-    ### summation for atoms :: Make 1D lsum list
+    
+    ### Make 1D lsum list :: summation for atoms, lsum - list (for energy) of (sums for atom_list)
     lsum_s_up   = []   ;   lsum_s_dn   = []
     lsum_py_up  = []   ;   lsum_py_dn  = []
     lsum_pz_up  = []   ;   lsum_pz_dn  = []
@@ -880,8 +901,8 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
         froot = f"Atoms{atom_list[0]}"
     else:
         froot = f"Atoms{atom_list[0]}-{atom_list[-1]}_N{len(atom_list)}"
-    if option:
-        froot += option[:3]
+    if Lspin:
+        froot += 'pol'      # outfile pol 
     outfile = froot + '.dat'
     outf = open(outfile, 'w')
     lsum_p = []
@@ -898,13 +919,13 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
         else:
             lsum_p_dn.append(lsum_px_dn[i]+lsum_py_dn[i]+lsum_pz_dn[i])
             lsum_d_dn.append(lsum_dx2_dn[i]+lsum_dxy_dn[i]+lsum_dxz_dn[i]+lsum_dyz_dn[i]+lsum_dz2_dn[i])
-            if option == 'split':
+            if Lspin:
                 ### format:: E, lsum_s_up, lsum_s_dn, lsum_p, lsum_p_dn, lsum_d, lsum_d_dn, lsum(s+p+d), lsum(s+p+d)_dn 
                 st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % \
                     (Ei_f0[i],lsum_s_up[i],lsum_s_dn[i],lsum_p[i],lsum_p_dn[i],lsum_d[i],lsum_d_dn[i],lsum_s_up[i]+lsum_p[i]+lsum_d[i],lsum_s_dn[i]+lsum_p_dn[i]+lsum_d_dn[i])
-            elif option == 'polar':
-                st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % \
-                    (Ei_f0[i],lsum_s_up[i],-lsum_s_dn[i],lsum_p[i],-lsum_p_dn[i],lsum_d[i],-lsum_d_dn[i],lsum_s_up[i]+lsum_p[i]+lsum_d[i],-(lsum_s_dn[i]+lsum_p_dn[i]+lsum_d_dn[i]))           
+            #elif option == 'polar':
+            #    st = "%15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f" % \
+            #        (Ei_f0[i],lsum_s_up[i],-lsum_s_dn[i],lsum_p[i],-lsum_p_dn[i],lsum_d[i],-lsum_d_dn[i],lsum_s_up[i]+lsum_p[i]+lsum_d[i],-(lsum_s_dn[i]+lsum_p_dn[i]+lsum_d_dn[i]))           
             ### No option: lsum up and down ### format:: E, lsum_s, lsum_p, lsum_d, lsum(s+p+d)
             else:
                 st = "%15.8f %15.8f %15.8f %15.8f %15.8f" % (Ei_f0[i],lsum_s_up[i]+lsum_s_dn[i],lsum_p[i]+lsum_p_dn[i],lsum_d[i]+lsum_d_dn[i],lsum_s_up[i]+lsum_p[i]+lsum_d[i]+lsum_s_dn[i]+lsum_p_dn[i]+lsum_d_dn[i])
@@ -913,17 +934,19 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], option=None):
         outf.write("\n")
     outf.close()
     os.system(f'cp {outfile} SUM_ATOM.dat')
+    return outfile
 
 
-def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb='p', plot_option=None):
+def pdos_orbital_analysis(fname='SUM_ATOM.dat', icol=3, elimit='inf'):
     '''
-    d-band center theory : Nature, 376, 238 (1995)
-    Fermi abundance      : J. Phys. Chem. C 121, 1530 (2017), optimal value RT = 0.4 eV
-    highest peak         : Nat. Energy, 1, 16130 (2016)
-    orbitals    0 for 's', 1 for 'p', 2 for 'd'
-    SUM_ATOM.dat format: ene, s, p, d. s+p+d
+    d-band center theory    : Nature, 376, 238 (1995)
+    Fermi abundance         : J. Phys. Chem. C 121, 1530 (2017), optimal value RT = 0.4 eV
+    highest peak            : Nat. Energy, 1, 16130 (2016)
+
+    fname   PDOS file with E-EF
+    icol    receives column index
+    elimit  limit of integral ['inf'|'Fermi'] for Fermi-level abundance
     '''
-    import os, sys, math
     import numpy as np
     from scipy.misc import derivative
  
@@ -943,21 +966,8 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb='p', plot_option=None):
     
     
     ### Start of calculation
-    line_info, word_info = Vasp.read_file(fname)
+    line_info, word_info = read_file(fname)
     
-    ### select orbital column
-    dat_ncolumn5 = {'s': 1, 'p': 2, 'd': 3, 't': 4}   # in case up and down is summed
-    print(f"orb {orb}")
-    if not orb.isalpha():   # cN
-        icol=int(orb.isalpha[1]) # take N in cN
-    else:
-        if len(word_info[0]) == 5:
-            icol = int(dat_ncolumn5[orb])
-        else:
-            print(f"{word_info[0]}")
-            print(f"not prepared for other file format with length {len(word_info[0])}")
-            sys.exit(11)
-
     E = [] ; dos = []
     
     ### Obtain E, dos, word_info.shape=(nene, ncol)
@@ -965,26 +975,21 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb='p', plot_option=None):
         E.append(float(word_info[i][0]))
         dos.append(float(word_info[i][icol]))
 
+    ### Get index of Fermi level
     for i in range(len(E)-1):
         if E[i] * E[i+1] <= 0:
-            iFermi = i + 1   # i < E_fermi < i+1
+            iFermi = i + 1   # i(+) < E_fermi < i+1 (-)
             break
     
     # find parameteres
     dE = E[1] - E[0]
-    sum_dos = 0 ; sum_Edos = 0
-    sum_dosw = 0 ; sum_Edosw = 0    # w: weight using FD function
+    sum_dos = 0 ; sum_Edos = 0;
+    sum_dosw = 0 ; sum_Edosw = 0    # w: weight using FD derivative function
     
     dos2Ef = dos[:iFermi]
-    if sum(dos2Ef) >= 0:
-        dos_max = max(dos2Ef) 
-    elif sum(dos2Ef) < 0:
-        dos_max = min(dos2Ef)
-    else:
-        print("The data is not consistent for spin up or dn")
-    
+    dos_max = max(dos2Ef) 
     i_dosmax = find_index(dos2Ef, dos_max)
-    print(f"density max index {i_dosmax}")
+    #print(f"density max index {i_dosmax} in {whereami}")
 
     if len(i_dosmax) == 1:
         E_dosmax = E[i_dosmax[0]]
@@ -992,19 +997,32 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb='p', plot_option=None):
         print("Same max values exist")
 
     # calculation 
-    for i in range(iFermi):
-        sum_dos     = sum_dos    + dE * dos2Ef[i]
-        sum_Edos    = sum_Edos   + dE * dos2Ef[i] * E[i]
-        sum_dosw    = sum_dosw   - dE * dos2Ef[i] * fd_derivative_weight(E[i], weight_arg=0.4)
-        sum_Edosw  = sum_Edosw - dE * dos2Ef[i] * E[i] * fd_derivative_weight(E[i], weight_arg=0.4)
+    for i in range(len(E)):
+        sum_dos     = sum_dos   + dE * dos[i]
+        sum_Edos    = sum_Edos  + dE * dos[i] * E[i]
+        sum_dosw    = sum_dosw  - dE * dos[i] * fd_derivative_weight(E[i], weight_arg=0.4) # - comes from fd_derivative
+        sum_Edosw   = sum_Edosw - dE * dos[i] * E[i] * fd_derivative_weight(E[i], weight_arg=0.4)
+        if i == iFermi:
+            sum_dosw_Ef     = sum_dosw
+            sum_Edosw_Ef    = sum_Edosw
     #print(f"{sum_Edosw} {sum_dosw}")
-    Orb_cent = sum_Edos / sum_dos
-    Ef_abund = sum_Edosw / sum_dosw
-    print('orbital center ', '%12.8f' % Orb_cent)
-    print('fermi-abudnace ', '%12.8f' % Ef_abund)
-    print('highest peak at','%12.8f'  %  E_dosmax, 'eV with amplitude of ', '%12.8f' % dos2Ef[i_dosmax[0]])
+    orb_cent        = sum_Edos / sum_dos
+    Efermi_abund     = sum_Edosw / sum_dosw
+    Efermi_abund_2Ef  = sum_Edosw_Ef / sum_dosw_Ef
+
+    print(f"{'orbital center':20}{orb_cent:10.3f}")
+    print(f"{'softness':20}{sum_dosw:10.3f}")
+    print(f"{'fermi-abudnace':20}{Efermi_abund:10.3f}")
+    print(f"{'fermi-abudnace to Ef':20}{Efermi_abund_2Ef:10.3f}")
+    print(f"{'highest peak at':20}{E_dosmax:10.3f}{' eV with amplitude of':20}{dos[i_dosmax[0]]:10.2f}")
     
-    return Orb_cent, Ef_abund, (E_dosmax, dos2Ef[i_dosmax[0]])
+    if elimit == 'fermi':
+        Efermi_ab = Efermi_abund_2Ef
+    elif elimit == 'inf':
+        Efermi_ab = Efermi_abund
+    
+
+    return orb_cent, Efermi_ab, (E_dosmax, dos[i_dosmax[0]])
 
 
 

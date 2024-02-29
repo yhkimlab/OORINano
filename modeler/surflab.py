@@ -1,7 +1,7 @@
 ### refactored by J. Park 2021.11.01
 
 from __future__ import print_function
-from ..atoms import atomic_symbol, atomic_number, reference_states
+from ..atoms import atomic_symbol, atomic_number, reference_state # reference_state was replaced by hash
 from .surface_data import *
 from ..rw import convert_abc2xyz
 from math import sin, cos, sqrt, pi
@@ -16,7 +16,7 @@ import numpy as np
 
 
 def find_lattice_parameters(symb):
-    info = reference_states[atomic_number(symb)]
+    info = reference_state[symb]
     if info == None:
         raise ValueError('Can`t guess lattice.')
     lattice = info['symmetry']

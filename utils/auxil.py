@@ -1,12 +1,41 @@
 '''
 auxiliary functions
+    string to number
     parsing
     time2human
     check_file
     
 '''
-import re, inspect, os, glob
+import re, inspect, os, glob, sys
+import numpy as np
 
+### change string (read input file) to value
+re_num = re.compile("^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$")   # string for all kinds of number
+
+def isnumber(str):
+    '''
+    str     string
+    return  number or not
+    '''
+    if re_num.match(str):
+        return True
+    else:
+        return False
+
+def isint(value):
+    '''
+    value   input string is value
+    return  try to convert string to integer
+    '''
+    flag = True
+    try:
+        int(value)
+    except ValueError:
+        flag = False
+    return flag
+
+
+### 
 def parse_line(line):
     '''
     read line and return list
@@ -59,7 +88,7 @@ def whereami(rank=1):
     '''
     return inspect.stack()[rank][3]
 
-def list2str(li, delimit=None):
+def list2str_old(li, delimit=None):
     '''
     list to string
         delimit delimiter between list elements, default=''
@@ -71,6 +100,49 @@ def list2str(li, delimit=None):
         st = delimit.join(str(x) for x in li)
     return st
 
+def list2str(lis, decimal = 0, head=None, end=None):
+    '''
+    list to string
+    delimit     delimiter between list elements, default=''
+    decimal     change float to decimal place in case float
+
+    '''
+    ### change float to the formmated decimal placement
+    if type(decimal) == int:
+        lis = list(np.around(np.array(lis), decimal))
+
+    #if delimit == None:
+    #    st = "".join(str(x) for x in lis)
+    #else:
+    #    st = delimit.join(str(x) for x in lis)
+
+    st = "   ".join(['{:10.2f}'.format(i) for i in lis])
+    if end:
+        st += '\n'
+
+    if head:
+        headst = '{:^10}'.format(head)
+        st = headst + st
+    return st
+
+def flist2str(lis, delimit='  ', head=None, decimal=2):
+    '''
+    float list to string
+        delimit delimiter between list elements, default=''
+    formatted   for decimal number
+    '''
+    if decimal == 2:
+        st = delimit.join('%10.2f' % x for x in lis)
+    else:
+        print("Exit: more format is required")
+        sys.exit(111)
+
+    if head:
+        headst = '%10s' % head
+        st = headst + st
+    return st
+
+
 def list2dict(li):
     it = iter(li)
     dic = dict(zip(it,it))
@@ -79,6 +151,19 @@ def list2dict(li):
 def print_list(li):
     st = list2str(li)
     print(st)
+    return st
+
+def list2_format(li, decimal=2):
+    return list(np.around(np.array(li), decimal))
+
+def headlist2str(li, head, Lwrite=True):
+
+    ### formated list string
+    #st = str([ f'{x:7.2f}' for x in li])
+
+    st = f"{head:^10s}" + str(li)
+    if Lwrite:
+        st += '\n'
     return st
 
 def f_ext(fname):

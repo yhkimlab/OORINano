@@ -7,7 +7,6 @@
 from __future__ import print_function
 #from .atomic_data import atomic_weight, atomic_symbol, atomic_number, covalent_radii 
 from .atomic_data import *
-from .atoms_aux import *
 from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
 import copy     # added by SH
@@ -212,8 +211,8 @@ class AtomsSystem(object):
 
         if not atoms: # 110924 empty AtomsSystem is allowed.
             self._atoms = []
-            self._cell = None
-            self._pbc = None
+            self._cell = []     # change from None
+            self._pbc = []      # change from None
             self._pointer = {}
             return
             #raise ValueError
@@ -542,8 +541,8 @@ class AtomsSystem(object):
         ysite = diagon[1]/2
         zmax    = self.get_zmax()
         pcoord = (xsite, ysite, zmax)
-        print(f"pivot site: {pcoord} maxgid {maxgid}")
-        print(f"self {self}")
+        #print(f"pivot site: {pcoord} maxgid {maxgid}")
+        #print(f"self {self}")
         ipivot = self.select_nearest(pcoord, maxgid)
         return ipivot
     
@@ -1180,7 +1179,7 @@ class AtomsSystem(object):
         print ('Contents =>', contents); i=0
         info_cell = self.get_cell(); pbc_info = self.get_pbc()
         #if self._cell != None:
-        if self._cell.any():
+        if self._cell.any():   # error with NoneType -> self._cell = [] initially
             print ("\nCell & Periodic Boundary Condition Infomation")
             print ("v1  (%10.6f, %10.6f, %10.6f)" % tuple(info_cell[0]))
             print ("v2  (%10.6f, %10.6f, %10.6f)" % tuple(info_cell[1]))

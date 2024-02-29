@@ -18,46 +18,43 @@ outfile=$pdir/${SLURM_JOB_ID}.${jobname}.out
 partname=$SLURM_JOB_PARTITION
 nodelist=$SLURM_JOB_NODELIST
 
-if [ $partname == 'X1' ]; then
+if [ ${partname} == 'X1' ] || [ ${partname} == 'X1c' ]; then
     par=2; SLURM_CPUS_PER_NODE=8
-elif [ $partname == 'X2' ]; then
+elif [ ${partname} == 'X2' ] || [ ${partname} == 'X2c']; then
     par=2; SLURM_CPUS_PER_NODE=12
 elif [ $partname == 'X3' ]; then
     par=4; SLURM_CPUS_PER_NODE=20
-    #if [ $hmem -eq 1 ]; then
-    if [ $hmem ]; then
-        par=2
-    fi
 elif [ $partname == 'X4' ]; then
     par=4; SLURM_CPUS_PER_NODE=24
-    if [ $hmem  ]; then
-        par=2
-    fi
-else    # if X5
+else    # if X5 or X6
     par=4; SLURM_CPUS_PER_NODE=32
 fi
 
 npar=$(expr $SLURM_JOB_NUM_NODES \* $par )
 
-if [ ! -f "$wdir" ]; then
+
+if [ ! -d "$wdir" ]; then
     mkdir $wdir
 else
     echo "there exists $wdir"
-#    exit 1
 fi
 
 jobfile="run_catalysis.py"
 catkind=${cat:-"orr"}     # select [ORR|HER]
-poscar=${pos:-"cp"}
+poscar=${pos:-"gen"}
 
-if [ $poscar == 'cp' ]; then
-    cp CONTCAR_Pt-SAC $wdir/POSCAR
-    str="../$jobfile -j run -c $catkind -p POSCAR -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
+if [ $poscar == 'gen' ]; then
+    if [ $catkind == 'orr' ]; then
+        str="../$jobfile -j run -r orr -m Pt -ss 111 3 -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar "
+    else # HER
+        str="../$jobfile -j run -r $catkind -m Pt Au Ag Pd Ni Cu -ss 111 3 -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar "
+    fi
 else
-    str="../$jobfile -j run -c $catkind -p Pt 111 3 -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
+    cp CONTCAR_Pt-SAC $wdir/POSCAR
+    str="../$jobfile -j run -r $catkind -i POSCAR -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
 fi
 
-echo `date` > $logfile
+echo `date` >> $logfile
 echo HOME is $HOME >> $logfile
 cd $wdir
 echo " Partition : $SLURM_JOB_PARTITION" >> $logfile

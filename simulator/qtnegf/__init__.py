@@ -89,7 +89,7 @@ def calcElectrode(calc, el_model, elecdir, np, fdf_elec = None, show_params=Fals
         check_fname = f'{cwdr}/MESSAGES'
         calc.read_all_fdf() # read all .fdf in /RUN
         if (not os.path.isfile(check_fname)) or (not check_file(check_fname, job_complete)):
-            calc.runQtNegf(np)
+            calc.run_calculator(np)
             print(f"Job completed in {subdir}")
         os.chdir('..')
         os.chdir('..')
@@ -163,7 +163,7 @@ def calcScattering(calc, struct_channel, scatter_dir, finp, foutp, np, fdf_scatt
         check_fname = f'{cwdv}/TSHS/MESSAGES'
         
         if (not os.path.isfile(check_fname)) or (not check_file(check_fname, job_complete)):
-            calc.runQtNegf(np, **yoption)
+            calc.run_calculator(np, **yoption)
         yoption['scatter'] = os.getcwd()
         os.chdir(cwdv)
 
@@ -174,7 +174,7 @@ def calcScattering(calc, struct_channel, scatter_dir, finp, foutp, np, fdf_scatt
             calc.read_all_fdf()
             calc.set_option('kgrid_Monkhorst_Pack', True, (12,1,1))
             calc.set_option('TS.Elecs.Neglect.Principal', True)
-            calc.runQtNegf(np, **yoption)
+            calc.run_calculator(np, **yoption)
             yoption['tbtrans'] = os.getcwd()
         os.chdir(cwds)
         ### write to yaml

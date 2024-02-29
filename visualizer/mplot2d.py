@@ -10,7 +10,7 @@ import matplotlib.ticker as ticker
 import sys, re
 import scipy
 import numpy as np
-from .pltcommon import *
+from .pltorbit import *
 from ..utils.auxil import *
 
 #plt.switch_backend('agg')
@@ -21,19 +21,6 @@ text_x = 0.75
 text_y = 0.8
 text_twinx_x = 0.8
 text_twinx_y = 0.9
-
-### functions
-#   my_font
-#   common_figure: will be moved to myplot_default and deleted
-#   common_figure_after: needed after plt.plot()
-#   draw_dots_two: option: twinx
-#   xtitle_font
-#   mplot_twinx
-#   mplot_nvector
-#   draw_histogram
-#
-
-#from myplot_default import *
 
 def my_font(pack='amp'):
     if pack == 'amp':
@@ -138,8 +125,9 @@ def common_figure(ctype='dark', ncolor=4, Ltwinx=False):
 
     fig = plt.figure(figsize=(10,6))
     ax = plt.axes()
-    mpl.rcParams.update({'font.size':12})
-    #ax.tick_params(axis='both', which='major', labelsize=25)
+    mpl.rcParams.update({'font.size':15})
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    #print(f"y ticks locator in {__name__}")
     #ax.tick_params(axis='x', labelsize=30)
     if ctype == 'darken':
         pass   
@@ -442,13 +430,15 @@ def auto_nvector(x,y):
         plt.plot(x,y[i])
     plt.show()
     return 0
-### most1
-def mplot_table_line(x, y, dx=1.0, title=None, xlabel=None, ylabel=None, legend=None,Lsave=False, colors=None, lvert=None, v_legend=None, orb=None, xlim=None):
+
+### VASP PDOS called by plot_dostable in mplottable.py
+def mplot_table_vline(x, y, dx=1.0, title=None, xlabel=None, ylabel=None, legend=None,Lsave=False, colors=None, lvert=None, v_legend=None, orb=None, xlim=None, plot_style=None):
     '''
     call with x=[] and y=[ [...
     x:: [] or [size]
     y:: [size] or [[size],[size],...[size]]
     '''
+    
     if not colors:
         fig, ax = common_figure(ncolor = len(legend))
     else:
@@ -461,45 +451,71 @@ def mplot_table_line(x, y, dx=1.0, title=None, xlabel=None, ylabel=None, legend=
     else:
         xsize = ys.shape[0]
         x=range(xsize)
+    
     #print(f"x={len(x)} y={ys.shape} in {whereami()}()")
-    plt.title(title)
-    xlabel = 'E - E$_F$ [eV]'
-    plt.xlabel(xlabel, fontsize=12)
-    plt.ylabel(ylabel, fontsize=12)
-    print(f"xlabel: {xlabel} ")
+    print(f"title {title} in {__name__}")
+    plt.title(title, y=1.04)
+    #xlabel = 'E - E$_F$ [eV]'
+    plt.xlabel(xlabel, fontsize=20)
+    plt.ylabel(ylabel, fontsize=20)
+    #ax.set_ylim(0, 3)
+    #print(f"xlabel: {xlabel} ")
+    #print(f"plot style {plot_style}")
     if ys.ndim == 1:
         plt.plot(x, y, '-')
         #plt.scatter(x, y)
     elif ys.ndim == 2:
         for i in range(len(ys)):
-            if re.search('t', legend[i]):
+            if re.search('sum', legend[i]):
                 d = scipy.zeros(len(ys[i,:]))
-                print(f"shape d {np.array(d).shape}")
+                #print(f"shape d {np.array(d).shape}")
                 ax.fill_between(x, ys[i,:], where=ys[i,:]>=d, color=colors[i])
-                plt.plot(x,ys[i,:],  label='TDOS' , color=colors[i])
+                #plt.plot(x,ys[i,:],  label='TDOS' , color=colors[i])
+                plt.plot(x,ys[i,:],  color=colors[i])
             else:
-                plt.plot(x,ys[i,:],  label=legend[i] , color=colors[i])
+                ### sum or non-polarized
+                if not plot_style:
+                    plt.plot(x,ys[i,:],  label=legend[i] , color=colors[i])
+                ### split
+                elif re.search('sp', plot_style):
+                    if re.search('dn', legend[i]):
+                        plt.plot(x,ys[i,:],  label=legend[i] , color=colors[i], linestyle='dashed')
+                    else:
+                        plt.plot(x,ys[i,:],  label=legend[i] , color=colors[i])
+                ### polar plot
+                elif re.search('po',plot_style):
+                    if re.search('dn', legend[i]):
+                        plt.plot(x, -ys[i,:],  label=legend[i] , color=colors[i], linestyle='dashed')
+                    else:
+                        plt.plot(x,ys[i,:],  label=legend[i] , color=colors[i])
 
     else:
         print(f"Error:: obscure in y-dim {ys.ndim}")
     
-    ylim = ax.get_ylim()    # after draw dos, get_ylim
+    ylim = ax.get_ylim()    # returns tuple
+    #print(f"ylim = {ylim} plot style {plot_style} in {whereami()}")
+    if not plot_style == 'polar':
+        ax.set_ylim(0, ylim[1]) # redefine ymin=0 for DOS plot
+    #print(f"get ylim {ylim}")
     ### plot vertical lines
     if lvert:
-        lstyle=['-', '--']
+        lstyle  = ['--', '--', ':']
+        colors  = ['green', 'purple', 'orange' ]
         for i, key in enumerate(lvert.keys()):
             label = f"{orb}-{key}"
-            plt.axvline(x=lvert[key], color=getcolor_orbital(orb), linestyle=lstyle[i], label=label)
+            plt.axvline(x=lvert[key], color=colors[i], linestyle=lstyle[i], label=label)
     
     ### ADD LEGEND
     plt.legend(loc=1)               # locate after plot
-    #plt.xlim([-20.0, 15.0])
-    #ax.set_xlim([-25, 15])
-    ax.set_ylim([0.0, ylim[1]])     # set ymin=0 after get ymax
+    
     if xlim:
         ax.set_xlim(xlim)
+    ax.set_ylim(0, 0.2)
     ax.xaxis.set_major_locator(ticker.AutoLocator())
-    ax.yaxis.set_major_locator(ticker.AutoLocator())
+    
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(0.05))
+    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
+    #ax.yaxis.set_major_locator(ticker.AutoLocator())
     plt.show()
     if Lsave:
         fig.savefig("pdos.png", dpi=150)

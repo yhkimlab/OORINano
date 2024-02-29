@@ -1,5 +1,4 @@
 
-import os, sys, glob, math
 from ...atoms import *
 
 '''
@@ -24,7 +23,7 @@ class Catmodels:
         maxindex = z_axis.index(max(z_axis))
         return maxindex
 
-    def HER_transition_gen(self, pivot=None, zdist=1.5):
+    def HER_intermediate_gen(self, pivot=None, zdist=1.5):
         """
         specify hydrogen atomic position on the catalyst
 
@@ -52,14 +51,14 @@ class Catmodels:
         atomsH = atoms + Atom('H', vpivot + vHdist)
         return atomsH
 
-    def four_electron_transition_gen(self, pivot=None, zdist=1.5, mode='ORR'):
+    def four_electron_intermediates_gen(self, pivot=None, zdist=1.5, mode='ORR'):
         """
         specify initial atomic position on the catalyst
 
         Parameters
         ----------
         pivot = int (pivot id), list
-            same as HER_transition_gen
+            same as HER_intermediate_gen
             assign the position [A] of adsorbed hydrogen [x, y, z]
             Ex. pivot = [1.2, 1.35, 23.75]
             if pivot is None, the atomic position is automatically assigned
@@ -84,7 +83,7 @@ class Catmodels:
         else:
             if type(pivot) is int:
                 pivot_position = atoms[pivot-1].get_position()
-                #print(f"pivot_position: {pivot_position}")
+                print(f"pivot_position: {pivot_position}")
             else:
                 pivot_position = (pivot[0], pivot[1], pivot[2])
         vpivot = Vector(pivot_position)

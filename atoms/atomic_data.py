@@ -43,6 +43,39 @@ atomic_symbol = {
 104:'Had', 105:'Oad'
 }
 
+hatomic_number = {
+#Period 1   
+ 'H':1,                                                         'He':2,
+#Period 2
+ 'Li':3,  'Be':4,  'B':5,   'C':6,   'N':7,   'O':8,   'F':9,  'Ne':10,
+#Period 3
+'Na':11, 'Mg':12, 'Al':13, 'Si':14, 'P':15,  'S':16,  'Cl':17, 'Ar':18,
+#Period 4
+'K':19,  'Ca':20,
+'Sc':21,'Ti':22,'V':23,'Cr':24,'Mn':25,'Fe':26,'Co':27,'Ni':28,'Cu':29,'Zn':30,
+                  'Ga':31, 'Ge':32, 'As':33, 'Se':34, 'Br':35, 'Kr':36,
+#Period 5
+'Rb':37, 'Sr':38,
+'Y':39,'Zr':40,'Nb':41,'Mo':42,'Tc':43,'Ru':44,'Rh':45,'Pd':46,'Ag':47,'Cd':48,
+                  'In':49, 'Sn':50, 'Sb':51, 'Te':52, 'I':53,  'Xe':54,
+#Period 6
+'Cs':55, 'Ba':56,
+'Lu':71,'Hf':72,'Ta':73,'W':74,'Re':75,'Os':76,'Ir':77,'Pt':78,'Au':79,'Hg':80,
+                  'Ti':81, 'Pb':82, 'Bi':83, 'Po':84, 'At':85, 'Rn':86,
+#Period 7
+'Fr':87, 'Ra':88,
+'Rf':104,'Db':105,'Sg':106,'Bh':107,'Hs':108,'Mt':109,'Ds':110,'Rg':111,
+#Lanthanoids
+'La':57,'Ce':58,'Pr':59,'Nd':60,'Pm':61,'Sm':62,'Eu':63,'Gd':64,'Tb':65,
+'Dy':66,'Ho':67,'Er':68,'Tm':69,'Yb':70,
+#Actinoids
+'Ac':89,'Th':90,'Pa':91,'U':92,'Np':93,'Pu':94,'Am':95,'Cm':96,'Bk':97,'Cf':98,
+'Es':99,'Fm':100,'Md':101,'No':102,'Lr':103,
+
+# NMJ MODIFICATION
+'Had':104, 'Oad':105
+}
+
 def atomic_number(symb):
     if symb == 'X': return 0
     symb = symb.capitalize()
@@ -270,6 +303,114 @@ covalent_radii = N.array([
  0.73]) # NMJ H for ORR
 
 # This data is from Ashcroft and Mermin.
+reference_state = {\
+    'X' :{ 'weight':  0.00000, 'magmom': 0,                                                                    },                                                                       
+    'H' :{ 'weight':  1.00794, 'magmom': 1,  'symmetry': 'diatom', 'd': 0.74,                                  },                                          
+    'He':{ 'weight':  4.00260, 'magmom': 0,  'symmetry': 'atom'                                                },                                                       
+    'Li':{ 'weight':  6.94100, 'magmom': 1,  'symmetry': 'BCC', 'a': 3.49                                      },                                             
+    'Be':{ 'weight':  9.01218, 'magmom': 2,  'symmetry': 'hcp', 'c/a': 1.567, 'a': 2.29                        },           
+    'B' :{ 'weight': 10.81100, 'magmom': 3,  'symmetry': 'Tetragonal', 'c/a': 0.576, 'a': 8.73                 },    
+    'C' :{ 'weight': 12.01100, 'magmom': 4,  'symmetry': 'Diamond', 'a': 3.57                                  }, # valance e = 4, normally 0, if radical 1
+    'N' :{ 'weight': 14.00670, 'magmom': 3,  'symmetry': 'diatom', 'd': 1.10                                   }, # valance e = 3, normally 0, if radical 1
+    'O' :{ 'weight': 15.99940, 'magmom': 2,  'symmetry': 'diatom', 'd': 1.21                                   }, 
+    'F' :{ 'weight': 18.99840, 'magmom': 1,  'symmetry': 'diatom', 'd': 1.42                                   }, 
+    'Ne':{ 'weight': 20.17970, 'magmom': 0,  'symmetry': 'fcc', 'a': 4.43                                      },    
+    'Na':{ 'weight': 22.98977, 'magmom': 1,  'symmetry': 'BCC', 'a': 4.23                                      },    
+    'Mg':{ 'weight': 24.30500, 'magmom': 2,  'symmetry': 'hcp', 'c/a': 1.624, 'a': 3.21                        },   
+    'Al':{ 'weight': 26.98154, 'magmom': 3,  'symmetry': 'fcc', 'a': 4.05                                      },                 
+    'Si':{ 'weight': 28.08550, 'magmom': 4,  'symmetry': 'Diamond', 'a': 5.43                                  },             
+    'P ':{ 'weight': 30.97376, 'magmom': 3,  'symmetry': 'Cubic', 'a': 7.17                                    },               
+    'S' :{ 'weight': 32.06600, 'magmom': 2,  'symmetry': 'Orthorhombic', 'c/a': 2.339, 'a': 10.47,'b/a': 1.229 },
+    'Cl':{ 'weight': 35.45270, 'magmom': 1,  'symmetry': 'Orthorhombic', 'c/a': 1.324, 'a': 6.24, 'b/a': 0.718 },
+    'Ar':{ 'weight': 39.94800, 'magmom': 0,  'symmetry': 'fcc', 'a': 5.26                                      },
+    'K' :{ 'weight': 39.09830, 'magmom': 1,  'symmetry': 'BCC', 'a': 5.23                                      },
+    'Ca':{ 'weight': 40.07800, 'magmom': 2,  'symmetry': 'fcc', 'a': 5.58                                      },
+    'Sc':{ 'weight': 44.95590, 'magmom': 3,  'symmetry': 'hcp', 'c/a': 1.594, 'a': 3.31                        },
+    'Ti':{ 'weight': 47.88000, 'magmom': 4,  'symmetry': 'hcp', 'c/a': 1.588, 'a': 2.95                        },
+    'V' :{ 'weight': 50.94150, 'magmom': 5,  'symmetry': 'BCC', 'a': 3.02                                      },
+    'Cr':{ 'weight': 51.99600, 'magmom': 6,  'symmetry': 'BCC', 'a': 2.88                                      },
+    'Mn':{ 'weight': 54.93800, 'magmom': 5,  'symmetry': 'Cubic', 'a': 8.89                                    },
+    'Fe':{ 'weight': 55.84700, 'magmom': 4,  'symmetry': 'BCC', 'a': 2.87                                      },
+    'Co':{ 'weight': 58.93320, 'magmom': 3,  'symmetry': 'hcp', 'c/a': 1.622, 'a': 2.51                        },
+    'Ni':{ 'weight': 58.69340, 'magmom': 2,  'symmetry': 'fcc', 'a': 3.52                                      },
+    'Cu':{ 'weight': 63.54600, 'magmom': 1,  'symmetry': 'fcc', 'a': 3.61                                      },
+    'Zn':{ 'weight': 65.39000, 'magmom': 0,  'symmetry': 'hcp', 'c/a': 1.856, 'a': 2.66                        },
+    'Ga':{ 'weight': 69.72300, 'magmom': 3,  'symmetry': 'Orthorhombic', 'c/a': 1.695, 'a': 4.51, 'b/a': 1.001 },
+    'Ge':{ 'weight': 72.61000, 'magmom': 4,  'symmetry': 'Diamond', 'a': 5.66                                  },
+    'As':{ 'weight': 74.92160, 'magmom': 3,  'symmetry': 'Rhombohedral', 'a': 4.13, 'alpha': 54.10             },
+    'Se':{ 'weight': 78.96000, 'magmom': 2,  'symmetry': 'hcp', 'c/a': 1.136, 'a': 4.36                        },
+    'Br':{ 'weight': 79.90400, 'magmom': 1,  'symmetry': 'Orthorhombic', 'c/a': 1.307, 'a': 6.67, 'b/a': 0.672 },
+    'Kr':{ 'weight': 83.80000, 'magmom': 0,  'symmetry': 'fcc', 'a': 5.72                                      },
+    'Rb':{ 'weight': 85.46780, 'magmom': 1,  'symmetry': 'BCC', 'a': 5.59                                      },
+    'Sr':{ 'weight': 87.62000, 'magmom': 2,  'symmetry': 'fcc', 'a': 6.08                                      },
+    'Y' :{ 'weight': 88.90590, 'magmom': 3,  'symmetry': 'hcp', 'c/a': 1.571, 'a': 3.65                        },
+    'Zr':{ 'weight': 91.22400, 'magmom': 4,  'symmetry': 'hcp', 'c/a': 1.593, 'a': 3.23                        },
+    'Nb':{ 'weight': 92.90640, 'magmom': 5,  'symmetry': 'BCC', 'a': 3.30                                      },
+    'Mo':{ 'weight': 95.94000, 'magmom': 6,  'symmetry': 'BCC', 'a': 3.15                                      },
+    'Tc':{ 'weight':   N.nan,  'magmom': 5,  'symmetry': 'hcp', 'c/a': 1.604, 'a': 2.74                        },
+    'Ru':{ 'weight':101.07000, 'magmom': 4,  'symmetry': 'hcp', 'c/a': 1.584, 'a': 2.70                        },
+    'Rh':{ 'weight':102.90550, 'magmom': 3,  'symmetry': 'fcc', 'a': 3.80                                      },
+    'Pd':{ 'weight':106.42000, 'magmom': 2,  'symmetry': 'fcc', 'a': 3.89                                      },
+    'Ag':{ 'weight':107.86800, 'magmom': 1,  'symmetry': 'fcc', 'a': 4.09                                      },
+    'Cd':{ 'weight':112.41000, 'magmom': 0,  'symmetry': 'hcp', 'c/a': 1.886, 'a': 2.98                        },
+    'In':{ 'weight':114.82000, 'magmom': 3,  'symmetry': 'Tetragonal', 'c/a': 1.076, 'a': 4.59                 },
+    'Sn':{ 'weight':118.71000, 'magmom': 4,  'symmetry': 'Tetragonal', 'c/a': 0.546, 'a': 5.82                 },
+    'Sb':{ 'weight':121.75700, 'magmom': 3,  'symmetry': 'Rhombohedral', 'a': 4.51, 'alpha': 57.60             },
+    'Te':{ 'weight':127.60000, 'magmom': 2,  'symmetry': 'hcp', 'c/a': 1.330, 'a': 4.45                        },
+    'I' :{ 'weight':126.90450, 'magmom': 1,  'symmetry': 'Orthorhombic', 'c/a': 1.347, 'a': 7.27, 'b/a': 0.659 },
+    'Xe':{ 'weight':131.29000, 'magmom': 0,  'symmetry': 'fcc', 'a': 6.20                                      },
+    'Cs':{ 'weight':132.90540, 'magmom': 1,  'symmetry': 'BCC', 'a': 6.05                                      },
+    'Ba':{ 'weight':137.33000, 'magmom': 2,  'symmetry': 'BCC', 'a': 5.02                                      },
+    'La':{ 'weight':138.90550, 'magmom': 3,  'symmetry': 'hcp', 'c/a': 1.619, 'a': 3.75                        },
+    'Ce':{ 'weight':140.12000, 'magmom': 4,  'symmetry': 'fcc', 'a': 5.16                                      },
+    'Pr':{ 'weight':140.90770, 'magmom': 5,  'symmetry': 'hcp', 'c/a': 1.614, 'a': 3.67                        },
+    'Nd':{ 'weight':144.24000, 'magmom': 6,  'symmetry': 'hcp', 'c/a': 1.614, 'a': 3.66                        },
+    'Pm':{ 'weight':   N.nan,  'magmom': 6,                                                                    },
+    'Sm':{ 'weight':150.36000, 'magmom': 6,  'symmetry': 'Rhombohedral', 'a': 9.00, 'alpha': 23.13             },
+    'Eu':{ 'weight':151.96500, 'magmom': 6,  'symmetry': 'BCC', 'a': 4.61                                      },
+    'Gd':{ 'weight':157.25000, 'magmom': 6,  'symmetry': 'hcp', 'c/a': 1.588, 'a': 3.64                        },
+    'Th':{ 'weight':158.92530, 'magmom': 6,  'symmetry': 'hcp', 'c/a': 1.581, 'a': 3.60                        },
+    'Dy':{ 'weight':162.50000, 'magmom': 6,  'symmetry': 'hcp', 'c/a': 1.573, 'a': 3.59                        },
+    'Ho':{ 'weight':164.93030, 'magmom': 6,  'symmetry': 'hcp', 'c/a': 1.570, 'a': 3.58                        },
+    'Er':{ 'weight':167.26000, 'magmom': 6,  'symmetry': 'hcp', 'c/a': 1.570, 'a': 3.56                        },
+    'Tm':{ 'weight':168.93420, 'magmom': 6,  'symmetry': 'hcp', 'c/a': 1.570, 'a': 3.54                        },
+    'Yb':{ 'weight':173.04000, 'magmom': 6,  'symmetry': 'fcc', 'a': 5.49                                      },
+    'Lu':{ 'weight':174.96700, 'magmom': 6,  'symmetry': 'hcp', 'c/a': 1.585, 'a': 3.51                        },
+    'Hf':{ 'weight':178.49000, 'magmom': 4,  'symmetry': 'hcp', 'c/a': 1.582, 'a': 3.20                        },
+    'Ta':{ 'weight':180.94790, 'magmom': 5,  'symmetry': 'BCC', 'a': 3.31                                      },
+    'W' :{ 'weight':183.85000, 'magmom': 6,  'symmetry': 'BCC', 'a': 3.16                                      },
+    'Re':{ 'weight':186.20700, 'magmom': 5,  'symmetry': 'hcp', 'c/a': 1.615, 'a': 2.76                        },
+    'Os':{ 'weight':190.20000, 'magmom': 4,  'symmetry': 'hcp', 'c/a': 1.579, 'a': 2.74                        },
+    'Ir':{ 'weight':192.22000, 'magmom': 3,  'symmetry': 'fcc', 'a': 3.84                                      },
+    'Pt':{ 'weight':195.08000, 'magmom': 2,  'symmetry': 'fcc', 'a': 3.92                                      },
+    'Au':{ 'weight':196.96650, 'magmom': 1,  'symmetry': 'fcc', 'a': 4.08                                      },
+    'Hg':{ 'weight':200.59000, 'magmom': 0,  'symmetry': 'Rhombohedral', 'a': 2.99, 'alpha': 70.45             },
+    'Tl':{ 'weight':204.38300, 'magmom': 3,  'symmetry': 'hcp', 'c/a': 1.599, 'a': 3.46                        },
+    'Pb':{ 'weight':207.20000, 'magmom': 4,  'symmetry': 'fcc', 'a': 4.95                                      },
+    'Bi':{ 'weight':208.98040, 'magmom': 3,  'symmetry': 'Rhombohedral', 'a': 4.75, 'alpha': 57.14             },
+    'Po':{ 'weight':   N.nan,  'magmom': 2,  'symmetry': 'SC', 'a': 3.35                                       },
+    'At':{ 'weight':   N.nan,  'magmom': 1,                                                                    },
+    'Rn':{ 'weight':   N.nan,  'magmom': 0,                                                                    },
+    'Fr':{ 'weight':   N.nan,  'magmom': 1,                                                                    },
+    'Ra':{ 'weight':226.02540, 'magmom': 2,                                                                    },
+    'Ac':{ 'weight':   N.nan,  'magmom': 3,  'symmetry': 'fcc', 'a': 5.31                                      },
+    'Th':{ 'weight':232.03810, 'magmom': 4,  'symmetry': 'fcc', 'a': 5.08                                      },
+    'Pa':{ 'weight':231.03590, 'magmom': 5,  'symmetry': 'Tetragonal', 'c/a': 0.825, 'a': 3.92                 },
+    'U' :{ 'weight':238.02900, 'magmom': 6,  'symmetry': 'Orthorhombic', 'c/a': 2.056, 'a': 2.85, 'b/a': 1.736 },
+    'Np':{ 'weight':237.04820, 'magmom': 6,  'symmetry': 'Orthorhombic', 'c/a': 1.411, 'a': 4.72, 'b/a': 1.035 },
+    'Pu':{ 'weight':  N.nan,   'magmom': 6,  'symmetry': 'Monoclinic'                                          },
+    'Am':{ 'weight':  N.nan,   'magmom': 6,                                                                    },
+    'Cm':{ 'weight':  N.nan,   'magmom': 6,                                                                    },
+    'Bk':{ 'weight':  N.nan,   'magmom': 6,                                                                    },
+    'Cf':{ 'weight':  N.nan,   'magmom': 6,                                                                    },
+    'Es':{ 'weight':  N.nan,   'magmom': 6,                                                                    },
+    'Fm':{ 'weight':  N.nan,   'magmom': 6,                                                                    },
+    'Md':{ 'weight':  N.nan,   'magmom': 6,                                                                    },
+    'No':{ 'weight':  N.nan,   'magmom': 6,                                                                    },
+    'Lr':{ 'weight':  N.nan,   'magmom': 6,                                                                    }}
+#       1.00794, # NMJ H for
+#   15.99940])# NMJ O for
+# This data is from Ashcroft and Mermin. --> replaced by hash (depricated by J. Park)
 reference_states = [\
     None, #X
     {'symmetry': 'diatom', 'd': 0.74}, #H
@@ -374,7 +515,7 @@ reference_states = [\
     None,#Fm
     None,#Md
     None,#No
-    None]#Lw
+    None]#Lr
 
 atomic_ichar = [\
     0,#X

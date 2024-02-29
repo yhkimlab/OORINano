@@ -5,9 +5,8 @@
 #
 
 from __future__ import print_function
-#from .atomic_data import atomic_weight, atomic_symbol, atomic_number, covalent_radii 
+#from .atomic_data import atomic_weight, atomic_symbol, covalent_radii 
 from .atomic_data import *
-from .atoms_aux import *
 from math import sqrt, pi, sin, cos, asin, acos
 import numpy as np
 import copy     # added by SH

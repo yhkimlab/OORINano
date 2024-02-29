@@ -13,8 +13,8 @@ import json
 import re
 import sys
 import argparse
-#from common import whereami
-from .. import atoms as ncatoms
+from ...utils.auxil import isnumber, isint, whereami
+#import ...atoms as ncatoms
 
 ### VASP ini & outfiles
 vasf_default=['CHG','CHGCAR','CONTCAR','DOSCAR','EIGENVAL','IBZKPT','OSZICAR','OUTCAR','PCDAT','REPORT','vasprun.xml','WAVECAR',  'XDATCAR']
@@ -76,53 +76,50 @@ def get_vasp_repository():
         exit(1)
     return ini_dvasp
 
-def get_atoms_4pos(pos='POSCAR'):
-    with open(pos, 'r') as f:
-        lines = f.readlines()
-        for index, line in enumerate(lines):
-            if index <= 4: continue
-            if line.strip().replace(' ','').isalpha():
-                atoms=line.strip().split()
-                continue
-            if 'atoms' in locals():
-                natoms=line.strip().split()
-                break
-    if 'atoms' in locals() and 'natoms' in locals():
-        return natoms, atoms
-    else:
-        return 'err' 
-                
-
-def make_magmom_4pos(pos='POSCAR', magin=None):
+reg='[=\s]+'            # regular expression to remove = in string of 'A = B'
+def get_kv(strline):
     '''
-    Read POSCAR [and input magmom]
-    Return string of MAGMOM
-    
-    pos     POSCAR
-    magin   MAGMOM input list of [ 'atom symbol', magmom, ... ]
-
+    input   strline     stripped line
+    return  tuple of key & value
+            if value is number, save as number
     '''
-    magmom = {}
-    if magin:
-        li = iter(magin)
-        magmom = dict(zip(li, int(li)))
-    natoms, atoms = get_atoms_4pos(pos)
-    magstr="MAGMOM = "
-    Lmag = False
-    for index, atom in enumerate(atoms):
-        if magin and atom in magin.keys():
-            magstr += f"{natoms[index]}*{magin[atom]*1.5} "
-            Lmag = True
-        elif atom in ncatoms.atom_prop.keys():
-            magstr += f"{natoms[index]}*{ncatoms.atom_prop[atom][1]*1.5} "
-            Lmag = True
+    lst = re.split(reg, strline)
+
+    if isnumber(lst[1]):
+        if isint(lst[1]):
+            value = int(lst[1])
         else:
-            print("ERROR: no magmom in input and repo")
-            sys.exit(10)
-            #magstr += f"{natoms[index]}*0 "
-    if Lmag: return magstr + "100*0"
-    else:    return "# " + magstr
+            value = float(lst[1])
+    else:
+        value = lst[1]
 
+    return lst[0], value
+
+def read_incar(incar):
+    dic={}
+    with open(incar, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            ### remove white space on both edge
+            strline=line.strip()
+            ### select a line which starts with word
+            if re.match('\w',strline) and re.search('=', strline):
+                if re.search(';', strline):
+                    kvslist = re.split(';', strline)
+                    for kvs in kvslist:
+                        strl = kvs.strip()
+                        #print(f"kvstring {strl}")
+                        k, v = get_kv(strl)
+                        dic[k] = v
+                ### delimiter: = and \s(white space) altogether
+                else:
+                    k, v = get_kv(strline)
+                    #print(f'{lst[0]:^10} = {lst[1]:>10}')
+                    dic[k] = v
+    #print(dic)
+    return dic
+
+    return incar_dict
 
 def make_kpoints(kp, method):
     """ 
