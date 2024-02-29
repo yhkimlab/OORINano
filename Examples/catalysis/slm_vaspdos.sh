@@ -7,7 +7,6 @@
 
 pdir=$SLURM_SUBMIT_DIR
 jobname=$SLURM_JOB_NAME
-odir=$pdir/$jobname         # it is old directory of catalysis cal
 logfile=$pdir/${SLURM_JOB_ID}.${jobname}.log
 outfile=$pdir/${SLURM_JOB_ID}.${jobname}.out
 partname=$SLURM_JOB_PARTITION
@@ -35,17 +34,20 @@ fi
 npar=$(expr $SLURM_JOB_NUM_NODES \* $par )
 
 runpython="run_vaspdos.py"
-poscar=${pos}
-chgcar=${chg}
-djob=dos
-rjob=${job:-$djob}
+ini_odir=pwd                   # default old dir
+old_dir=${odir:-$ini_odir}     # it is old directory of catalysis cal
+posfile=${pos:-"POSCAR"}
+poscar="${old_dir}/${posfile}"
+
+ini_job=dos                    # default job == 'dos'
+rjob=${job:-$ini_job}          # running job
 echo $rjob >> $logfile
 echo `date` >> $logfile
 
-### in case no CHGCAR, run sp and write CHGCAR
+### Run sp at wdir=${old_dir}sp :: in case no CHGCAR, run sp and write CHGCAR
 if [[ $rjob == *"sp"* ]]; then
     ### make sp directory
-    wdir=${odir}sp              # wdir is odir_name+'sp'
+    wdir=${pdir}/${old_dir}sp              # wdir is odir_name+'sp'
     if [ ! -f "$wdir" ]; then
         mkdir $wdir
     else
@@ -55,31 +57,36 @@ if [[ $rjob == *"sp"* ]]; then
     echo $rjob has 'sp'
     cp $poscar $wdir/POSCAR
     cd $wdir
-    str="../$runpython -j sp -p POSCAR -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
+    str="../$runpython -j sp -d ${pdir}/${old_dir} -p POSCAR -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
     echo "python3 $str | vasp running" >> $logfile
     echo "python3  $str " >> $logfile
     python3 $str >> $logfile
     cd $pdir
     echo "sp was done" >> $logfile
 
-    rjob=dos
     poscar=${wdir}/CONTCAR
     chgcar=${wdir}/CHGCAR
+else
+    wdir=${pdir}/${old_dir}     # old_dir from local
 fi
 
+### Run dos at wdir=${wdir}dos
+
 if [[ $rjob == *"dos"* ]]; then
-    wdir=${wdir}dos             # wdir is odir_name [+ 'sp'] + 'dos'
+    old_dir=$wdir               # old_dir from root
+    wdir=${old_dir}dos             # wdir is odir_name [+ 'sp'] + 'dos'
     if [ ! -f "$wdir" ]; then
         mkdir $wdir
     else
         echo "there exists $wdir"
         exit 1
     fi
-
     cp $poscar $wdir/POSCAR
-    cp $chgcar $wdir
     cd $wdir
-    str="../$runpython -j dos -p POSCAR -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
+    chgcar="${old_dir}/CHGCAR"
+    ln -s $chgcar $wdir
+    
+    str="../$runpython -j dos -d $old_dir -p POSCAR -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
     echo "python3 $str | vasp running" >> $logfile
     echo "python3  $str " >> $logfile
     python3 $str >> $logfile

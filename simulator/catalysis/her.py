@@ -20,7 +20,7 @@ from ...utils.units import T         # T is imported here from thermo.py
 
 ### Workflow for the calculation of HER in catalysis
 
-def runHER(calc, sim_params, atoms_list=None, mode='opt', fix=None, ipivot=None, vib=1, label='test', pH=0):
+def runHER(calc, sim_params, atoms_list=None, mode='opt', fix=None, pivot=None, vib=1, flabel='test', pH=0):
     '''
     loop might be here for calc list
     '''
@@ -33,21 +33,21 @@ def runHER(calc, sim_params, atoms_list=None, mode='opt', fix=None, ipivot=None,
         for i, atoms in enumerate(atoms_list):
             calc    = simulator(atoms)
             calc.set_options(**sim_params)
-            print(f"calculate {label[i]}")
-            totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, mode, fix, ipivot, vib, label[i], T)
-            gibbs_vib   = calc_gibbs_HER(totE_sys, totE_sysH, zpe, TS, pH=pH, Temp=T)
+            print(f"calculate {flabel[i]}")
+            totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, mode, fix, pivot, vib, flabel[i], T)
+            gibbs_vib   = calc_gibbs_HER_pH(totE_sys, totE_sysH, zpe, TS, pH=pH, Temp=T)
             gibbsH.append(gibbs_vib)
             
-        plot_HER(gibbsH, label, pH=pH)
+        plot_HER(gibbsH, legend=flabel, pH=pH)
 
     else:
-        totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, mode, fix, ipivot, vib, label, T)
+        totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, mode, fix, pivot, vib, flabel, T)
         print(f"total energy: {totE_sys} {totE_sysH}\nZPE: {zpe}\nEntropy: {TS}")
 
         
         ### 2. Gibbs energy calculation by reading OUTCAR
-        Gibbs_novib = calc_gibbs_HER(totE_sys, totE_sysH, pH=pH, Temp=T)
-        Gibbs_vib   = calc_gibbs_HER(totE_sys, totE_sysH, zpe, TS, pH=pH, Temp=T)
+        Gibbs_novib = calc_gibbs_HER_pH(totE_sys, totE_sysH, pH=pH, Temp=T)
+        Gibbs_vib   = calc_gibbs_HER_pH(totE_sys, totE_sysH, zpe, TS, pH=pH, Temp=T)
         print(f"G_HER: {Gibbs_novib}\nG_HER_vib : {Gibbs_vib}")
         ### 3. Plot Gibbs energy for the series of structures
         G_H_legend = ['Norskov', 'Vib']
@@ -57,13 +57,13 @@ def runHER(calc, sim_params, atoms_list=None, mode='opt', fix=None, ipivot=None,
         #print(f"G_HER: {Gibbs_novib}\nG_HER_vib : {Gibbs_vib}")
     return 0
 
-def run_series_HER(calc, sim_params, mode, fix, pivot, vib, label, Temp):
+def run_series_HER(calc, sim_params, mode, fix, pivot, vib, flabel, Temp):
     '''
     mode        opt (default)
     fix         None (default)
                 b1L  fixed bottom 1 layer in case of slab
     vib
-    label  
+    flabel  
     pivot      passed to 
     '''
     simulator = calc.__class__
@@ -82,7 +82,7 @@ def run_series_HER(calc, sim_params, mode, fix, pivot, vib, label, Temp):
         #print("No atoms are fixed")
         
     ### skip if there is calc.checkfile
-    fsuffix     = f"{label}_cat"
+    fsuffix     = f"{flabel}_cat"
     outfile     = f"{simulator.checkfile}_{fsuffix}"
     if not os.path.isfile(outfile):
         calc.run_calculator(mode=mode, fix=fixed_atoms)
@@ -90,7 +90,7 @@ def run_series_HER(calc, sim_params, mode, fix, pivot, vib, label, Temp):
     totE_cat    = calc.get_total_energy(output_name=outfile)
     #print(f"totE_cat {totE_cat}")
 
-    fsuffix     = f"{label}_catH"
+    fsuffix     = f"{flabel}_catH"
     outfile     = f"{simulator.checkfile}_{fsuffix}"
    
     if not pivot:

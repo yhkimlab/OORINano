@@ -5,8 +5,8 @@ import argparse
 import re
 import sys
 import numpy as np
-from .mplot2d import mplot_table_line
-from .pltcommon import *
+from .mplot2d import mplot_table_vline
+from .pltorbit import *
 import csv
 
 def fwhite2table(inf, icx=1):
@@ -56,7 +56,7 @@ def fcsv2table(inf):
     return fields, rows
 
 
-def plot_dostable(inf,ix,icy,title,xlabel,ylabel,ylegend_in,colors,plot_option=None,lvertical=None,orb=None, xlim=None):
+def plot_dostable(inf,ix,icy,title=None,xlabel=None,ylabel=None,ylegends=None,colors=None,plot_style=None,lvertical=None,orb=None, xlim=None):
     '''
     inf : table format
     fmt : white space or csv
@@ -68,9 +68,9 @@ def plot_dostable(inf,ix,icy,title,xlabel,ylabel,ylegend_in,colors,plot_option=N
     if not title:
         title = inf.split('.')[0]
     ### define file format
-    fnamelist = inf.split('.')
-    if len(fnamelist) == 2:
-        if fnamelist[1] == 'csv':
+    lisfname = inf.split('.')
+    if len(lisfname) == 2:
+        if lisfname[1] == 'csv':
             fmt = 'csv'
         else:
             fmt = 'white'
@@ -84,7 +84,7 @@ def plot_dostable(inf,ix,icy,title,xlabel,ylabel,ylegend_in,colors,plot_option=N
         y2 = np.array(y2d).T
     elif fmt == 'csv':
         fields, rows = fcsv2table(inf)
-        ylegend=fields[1:]
+        ylegend=fields[1:]              # ylegend from file
         tab = np.array(rows).T
         x   = tab[0,:]
         y2  = tab[1:,:]
@@ -115,8 +115,8 @@ def plot_dostable(inf,ix,icy,title,xlabel,ylabel,ylegend_in,colors,plot_option=N
 
     ### var: x, y2, ylegend
     ys = []
-    if not ylegend:
-        ylegend=ylegend_in
+    if not ylegend:         # not in file
+        ylegend=ylegends
     if not colors and ylegend:
         colors = []
         for yl in ylegend:
@@ -125,12 +125,13 @@ def plot_dostable(inf,ix,icy,title,xlabel,ylabel,ylegend_in,colors,plot_option=N
     if not icy:
         icy =  list(range(len(y2value)))
     for i in icy:
-        ys.append(y2value[i-2][:])
+        ys.append(y2value[i-1][:])
         
     #print(f"title {title} xlabel {xlabel} ylabel {ylabel}")
-    #print(f"ylegends {ylegend}")
+    #print(f"ylegends {ylegend}, shape of data {np.array(ys).shape}")
+    #print(f"ys {ys}")
     ### x will be used for just len(x)
-    mplot_table_line(x, ys, title=title, xlabel=xlabel, ylabel=ylabel, legend=ylegend, colors=colors,lvert=lvertical, plot_option=plot_option, orb=orb, xlim=xlim)
+    mplot_table_vline(x, ys, title=title, xlabel=xlabel, ylabel=ylabel, legend=ylegend, colors=colors,lvert=lvertical, plot_style=plot_style, orb=orb, xlim=xlim)
     return 0
 
 def main():
@@ -157,7 +158,7 @@ def main():
     args = parser.parse_args()
 
     ### n columns in 1 file, twinx
-    draw_table(args.inf,args.level,args.icolumn_x,args.icolumn_y,args.title,args.xlabel,args.ylabel,args.ylabels,args.save,args.y_scale, args.colors, args.twinx, args.second_iy, args.second_yl)
+    plot_dostable(args.inf,args.level,args.icolumn_x,args.icolumn_y,args.title,args.xlabel,args.ylabel,args.ylabels,args.save,args.y_scale, args.colors, args.twinx, args.second_iy, args.second_yl)
     return 0
 
 if __name__=='__main__':

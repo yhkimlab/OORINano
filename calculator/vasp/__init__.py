@@ -6,15 +6,10 @@ from ...utils.fermidirac import fd_derivative_weight
 from glob import glob
 import os, math, sys
 import numpy as np
-from ...utils.auxil import parse_line, parse_lines
+from ...utils.auxil import parse_line, parse_lines, whereami
 from .file_format import *
  
 ### import io.read, io.write inside Vasp class
-
-# VASP Simulation Object
-# made by Noh           2021. 8.
-# modified by J. Park   2021.10. class Vasp, PDOS[nonmag]
-#
 
 class Vasp(object):
 
@@ -291,12 +286,14 @@ class Vasp(object):
             incar.write(f"{key:<12}=    {p[key]}\n")
         all_params.extend(list_optional)
 
+        #print(f"p[ISPIN] = {p['ISPIN']} : {p['MAGMOM']} in {whereami()}")
         if p['ISPIN'] == 2:
             if p['MAGMOM']:
                 #print(f"True {p['MAGMOM']}"), do no pass p['MAGMOM'] if it is {} -> it became True
                 str_mag = get_magmom_4pos(pos="POSCAR", magin=f"{p['MAGMOM']}")
             else:
                 str_mag = get_magmom_4pos(pos="POSCAR")
+            #print(f"{str_mag}")
             incar.write(f"{str_mag}\n")
         all_params.append('MAGMOM')
 
@@ -725,9 +722,16 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], Lspin=False):
         ngrid   number of energy grid
     
     atom_list should starts from 1
-    Lspin: True in case of spin = 2
-        None    sum spin-up and spin-down
-        split   write spin-up and spin-down with two columns
+    Lspin   True    write spin-up and spin-down with two columns in case of spin = 2
+            False   sum spin-up and spin-down
+            
+    TDOS.dat format             ene = E - EF
+        unpolar                 iene    dos(E)  accum
+        polar                   iene    dos_up(E) dos_dn(E)
+    Atom...dat format
+        unpolar                 iene    s   p   d   s+p+d
+        polar w. Lspin = False  iene    s   p   d   s+p+d
+        polar w. Lspin = True   iene    s_up    s_dn    p_up    p_dn    d_up    d_dn    s+p+d_up    s+p+d_dn 
     '''
 
     nline_pre = 5
@@ -742,19 +746,19 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], Lspin=False):
 
     ### parse energy title
     elist   = parse_line(lines[5])
-    Emax    = float(elist[0])
-    Emin    = float(elist[1])
+    #Emax    = float(elist[0])
+    #Emin    = float(elist[1])
     ngrid   = int(elist[2])                     # number of Ene grid
     E_fermi  = float(elist[3])
 
-    ### test parsing of one line in energy block
-    if len(parse_line(lines[6])) == 5:
+    ### get spin in one line in energy block
+    if len(parse_line(lines[10])) == 5:
         spin = 2    # spin polarized
     else:           # ncol = 3
         spin = 1
     
     ### Obtain TDOS = [nline_pre+1: nline_pre + ngrid +1] 
-
+    ### required to obtain Ei_f0[]
     Ei_f0   = []         # E w.r.t. E_fermi
     tdos    = []        # non-spin or spin-up
     tdos_cum = []
@@ -762,22 +766,21 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], Lspin=False):
         tdos_dn     = []
         tdos_cum_dn = []
 
-    ### for TDOS
     for i, line in enumerate(lines[nline_pre+1:nline_pre+1+ngrid]):
         lele = parse_line(line)
-        Ei_f0.append(float(lele[0])-E_fermi)
-        tdos.append(float(lele[1]))
+        Ei_f0.append(float(lele[0])-E_fermi)        # iene
+        tdos.append(float(lele[1]))                 # tdos(E)
         if spin == 1:
-            tdos_cum.append(float(lele[2]))       # Tdos total
+            tdos_cum.append(float(lele[2]))         # tdos_acc 
         ### wrong order for spin==2, by J. Park
         else: # spin == 2:
-            tdos_dn.append(float(lele[2]))    # this is TDOS-up-acc if spin == 2
-            tdos_cum.append(float(lele[3]))
-            tdos_cum_dn.append(float(lele[4]))    # TDOS-down-acc   if spin == 2
+            tdos_dn.append(float(lele[2]))          
+            tdos_cum.append(float(lele[3]))         # tdos-up-acc 
+            tdos_cum_dn.append(float(lele[4]))      # tdos-dn-acc
     
     with open('TDOS.dat', 'w') as f:
         for i in range(len(Ei_f0)):
-            st = f"{Ei_f0[i]:11.3f}  {tdos[i]:10.4g}"
+            st = f"{Ei_f0[i]:11.3f}  {tdos[i]:10.4g}" 
             if spin == 1:
                 st += f"  {tdos_cum[i]:10.4g}"
             else: # spin == 2:
@@ -797,8 +800,7 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], Lspin=False):
     atoms_dx2_up   = []   ;    atoms_dx2_dn   = []
     
         
-    ### scan atom_list:: Make 2D atoms list
-    #print(f"atom list {atom_list}")
+    ### Make 2D atoms list :: scan atom_list
     for iatom in atom_list:
         ### Initialize for atom ###
         s_up     = []   ;    s_dn   = []
@@ -841,9 +843,8 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], Lspin=False):
             atoms_py_dn.append(py_dn)   ;   atoms_pz_dn.append(pz_dn)   ; atoms_px_dn.append(px_dn)  
             atoms_dxy_dn.append(dxy_dn) ;   atoms_dyz_dn.append(dyz_dn) ; atoms_dz2_dn.append(dz2_dn) 
             atoms_dxz_dn.append(dxz_dn) ;   atoms_dx2_dn.append(dx2_dn)
-    ### you might extract dos for each atom
-
-    ### summation for atoms :: Make 1D lsum list
+    
+    ### Make 1D lsum list :: summation for atoms, lsum - list (for energy) of (sums for atom_list)
     lsum_s_up   = []   ;   lsum_s_dn   = []
     lsum_py_up  = []   ;   lsum_py_dn  = []
     lsum_pz_up  = []   ;   lsum_pz_dn  = []
@@ -901,7 +902,7 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], Lspin=False):
     else:
         froot = f"Atoms{atom_list[0]}-{atom_list[-1]}_N{len(atom_list)}"
     if Lspin:
-        froot += 'pol'
+        froot += 'pol'      # outfile pol 
     outfile = froot + '.dat'
     outf = open(outfile, 'w')
     lsum_p = []
@@ -933,18 +934,19 @@ def calc_pdos(fname = 'DOSCAR', atom_list=[1], Lspin=False):
         outf.write("\n")
     outf.close()
     os.system(f'cp {outfile} SUM_ATOM.dat')
+    return outfile
 
 
-def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb=3, plot_option=None):
+def pdos_orbital_analysis(fname='SUM_ATOM.dat', icol=3, elimit='inf'):
     '''
-    d-band center theory : Nature, 376, 238 (1995)
-    Fermi abundance      : J. Phys. Chem. C 121, 1530 (2017), optimal value RT = 0.4 eV
-    highest peak         : Nat. Energy, 1, 16130 (2016)
-    orb     receives column index which starts from 1
-    # Do not receive orbital symbol    0 for 's', 1 for 'p', 2 for 'd'
-    SUM_ATOM.dat format: ene, s, p, d. s+p+d
+    d-band center theory    : Nature, 376, 238 (1995)
+    Fermi abundance         : J. Phys. Chem. C 121, 1530 (2017), optimal value RT = 0.4 eV
+    highest peak            : Nat. Energy, 1, 16130 (2016)
+
+    fname   PDOS file with E-EF
+    icol    receives column index
+    elimit  limit of integral ['inf'|'Fermi'] for Fermi-level abundance
     '''
-    import os, sys, math
     import numpy as np
     from scipy.misc import derivative
  
@@ -966,22 +968,6 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb=3, plot_option=None):
     ### Start of calculation
     line_info, word_info = read_file(fname)
     
-    ### select orbital column
-    '''
-    dat_ncolumn5 = {'s': 1, 'p': 2, 'd': 3, 't': 4}   # in case up and down is summed
-    print(f"orb {orb} in table index")
-    if not orb.isalpha():   # cN
-        icol=int(orb.isalpha[1]) # take N in cN
-    else:
-        if len(word_info[0]) == 5:
-            icol = int(dat_ncolumn5[orb])
-        else:
-            print(f"{word_info[0]}")
-            print(f"not prepared for other file format with length {len(word_info[0])}")
-            sys.exit(11)
-    '''
-    icol = orb - 1  # from table index to list index
-
     E = [] ; dos = []
     
     ### Obtain E, dos, word_info.shape=(nene, ncol)
@@ -989,26 +975,21 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb=3, plot_option=None):
         E.append(float(word_info[i][0]))
         dos.append(float(word_info[i][icol]))
 
+    ### Get index of Fermi level
     for i in range(len(E)-1):
         if E[i] * E[i+1] <= 0:
-            iFermi = i + 1   # i < E_fermi < i+1
+            iFermi = i + 1   # i(+) < E_fermi < i+1 (-)
             break
     
     # find parameteres
     dE = E[1] - E[0]
-    sum_dos = 0 ; sum_Edos = 0
-    sum_dosw = 0 ; sum_Edosw = 0    # w: weight using FD function
+    sum_dos = 0 ; sum_Edos = 0;
+    sum_dosw = 0 ; sum_Edosw = 0    # w: weight using FD derivative function
     
     dos2Ef = dos[:iFermi]
-    if sum(dos2Ef) >= 0:
-        dos_max = max(dos2Ef) 
-    elif sum(dos2Ef) < 0:
-        dos_max = min(dos2Ef)
-    else:
-        print("The data is not consistent for spin up or dn")
-    
+    dos_max = max(dos2Ef) 
     i_dosmax = find_index(dos2Ef, dos_max)
-    print(f"density max index {i_dosmax}")
+    #print(f"density max index {i_dosmax} in {whereami}")
 
     if len(i_dosmax) == 1:
         E_dosmax = E[i_dosmax[0]]
@@ -1016,19 +997,32 @@ def pdos_orbital_analysis(fname='SUM_ATOM.dat', orb=3, plot_option=None):
         print("Same max values exist")
 
     # calculation 
-    for i in range(iFermi):
-        sum_dos     = sum_dos    + dE * dos2Ef[i]
-        sum_Edos    = sum_Edos   + dE * dos2Ef[i] * E[i]
-        sum_dosw    = sum_dosw   - dE * dos2Ef[i] * fd_derivative_weight(E[i], weight_arg=0.4)
-        sum_Edosw  = sum_Edosw - dE * dos2Ef[i] * E[i] * fd_derivative_weight(E[i], weight_arg=0.4)
+    for i in range(len(E)):
+        sum_dos     = sum_dos   + dE * dos[i]
+        sum_Edos    = sum_Edos  + dE * dos[i] * E[i]
+        sum_dosw    = sum_dosw  - dE * dos[i] * fd_derivative_weight(E[i], weight_arg=0.4) # - comes from fd_derivative
+        sum_Edosw   = sum_Edosw - dE * dos[i] * E[i] * fd_derivative_weight(E[i], weight_arg=0.4)
+        if i == iFermi:
+            sum_dosw_Ef     = sum_dosw
+            sum_Edosw_Ef    = sum_Edosw
     #print(f"{sum_Edosw} {sum_dosw}")
-    Orb_cent = sum_Edos / sum_dos
-    Ef_abund = sum_Edosw / sum_dosw
-    print('orbital center ', '%12.8f' % Orb_cent)
-    print('fermi-abudnace ', '%12.8f' % Ef_abund)
-    print('highest peak at','%12.8f'  %  E_dosmax, 'eV with amplitude of ', '%12.8f' % dos2Ef[i_dosmax[0]])
+    orb_cent        = sum_Edos / sum_dos
+    Efermi_abund     = sum_Edosw / sum_dosw
+    Efermi_abund_2Ef  = sum_Edosw_Ef / sum_dosw_Ef
+
+    print(f"{'orbital center':20}{orb_cent:10.3f}")
+    print(f"{'softness':20}{sum_dosw:10.3f}")
+    print(f"{'fermi-abudnace':20}{Efermi_abund:10.3f}")
+    print(f"{'fermi-abudnace to Ef':20}{Efermi_abund_2Ef:10.3f}")
+    print(f"{'highest peak at':20}{E_dosmax:10.3f}{' eV with amplitude of':20}{dos[i_dosmax[0]]:10.2f}")
     
-    return Orb_cent, Ef_abund, (E_dosmax, dos2Ef[i_dosmax[0]])
+    if elimit == 'fermi':
+        Efermi_ab = Efermi_abund_2Ef
+    elif elimit == 'inf':
+        Efermi_ab = Efermi_abund
+    
+
+    return orb_cent, Efermi_ab, (E_dosmax, dos[i_dosmax[0]])
 
 
 

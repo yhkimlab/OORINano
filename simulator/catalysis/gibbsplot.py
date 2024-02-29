@@ -21,6 +21,16 @@ def common_plot():
 
     return plt
 
+def common_plot_HER():
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+
+    mpl.use('Agg')
+    plt.figure(figsize=(4.5, 6.5))
+    plt.rcParams['axes.linewidth'] = 2.0
+
+    return plt
+
 def common_format(plt):
     ### common font for Gibbs plot
     plt.tick_params(axis="y", direction="in", length=10, width=2)
@@ -31,7 +41,7 @@ def common_format(plt):
     return 0
 
 
-def plot_HER(Gibbs_H, legend=None, ymin=-1, ymax=1, label="HER", y_ticks=[-1.0, -0.5, 0, 0.5, 1.0], dpi=600, pH=0, Temp=298.15):
+def plot_HER(Gibbs_H, legend=None, ymin=-1, ymax=1, fig_fname="HER", y_ticks=[-1.0, -0.5, 0, 0.5, 1.0], dpi=600, pH=0, Temp=298.15):
     """
     plot HER profile with python-matplotlib
     this module is independent, so if you can use only hand-shaved values
@@ -47,20 +57,22 @@ def plot_HER(Gibbs_H, legend=None, ymin=-1, ymax=1, label="HER", y_ticks=[-1.0, 
        the legend when matplotlib will visualize.
        this is only available for number of dataset is matched between Gibbs_H and legend.
        otherwise, the legend is automatically assigend just [1, 2, 3 ...]
+
+    fig_fname      plot filename
     """
 
-    plt = common_plot()
+    plt = common_plot_HER()
 
     e_Gibbs_H = Gibbs_H
 
     X = [0, 1, 2]
-    Z = []
+    legends = []
 
     if legend is None:
         for i in range(len(e_Gibbs_H)):
-            Z.append(i+1)
+            legends.append(i+1)
     elif len(Gibbs_H) == len(legend):
-        Z = legend
+        legends = legend
     else:
         raise ValueError("The number of data between Gibbs energies and their legends is not matched")
 
@@ -76,19 +88,19 @@ def plot_HER(Gibbs_H, legend=None, ymin=-1, ymax=1, label="HER", y_ticks=[-1.0, 
 
     for i in range(len(e_Gibbs_H)):
         Y = [0, e_Gibbs_H[i], 0]
-        plt.plot(X, Y, marker='_', ms='50', mew='5', linestyle='dashed', linewidth='1', label='%s' % str(Z[i]))
+        plt.plot(X, Y, marker='_', ms='50', mew='5', linestyle='dashed', linewidth='1', label='%s' % str(legends[i]))
     plt.axis([-0.4, 2.4, ymin, ymax])
     plt.xticks([0, 1, 2], [r' H$^{+}$+e$^{-}$ ', r' H$^{*}$ ', r' 1/2H$_{2}$ '], fontsize=20)
     plt.yticks(y_ticks, fontsize=20)
-    
+    common_format(plt)
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={"size":15}, frameon=False)
-    plt.savefig('%s.png' % label, format='png', dpi=dpi, bbox_inches = 'tight')
+    plt.savefig('%s.png' % fig_fname, format='png', dpi=dpi, bbox_inches = 'tight')
 
-def plot_ORR_4e_wU(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="ORR_4e", y_ticks=[-2, 0, 2, 4, 6], dpi=600, G_cal=0, pH=0, Temp=298.15):
+def plot_ORR_4e_wU(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, flabel="ORR_4e", y_ticks=[-4, -2, 0, 2, 4, 6], dpi=600, G_cal=0, pH=0, Temp=298.15):
     '''
     Plot Gibbs energy with U (cell potential)
-        pH is included in Gibbs_E
-        U is calculated in routine for U_oc (open-circuit, onset for overpotential) using U_0 and U_eq
+        pH  for flable, values are already included in Gibbs_E in function calc_gibbs_ORR_4e_pH()
+        U is provided or default (0, Ueq, U_onset)
     '''
     plt = common_plot()
     #global R, T
@@ -108,14 +120,18 @@ def plot_ORR_4e_wU(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="OR
     eta=U_eq-pot_onset
     print(f"Equilibrium pot at pH{pH:2d} = {U_eq:.2f} with onset potential {pot_onset:.2f}, overpotential {eta:.2f}")
 
-    applied_U = [0.00, pot_onset, U_eq]
-    
-    if legend is None:
-        legend = [r'U$_0$=0.00 V', r'U$_{oc}$=%4.2f V' % pot_onset, r'U$_{eq}$=%4.2f V' % U_eq] # Voc == Vonset
+    ### plot applied U
+    if U:
+        applied_U = U
+        if legend is None:
+            legend = [f'U={cellpot:.2f} V' for cellpot in applied_U ]
+        #flabel = flabel + f"pH{pH:1d}_Voc{pot_onset:.1f}"
     else:
-        legend = legend
-    label = label + f"_Voc{pot_onset:.1f}"
-    
+        applied_U = [0.00, pot_onset, U_eq]
+        if legend is None:
+            legend = [r'U$_0$    =%5.2f V' % applied_U[0], r'U$_{onset}$=%5.2f V' % applied_U[1], r'U$_{eq}$   =%5.2f V' % applied_U[2]] # Voc == Vonset
+        #flabel = flabel + f"_Voc{pot_onset:.1f}"  # for filename
+    flabel = flabel + f"pH{pH:1d}_Voc{pot_onset:.1f}"
     elec_conv = -1
     X         = [-1, 0, 1, 2, 3, 4, 5, 6]
     G_eU=[]
@@ -136,7 +152,7 @@ def plot_ORR_4e_wU(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="OR
         return G_U     
     
     #print(f"len(X) {len(X)}, len(Y) {len(G_eU[0])}")
-    colors=['red', 'blue', 'black']
+    colors=['blue', 'red', 'black']
     for j in range(len(G_eU)):
         plt.scatter(X, G_eU[j], color=colors[j], marker='_', s=6000, linewidth=4, label='%s' % legend[j])
         for i in range(len(X)-1):
@@ -149,10 +165,10 @@ def plot_ORR_4e_wU(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="OR
     #plt.legend(loc=2, prop={"size":10})
     plt.legend(loc='upper left', bbox_to_anchor=(1, 0.5), prop={"size":25}, frameon=False)
     
-    plt.savefig('%s.png' % label, format='png', dpi=dpi, bbox_inches = 'tight')
+    plt.savefig('%s.png' % flabel, format='png', dpi=dpi, bbox_inches = 'tight')
 
 
-def plot_OER_4e_wU(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="OER_4e", y_ticks=[-2, 0, 2, 4, 6], dpi=600, G_cal=0, pH=0, Temp=298.15):
+def plot_OER_4e_wU(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, flabel="OER_4e", y_ticks=[-4, -2, 0, 2, 4, 6], dpi=600, G_cal=0, pH=0, Temp=298.15):
     '''
     Plot Gibbs energy with U (cell potential)
         pH is included in Gibbs_E
@@ -180,8 +196,7 @@ def plot_OER_4e_wU(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="OE
         legend = [r'U$_0$=0.00 V', r'U$_{eq}$=%4.2f V' % U_eq, r'U$_{oc}$=%4.2f V' % pot_onset] # Voc == Vonset
     else:
         legend = legend
-    label = label + f"_eta{eta:.1f}"
-
+    flabel = flabel + f"pH{pH:1d}_Voc{pot_onset:.1f}"
     elec_conv = -1
     
     G_eU=[]
@@ -200,7 +215,7 @@ def plot_OER_4e_wU(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="OE
     if G_cal:
         return G_eU     
      
-    colors=['red', 'black', 'blue']
+    colors=['blue', 'black', 'red']
     for j in range(len(G_eU)):
         plt.scatter(X, G_eU[j], color=colors[j], marker='_', s=9000, linewidth=4, label='%s' % legend[j])
         for i in range(len(X)-1):
@@ -212,4 +227,112 @@ def plot_OER_4e_wU(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, label="OE
     common_format(plt)
     plt.legend(loc='upper left', bbox_to_anchor=(1.1, 0.5), prop={"size":25}, frameon=False)
     
-    plt.savefig('%s.png' % label, format='png', dpi=dpi, bbox_inches = 'tight')
+    plt.savefig('%s.png' % flabel, format='png', dpi=dpi, bbox_inches = 'tight')
+
+def plot_OXR_4e_wU(Gibbs_E, U=None, legend=None, ymin=None, ymax=None, y_ticks=[-4, -2, 0, 2, 4, 6], dpi=600, G_cal=0, pH=0, Temp=298.15, cat_rxn='orr', flabel=None, colors=None):
+    '''
+    combine both ORR and OER to conserve the consistency of plot
+    Plot Gibbs energy with U (cell potential)
+        pH  for flable, values are already included in Gibbs_E in function calc_gibbs_ORR_4e_pH()
+        U is provided or default (0, Ueq, U_onset)
+    '''
+    if flabel:
+        flabel += cat_rxn + '_4e'
+    else:
+        flabel = cat_rxn + '_4e'
+    plt = common_plot()
+    
+    G_0     = Gibbs_E
+    ### --> find onset potential for input
+    pot_onset  = - max(list(map(operator.sub, Gibbs_E[1:],Gibbs_E[:-1]))) 
+
+    ### to obtain U_eq under pH
+    G_pH = pH_free_energy(pH=pH, Temp=Temp)
+    U_eq = 1.23 - G_pH
+    
+
+    if cat_rxn == 'orr':
+        X = [-1, 0, 1, 2, 3, 4, 5, 6]
+        xmin=-0.5; xmax=5.5
+        eta=U_eq-pot_onset
+    elif cat_rxn == 'oer':
+        X = [-1, 0, 1, 2, 3, 4, 5]
+        xmin = -0.5; xmax = 4.5
+        ymin = -5; ymax = 5.5
+        pot_onset *= -1 
+        eta = pot_onset - U_eq
+    
+   
+    print(f"onset potential {pot_onset}")
+    print(f"Equilibrium pot at pH{pH:2d} = {U_eq:.2f} with onset potential {pot_onset:.2f}, overpotential {eta:.2f}")
+    
+    ### plot applied U
+    if U:
+        applied_U = U
+        if legend is None:
+            legend = [f'U={cellpot:.2f} V' for cellpot in applied_U ]
+        #flabel = flabel + f"pH{pH:1d}_Voc{pot_onset:.1f}"
+    else:
+        if cat_rxn == 'orr':
+            applied_U = [0.00, pot_onset, U_eq]
+            if legend is None:
+                legend = [r'U$_0$    =%5.2f V' % applied_U[0], r'U$_{onset}$=%5.2f V' % applied_U[1], r'U$_{eq}$   =%5.2f V' % applied_U[2]] # Voc == Vonset
+            #flabel = flabel + f"_Voc{pot_onset:.1f}"  # for filename
+        elif cat_rxn == 'oer':
+            applied_U = [0.00, U_eq, pot_onset]
+            if legend is None:
+                legend = [r'U$_0$    =%5.2f V' % applied_U[0], r'U$_{eq}$   =%5.2f V' % applied_U[1], r'U$_{onset}$=%5.2f V' % applied_U[2]] # Voc == Vonset
+    flabel += f"_pH{pH:1d}_Voc{pot_onset:.1f}"
+    elec_conv = -1
+    G_eU=[]
+
+    ### ref -> G[5], Note that pH is included in Gibbs in calc_gibbs_ORR_4e()
+    
+    for i in range(len(applied_U)):
+        if cat_rxn == 'orr':
+            G_U   = [G_0[0]-G_0[5]+4*elec_conv*applied_U[i], # G_System+O2   + 4*e-, N.B pH is included in G_0
+                    G_0[1]-G_0[5]+4*elec_conv*applied_U[i], # G_System-O2*  + 4*e-
+                    G_0[2]-G_0[5]+3*elec_conv*applied_U[i], # G_System-OOH* + 3*e-
+                    G_0[3]-G_0[5]+2*elec_conv*applied_U[i], # G_System+O    + 2*e-
+                    G_0[4]-G_0[5]+1*elec_conv*applied_U[i], # G_System+OH   + 1*e-
+                    G_0[5]-G_0[5]+0*elec_conv*applied_U[i], # G_System      + 0*e-
+                    ]
+        elif cat_rxn == 'oer':
+        
+            G_U  = [ G_0[0]-G_0[0]+0*elec_conv*applied_U[i], # G_System+2H2O + 0*e- N.B. pH is included in G_0
+                    G_0[1]-G_0[0]+1*elec_conv*applied_U[i], # G_System-OH*  + 1*e-
+                    G_0[2]-G_0[0]+2*elec_conv*applied_U[i], # G_System-O*   + 2*e-
+                    G_0[3]-G_0[0]+3*elec_conv*applied_U[i], # G_System+OOH* + 3*e-
+                    G_0[4]-G_0[0]+4*elec_conv*applied_U[i], # G_System+O2   + 4*e-, No O2* state
+                    ]
+        G_U.insert(0, G_U[0])       # dup. for plot
+        G_U.append(G_U[-1])         # dup. for plot
+        G_eU.append(G_U)
+
+    plt.yticks(y_ticks, fontsize=20)
+    common_format(plt)
+    if cat_rxn == 'orr':
+        if not colors:
+            colors=['blue', 'red', 'black']
+        for j in range(len(G_eU)):
+            plt.scatter(X, G_eU[j], color=colors[j], marker='_', s=6000, linewidth=4, label='%s' % legend[j])
+            for i in range(len(X)-1):
+                plt.vlines((X[i+1]+X[i])/2, G_eU[j][i], G_eU[j][i+1], linestyle=':', color=colors[j], linewidth=2)
+        
+        plt.axis([xmin, xmax, ymin, ymax])
+        plt.xticks([0, 1, 2, 3, 4, 5], ['O$_{2}$', 'O$_{2}^{*}$', 'OOH$^{*}$', 'O$^{*}$', 'OH$^{*}$', 'H$_{2}$O'], fontsize=20)
+        plt.legend(loc='upper left', bbox_to_anchor=(1, 0.5), prop={"size":25}, frameon=False)
+    elif cat_rxn == 'oer':
+        if not colors:
+            colors=['blue', 'black', 'red']    
+        for j in range(len(G_eU)):
+            plt.scatter(X, G_eU[j], color=colors[j], marker='_', s=8000, linewidth=4, label='%s' % legend[j])
+            for i in range(len(X)-1):
+                plt.vlines((X[i+1]+X[i])/2, G_eU[j][i], G_eU[j][i+1], linestyle=':', color=colors[j], linewidth=2)
+                                                                                                                                
+        plt.axis([xmin, xmax, ymin, ymax])
+        plt.xticks([0, 1, 2, 3, 4], ['H$_{2}$O', 'OH$^{*}$', 'O$^{*}$', 'OOH$^{*}$', 'O$_{2}$'], fontsize=20)
+        plt.legend(loc='upper left', bbox_to_anchor=(1, 0.5), prop={"size":25}, frameon=False)
+    
+    plt.savefig('%s.png' % flabel, format='png', dpi=dpi, bbox_inches = 'tight')
+    

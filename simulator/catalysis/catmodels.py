@@ -1,5 +1,4 @@
 
-import os, sys, glob, math
 from ...atoms import *
 
 '''

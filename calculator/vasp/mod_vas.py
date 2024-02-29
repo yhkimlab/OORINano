@@ -13,8 +13,8 @@ import json
 import re
 import sys
 import argparse
-#from common import whereami
-from .. import atoms as ncatoms
+from ...utils.auxil import isnumber, isint, whereami
+#import ...atoms as ncatoms
 
 ### VASP ini & outfiles
 vasf_default=['CHG','CHGCAR','CONTCAR','DOSCAR','EIGENVAL','IBZKPT','OSZICAR','OUTCAR','PCDAT','REPORT','vasprun.xml','WAVECAR',  'XDATCAR']
@@ -75,6 +75,51 @@ def get_vasp_repository():
         print("Error:: the directory cannot be found\n stop")
         exit(1)
     return ini_dvasp
+
+reg='[=\s]+'            # regular expression to remove = in string of 'A = B'
+def get_kv(strline):
+    '''
+    input   strline     stripped line
+    return  tuple of key & value
+            if value is number, save as number
+    '''
+    lst = re.split(reg, strline)
+
+    if isnumber(lst[1]):
+        if isint(lst[1]):
+            value = int(lst[1])
+        else:
+            value = float(lst[1])
+    else:
+        value = lst[1]
+
+    return lst[0], value
+
+def read_incar(incar):
+    dic={}
+    with open(incar, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            ### remove white space on both edge
+            strline=line.strip()
+            ### select a line which starts with word
+            if re.match('\w',strline) and re.search('=', strline):
+                if re.search(';', strline):
+                    kvslist = re.split(';', strline)
+                    for kvs in kvslist:
+                        strl = kvs.strip()
+                        #print(f"kvstring {strl}")
+                        k, v = get_kv(strl)
+                        dic[k] = v
+                ### delimiter: = and \s(white space) altogether
+                else:
+                    k, v = get_kv(strline)
+                    #print(f'{lst[0]:^10} = {lst[1]:>10}')
+                    dic[k] = v
+    #print(dic)
+    return dic
+
+    return incar_dict
 
 def make_kpoints(kp, method):
     """ 

@@ -14,7 +14,7 @@ from .calgibbs import *
 from .gibbsplot import *
 from .aux import fix_atoms
 from ...utils.units import T         # T is imported here from thermo.py
-from ...utils.auxil import list2_2f
+from ...utils.auxil import list2str, list2_format
 
 #...utils.auxililiary functions
 
@@ -37,54 +37,51 @@ def oer_ordering(li):
 
 ### Workflow for the calculation of catalysis
 
-def runORR(calc, sim_param , mode='opt', fix=None, ipivot=None, vib=1, label='test', pH=0, cat_rxn='orr'):
+def runORR(calc, sim_param , mode='opt', fix=None, pivot=None, vib=1, flabel='test', pH=0, cat_rxn='orr'):
     '''
     input
         T       not given from argument
                 read from ...utils.units
         cat_rxn     ORR/OER
-        ipivot  atom index start from 0 to anchor adsorbate
+        pivot  atom index start from 0 to anchor adsorbate
     '''
-    #print(f"0 ipivot {ipivot}")
+    #print(f"0 pivot {pivot}")
     ### 1. DFT calculation for all the struct (DFT-opt & zpe)
     ### ORR and OER proceed DFT calculation in the same routine but returns different order
-    totE, zpe, TS = run_series_ORR(calc, sim_param, mode, fix, ipivot, vib, label, T, cat_rxn=cat_rxn)
-    print(f"{'total energy':^15} {list2_2f(totE)}\n{'ZPE':^15} {list2_2f(zpe)}\n{'Entropy':^15} {list2_2f(TS)}")
-    with open(f"{cat_rxn}_{label}.json", 'w') as f:
+    totE, zpe, TS = run_series_ORR(calc, sim_param, mode, fix, pivot, vib, flabel, T, cat_rxn=cat_rxn)
+    print(f"{'total energy':^15} {list2_format(totE)}\n{'zpe':^15} {list2_format(zpe)}\n{'Entropy':^15} {list2_format(TS)}")
+    with open(f"{cat_rxn}_{flabel}.json", 'w') as f:
         f.write(json.dumps({'total energy': totE, 'zpe': zpe, 'TS': TS}))
-    with open(f"{cat_rxn}_{label}.dat", 'w') as f:
-        #f.write(f"{'totE':5}{*totE,}\n{'zpe':5}{*zpe,}\n{'TS':5}{*TS,}")
-        f.write(f"{'totE':5}{*totE,}\n{'zpe':5}{*zpe,}\n{'TS':5}{*TS,}")
+    with open(f"{cat_rxn}_{flabel}.dat", 'w') as f:
+        f.write( list2str(totE, decimal=2, head='totE', end='\n'))
+        f.write( list2str( zpe, decimal=2, head='zpe',  end='\n'))
+        f.write( list2str(  TS, decimal=2, head='TS',   end='\n'))
     ### 2. Gibbs energy calculation by reading OUTCAR: import analysis
     if vib:
         if cat_rxn == 'orr':
-            Gibbs_vib_pH   = calc_gibbs_ORR_4e_pH(totE=totE, ZPE=zpe, TS=TS, pH=pH, Temp=T)
+            Gibbs_pH   = calc_gibbs_ORR_4e_pH(totE=totE, zpe=zpe, TS=TS, pH=pH, Temp=T)
         elif cat_rxn == 'oer':
-            Gibbs_vib_pH   = calc_gibbs_OER_4e_pH(totE=totE, ZPE=zpe, TS=TS, pH=pH, Temp=T)
+            Gibbs_pH   = calc_gibbs_OER_4e_pH(totE=totE, zpe=zpe, TS=TS, pH=pH, Temp=T)
     else:
         Gibbs_novib = calc_gibbs_ORR_4e_pH(totE=totE, pH=pH, Temp=T)
     #print(f"G_ORR: {Gibbs_novib}\nG_ORR_vib : {Gibbs_vib}")
-    print(f"Gibbs_vib_pH {list2_2f(Gibbs_vib_pH)}")
+    print(f"Gibbs_pH {list2_format(Gibbs_pH)}")
     
     ### 3. Plot Gibbs energy for the series of structures: import gibbsplot
-    if cat_rxn == 'orr':
-        plot_ORR_4e_wU(Gibbs_vib_pH, label=f'ORR_4e_pH{pH}', pH=pH, Temp=T)
-    elif cat_rxn == 'oer':
-        plot_OER_4e_wU(Gibbs_vib_pH,label=f'OER_4e_pH{pH}', pH=pH, Temp=T)
+    plot_OXR_4e_wU(Gibbs_pH, pH=pH, Temp=T, cat_rxn=cat_rxn)
     return totE, zpe, TS
 
 
-def run_series_ORR(calc, sim_params, mode, fix, ipivot, vib, label, Temp, cat_rxn):
+def run_series_ORR(calc, sim_params, mode, fix, pivot, vib, flabel, Temp, cat_rxn):
     '''
     Make intermediates models and Do DFT calculation
-    ORR and OER
+    cat_rxn ORR and OER
     input
         mode        opt (default)
         fix         None (default)
                     b1L  fixed bottom 1 layer in case of slab
-        vib
-        label  
-        ipivot      passed to 
+        flabel  
+        pivot      passed to 
 
     return: different order and length for ORR(5) and OER(4)
         ltotE, lzpe, lTS
@@ -106,7 +103,7 @@ def run_series_ORR(calc, sim_params, mode, fix, ipivot, vib, label, Temp, cat_rx
         #print("No atoms are fixed")
     
     ### Skip run_calculator if there is __outfile of the simulator
-    fsuffix     = f"{label}_{irc}_cat"
+    fsuffix     = f"{flabel}_{irc}_cat"
     outfile     = f"{simulator.checkfile}_{fsuffix}"
     if not os.path.isfile(outfile):
         calc.run_calculator(mode=mode, fix=fixed_atoms)
@@ -118,15 +115,15 @@ def run_series_ORR(calc, sim_params, mode, fix, ipivot, vib, label, Temp, cat_rx
     ###### Make Intermediates geometry
     ### pivot is fixed here before atoms are disturbed
     #print(f"1: pivot {pivot}")
-    if not ipivot:
-        ipivot = calc.atoms.select_pivot(site='center')
-    print(f"pivot index is {ipivot}")
+    if not pivot:
+        pivot = calc.atoms.select_pivot(site='center')
+    print(f"pivot index is {pivot}")
     interm_fnames   = ['O2', 'OOH', 'O', 'OH']
     
     catalyst_opt    = simmodule.readAtomicStructure(calc.optfile)
     orr_model       = Catmodels(catalyst_opt)
 
-    interm_models   = orr_model.four_electron_intermediates_gen(mode='ORR', pivot=ipivot)
+    interm_models   = orr_model.four_electron_intermediates_gen(mode='ORR', pivot=pivot)
         
     ### list for data
     ltotE       = [totE_cat]
@@ -150,7 +147,7 @@ def run_series_ORR(calc, sim_params, mode, fix, ipivot, vib, label, Temp, cat_rx
 
         ### skip if there is calc.checkfile
         print(f"{len(interm_models[i])}")
-        fsuffix = f"{label}_{i+1}_cat{interm_fnames[i]}"
+        fsuffix = f"{flabel}_{i+1}_cat{interm_fnames[i]}"
         outfile = f"{simulator.checkfile}_{fsuffix}"
         if not os.path.isfile(outfile):
             calc.run_calculator(mode=mode, fix=fixed_atoms)

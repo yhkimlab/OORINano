@@ -45,22 +45,22 @@ def mol_free_energies(Temp=298.15, pH=0, p=0.035, sol=0):
     #print(f"G_H2O(l) {G_H2O_l:10.3f}, G_O2(g) {G_O2_g:10.3f}, G_H+ {G_H_ion:10.3f}, G_OH- {G_OH_ion:10.3f}")
     return G_H2O_l, G_O2_g, G_H_ion, G_OH_ion
 
-def calc_gibbs_HER(Sys, SysH, ZPE=None, TS=None, pH=0, Temp=298.15):
+def calc_gibbs_HER_pH(Sys, SysH, zpe=None, TS=None, pH=0, Temp=298.15):
     '''
     removed Sys list expression & novib
     '''
-    E_H2   =  -6.760;  ZPE_H2   = 0.270; TS_H2   = 0.410 
+    E_H2   =  -6.760;  zpe_H2   = 0.270; TS_H2   = 0.410 
     
     
     #n_component = len(Sys)
 
-    if ZPE is None or TS is None:
-        #ZPE = []
+    if zpe is None or TS is None:
+        #zpe = []
         #for i in range(n_component):
-        ZPE = 0.04 + 0.5*ZPE_H2  # Cu111 + H (Norskov) J. Electro. Soc. 152(3), J23 (2005)
-        #    ZPE.append(ZPE_default)
+        zpe = 0.04 + 0.5*zpe_H2  # Cu111 + H (Norskov) J. Electro. Soc. 152(3), J23 (2005)
+        #    zpe.append(zpe_default)
     else:
-        ZPE = ZPE
+        zpe = zpe
 
     if TS is None:
         #TS = []
@@ -70,14 +70,14 @@ def calc_gibbs_HER(Sys, SysH, ZPE=None, TS=None, pH=0, Temp=298.15):
     else:
         TS = TS
     '''
-    if len(SysH) + len(ZPE) + len(TS) - 3*n_component == 0:
+    if len(SysH) + len(zpe) + len(TS) - 3*n_component == 0:
         pass
     else:
         print("The input components do not match")
         print("Check the input list")
         print("E_System:", len(Sys))
         print("E_System+H:", len(SysH))
-        print("E_ZPE:", len(ZPE))
+        print("E_zpe:", len(zpe))
         print("E_TS:", len(TS))
    
     Gibbs_H = []
@@ -86,14 +86,14 @@ def calc_gibbs_HER(Sys, SysH, ZPE=None, TS=None, pH=0, Temp=298.15):
     '''
     
     delta_E    = SysH - (Sys + 0.5*E_H2)
-    delta_ZPE  = ZPE - 0.5 * ZPE_H2
+    delta_zpe  = zpe - 0.5 * zpe_H2
     delta_TS   = TS  - 0.5 * TS_H2
-    delta_G    = delta_E + delta_ZPE + delta_TS
+    delta_G    = delta_E + delta_zpe + delta_TS
     #Gibbs_H.append(delta_G)
 
     return delta_G #Gibbs_H
 
-def calc_gibbs_ORR_4e_pH(totE, ZPE=None, TS=None, Temp=298.15, pH=0, p=0.035, sol=0):
+def calc_gibbs_ORR_4e_pH(totE, zpe=None, TS=None, Temp=298.15, pH=0, p=0.035, sol=0):
     '''
     Gibbs Energy calculation including pH
     '''
@@ -101,11 +101,11 @@ def calc_gibbs_ORR_4e_pH(totE, ZPE=None, TS=None, Temp=298.15, pH=0, p=0.035, so
     # TE (DFT total energy) must contain a series of energies
     # TE = [Sys, Sys+O2, Sys+OOH, Sys+O, Sys+OH]
                                                                                                                            
-    if ZPE is None:
-        ZPE = [0.000, 0.169, 0.511, 0.117, 0.430]
+    if zpe is None:
+        zpe = [0.000, 0.169, 0.511, 0.117, 0.430]
         # reference values from Nat.commun. 8, 15938 (2017) STable 7
     else:
-        ZPE = ZPE
+        zpe = zpe
     
     if TS is None:
         TS = [0.000, 0.097, 0.087, 0.020, 0.030]
@@ -113,41 +113,41 @@ def calc_gibbs_ORR_4e_pH(totE, ZPE=None, TS=None, Temp=298.15, pH=0, p=0.035, so
     else:
         TS = TS
 
-    if len(totE) + len(ZPE) + len(TS) - 3*n_component == 0:
+    if len(totE) + len(zpe) + len(TS) - 3*n_component == 0:
         pass
     else:
         print("The input components do not match")
         print("Check the input list")
         print("TE:", len(totE))
-        print("ZPE:", len(ZPE))
+        print("zpe:", len(zpe))
         print("TS:", len(TS))
     ### Gibbs for adsorbates 
     print("get Gibbs enegy for molecules")
     G_H2O_l, G_O2_g, G_H_ion, G_OH_ion = mol_free_energies(Temp=Temp, pH=pH, p=p, sol=sol)
     ### Gibbs through ORR
     print("calculate gibbs")
-    G_Sys     = totE[0] + ZPE[0] - TS[0] + 4 * G_H_ion + 0 * G_H2O_l + 1 * G_O2_g
-    G_SysO2   = totE[1] + ZPE[1] - TS[1] + 4 * G_H_ion + 0 * G_H2O_l
-    G_SysOOH  = totE[2] + ZPE[2] - TS[2] + 3 * G_H_ion + 0 * G_H2O_l
-    G_SysO    = totE[3] + ZPE[3] - TS[3] + 2 * G_H_ion + 1 * G_H2O_l
-    G_SysOH   = totE[4] + ZPE[4] - TS[4] + 1 * G_H_ion + 1 * G_H2O_l                         
-    G_Sys_end = totE[0] + ZPE[0] - TS[0] + 0 * G_H_ion + 2 * G_H2O_l 
+    G_Sys     = totE[0] + zpe[0] - TS[0] + 4 * G_H_ion + 0 * G_H2O_l + 1 * G_O2_g
+    G_SysO2   = totE[1] + zpe[1] - TS[1] + 4 * G_H_ion + 0 * G_H2O_l
+    G_SysOOH  = totE[2] + zpe[2] - TS[2] + 3 * G_H_ion + 0 * G_H2O_l
+    G_SysO    = totE[3] + zpe[3] - TS[3] + 2 * G_H_ion + 1 * G_H2O_l
+    G_SysOH   = totE[4] + zpe[4] - TS[4] + 1 * G_H_ion + 1 * G_H2O_l                         
+    G_Sys_end = totE[0] + zpe[0] - TS[0] + 0 * G_H_ion + 2 * G_H2O_l 
     Gibbs_E   = [G_Sys, G_SysO2, G_SysOOH, G_SysO, G_SysOH, G_Sys_end]
     
     return Gibbs_E
 
 
-def calc_gibbs_OER_4e_pH(totE, ZPE=None, TS=None, Temp=298.15, pH=0, p=0.035):
+def calc_gibbs_OER_4e_pH(totE, zpe=None, TS=None, Temp=298.15, pH=0, p=0.035):
     
     n_component = len(totE)  
     # TE (DFT total energy) must contain a series of energies
     # TE = [Sys, Sys+O2, Sys+OOH, Sys+O, Sys+OH]
                                                                                                                            
-    if ZPE is None:
-        ZPE = [0.000, 0.430, 0.117, 0.511]
+    if zpe is None:
+        zpe = [0.000, 0.430, 0.117, 0.511]
         # reference values from Nat.commun. 8, 15938 (2017) STable 7
     else:
-        ZPE = ZPE
+        zpe = zpe
     
     if TS is None:
         TS = [0.000, 0.030, 0.020, 0.087]
@@ -155,21 +155,21 @@ def calc_gibbs_OER_4e_pH(totE, ZPE=None, TS=None, Temp=298.15, pH=0, p=0.035):
     else:
         TS = TS
                                                                                                                             
-    if len(totE) + len(ZPE) + len(TS) - 3*n_component == 0:
+    if len(totE) + len(zpe) + len(TS) - 3*n_component == 0:
         pass
     else:
         print("The input components do not match")
         print("Check the input list")
-        print("TE:", len(TE))
-        print("ZPE:", len(ZPE))
+        print("TE:", len(totE))
+        print("zpe:", len(zpe))
         print("TS:", len(TS))
      
     G_H2O_l, G_O2_g, G_H_ion, G_OH_ion = mol_free_energies(Temp=Temp, pH=pH, p=p)
-    G_Sys     = totE[0] + ZPE[0] - TS[0] + 0 * G_H_ion + 2 * G_H2O_l 
-    G_SysOH   = totE[1] + ZPE[1] - TS[1] + 1 * G_H_ion + 1 * G_H2O_l
-    G_SysO    = totE[2] + ZPE[2] - TS[2] + 2 * G_H_ion + 1 * G_H2O_l
-    G_SysOOH  = totE[3] + ZPE[3] - TS[3] + 3 * G_H_ion + 0 * G_H2O_l
-    G_Sys_end = totE[0] + ZPE[0] - TS[0] + 4 * G_H_ion + 0 * G_H2O_l + 1 * G_O2_g 
+    G_Sys     = totE[0] + zpe[0] - TS[0] + 0 * G_H_ion + 2 * G_H2O_l 
+    G_SysOH   = totE[1] + zpe[1] - TS[1] + 1 * G_H_ion + 1 * G_H2O_l
+    G_SysO    = totE[2] + zpe[2] - TS[2] + 2 * G_H_ion + 1 * G_H2O_l
+    G_SysOOH  = totE[3] + zpe[3] - TS[3] + 3 * G_H_ion + 0 * G_H2O_l
+    G_Sys_end = totE[0] + zpe[0] - TS[0] + 4 * G_H_ion + 0 * G_H2O_l + 1 * G_O2_g 
     Gibbs_E   = [G_Sys, G_SysOH, G_SysO, G_SysOOH, G_Sys_end]
                                                                                                                             
     return Gibbs_E

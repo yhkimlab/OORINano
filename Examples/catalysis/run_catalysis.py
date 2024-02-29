@@ -1,6 +1,5 @@
 import argparse
-import re
-import sys
+import re, os, sys
 from oorinano import catalysis
 from oorinano.calculator.vasp import Vasp
 from oorinano.calculator.vasp import readAtomicStructure as read_geo
@@ -8,16 +7,73 @@ from oorinano import surflab
 from oorinano.utils.auxil import fname_ext, fname_root
 import json
 
-def run_catalysis(job, cat_rxn, pH, flabel, poscar, mode, Lvib, fix, nnode, nproc, Vasp_par ):
+'''
+input   Atomic structure should be given in a file
+        metals are series for generating metal slabs
+'''
+
+def get_inputfile(inf, prefix):
     '''
-    job         run, model, incar, plot
+    Get json input data file
+    '''
+    if inf:
+        if os.path.exists(inf) and re.search('json', inf):
+            infile = inf
+        else:
+            print("use json file for plot with -i ")
+            sys.exit(10)
+    else:
+        cwd   = os.getcwd()
+        files = os.listdir(cwd)
+        jsonf = [ f for f in files if 'json' in f ]
+        if len(jsonf) == 1 or len(jsonf) == 2:
+            if len(jsonf) == 2 and prefix:
+                fs = [ f for f in jsonf if prefix in f]
+                infile = fs[0]
+            else:
+                infile = jsonf[0]
+        else:
+            print(f"There are abnormal number of json files in {cwd}: {jsonf}")
+            sys.exit(11)
+        return infile
+
+def set_simulation_params(vasp_parallel, nproc):
+    '''
+    User defined parameters for INCAR, KPOINTS, and simulation such as nproc (number of process)
+    User defined parameters will overwrite the default values the default values
+    '''
+    vasp_params={}
+    ediff = 0.0001; ediffg=-0.05; encut=400
+    ispin = 2
+    kpoints=[4,4,1]
+    ## npar vs ncore exclusive
+    if re.match('c', vasp_parallel ):
+        ncore=int(vasp_parallel[1:])
+        vasp_params['ncore'] = ncore
+    else:
+        npar=int(vasp_parallel[1:])
+        vasp_params['npar']  = npar
+    
+    sim_params = dict(nproc=nproc)
+
+    ### orr or oer: vasp_params.update(dict(kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2))
+    ###     magmom = dict or list: ispin=2, magmom=['N',2]
+    #vasp_params['kband'] = "67 68 69 70"
+    ### her: vasp_params.update(dict(kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2))
+    ### add user defined parameters here
+    vasp_params.update(dict(kpoints=kpoints, ediff=ediff, ediffg=ediffg, encut=encut, ispin=ispin))
+    sim_params.update(vasp_params)
+    return sim_params
+
+
+def run_catalysis(cat_struct, surf_size, fix, job, cat_rxn, pH, flabel, nnode, nproc, Vasp_par ):
+    '''
+    cat_struct   file with any type for atomic structure | metal list
+    job         run, model (check POSCAR), incar (check INCAR)
     cat_rxn     ORR(default=orr), HER, OER
     flabel      filename of job to save OUTCAR, CONTCAR, XDATCAR (default='test')
-    Loverwrite  Run or not(default) in case output file exists (OUTCAR_flabel_N_catO2[_vib] etc
-
+    
     Run params:
-        mode    opt sp vib
-        Lvib    activate vibration calculation for adsorbate for TS (default=True)
         flabel  tag for filename to save OUTCAR, CONTCAR, XDATCAR, etc
         fix     None (default)
                 b1L for slab to fix bottom 1 layer of slab
@@ -26,93 +82,74 @@ def run_catalysis(job, cat_rxn, pH, flabel, poscar, mode, Lvib, fix, nnode, npro
     VASP params for INCAR, KPOINTS & mpirun:
         nproc
         kpoints
-        poscar  Lvib
         INCAR:  mode Lvib Vasp_par keywords  npar, ispin, magmom, etc
             magmom will be list|dict such as ispin=2 & magmom=['N',2,...]|{'N':2,...(not checked)}
             mod change value in Vasp.wrtie_INCAR, Vasp.run_calculator
             ispin define here (below)
+    Other controllable parameters
+        runORR()    calc, sim_param, mode, fix, pivot, vib, flabel, pH, cat_rnx=(orr|oer)
+        runHER()    calc, sim_param, mode, fix, pivot, vib, flabel, pH, atoms_list=(many catalysts)
+                    pivot  int-atom index, list (len=3): coordinate
+                    oer     uses runORR
+
     '''
-    
-    ### 1. Make atoms
-    
-    if len(poscar) == 1:
-        if re.search('pos', poscar[0], re.I) or re.search('con', poscar[0], re.I):
-            ### read POSCAR
-            atoms = read_geo(poscar[0])
-        elif job == 'plot' and fname_ext(poscar[0]) == 'json':
-            ### -p POSCAR is for input data file for plot
-            fin = poscar[0]
-    ## generate surface
-    elif len(poscar) >= 3:
-        if len(poscar) == 3:
-            asize = int(poscar[2])
-            size=(asize,asize,asize)
-        elif len(poscar) == 5:
-            size=(int(poscar[2]), int(poscar[3]), int(poscar[4]))
-        print(f"fccsurf: {poscar[0]} {poscar[1]}, {size}")
-        atoms = surflab.fccsurfaces(poscar[0], poscar[1], size, vac=15)
+    ###### 1. Make AtomsSystem instances
+    ### if cat_struct == str: it's structure file of any type
+    if type(cat_struct) == str:
+        inp = cat_struct
+        struct_type = 'file'
+        ### read POSCARs
+        if re.search('pos', inp , re.I) or re.search('con', inp, re.I):
+            atoms = read_geo(inp)
+        # if different format add more to differentiate the file type
+        else:
+            print(f"input file error with {inp}")
+        
+    ### if cat_struct == list: generate metal slab
+    else:
+        struct_type = 'gen'
+        liatoms=[]
+        for metal in cat_struct:
+            if len(surf_size) == 2:
+                asize = int(surf_size[1])
+                size=(asize,asize,asize)
+            elif len(surf_size) == 4:
+                size=(int(surf_size[1]), int(surf_size[2]), int(surf_size[3]))
+            print(f"fccsurf: {metal} {surf_size[0]}, {size}")
+            atoms = surflab.fccsurfaces(metal, surf_size[0], size, vac=15)     # bccsurfaces is also available 
+            liatoms.append(atoms)
+        atoms = liatoms[0]
         ### for slab structure, fix bottom layer
         if fix is None:
             fix = 'b1L'
-    else:
-        atoms = None
 
+    ###### 2. Set params: VASP params (INCAR, KPOINTS), Server params (nproc)
+    sim_params = set_simulation_params(Vasp_par, nproc)
 
-    ### 2. Set params 
-    ## npar vs ncore exclusive
-    if not job == 'plot':
-        if re.match('c', Vasp_par ):
-            ncore=int(Vasp_par [1:])
-        else:
-            npar=int(Vasp_par [1:])
+    ### Make Vasp instance and pass to runORR to make Vasp instance inside module 
+    calc    = Vasp(atoms)
+    calc.set_options(**sim_params)
 
-        if cat_rxn == 'orr' or cat_rxn == 'oer':
-            
-            ###     magmom = dict or list: ispin=2, magmom=['N',2]
-            incar_params = dict(kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2)
-            ### user incar test
-            #incar_params['kband'] = "67 68 69 70"
-            if 'npar' in locals():
-                incar_params['npar']  = npar
-            else:
-                incar_params['ncore'] = ncore
-            sim_params   = dict(nproc=nproc)
-            sim_params.update(incar_params)
-        elif cat_rxn == 'her':
-            sim_params  = dict(npar=npar, kpoints=[1,1,1], nproc=nproc, ediff=0.01, ediffg=-0.04, encut=400, ispin=1)
-        else:
-            print(f"Error:: {cat_rxn} should be orr|oer|her")
-            sys.exit(1)
-
-        ### 3. Make Vasp instance and pass to runORR to make Vasp instance inside module 
-        calc    = Vasp(atoms)
-        calc.set_options(**sim_params)
-
-    #calc.write_POSCAR(file_name='POSCAR.test')
-    #sys.exit(10)
-
-    ### 4. Run catalysis (VASP) | Show INCAR | Plot
+    ### 3. Run catalysis (VASP) | Show INCAR | Plot
+    ### to test set mode = 'sp', vib = False
+    mode    = 'sp'; vib     = True                                                                 # user defined parameters
     if job == 'run':
         if cat_rxn == 'orr' or cat_rxn ==  'oer':
-            #
-            catalysis.runORR(calc, sim_params, mode=mode, vib=Lvib, fix=fix, label=flabel, pH=pH, cat_rxn=cat_rxn)    #pivot = 24 (atom index)
+            catalysis.runORR(calc, sim_params, mode=mode, vib=vib, fix=fix, flabel=flabel, pH=pH, cat_rxn=cat_rxn)    #pivot = 24 (atom index)
         elif cat_rxn == 'her':
-            catalysis.runHER(calc, sim_params, mode=mode, vib=Lvib, fix=fix, label=flabel)
+            if struct_type == 'file':
+                catalysis.runHER(calc, sim_params, mode=mode, vib=vib, fix=fix, flabel=flabel, pH=pH)
+            ### Make loop for several catalysts: make sub directories
+            elif struct_type == 'gen':
+                if 'liatoms' in locals():
+                    catalysis.runHER(calc, sim_params, atoms_list=liatoms, mode=mode, fix=fix, flabel=cat_struct, pH=pH)
+                else:
+                    catalysis.runHER(calc, sim_params, mode=mode, fix=fix, flabel=flabel, pH=pH)
     elif job == 'model':
         calc.write_POSCAR()
     elif job == 'incar':
         for k, v in calc.get_options():
             print(f"{k:>10}\t{v}")
-    elif job == 'plot':
-        ### read json file for data: totE, zpe, TS
-        with open(fin) as f:
-            ene = json.load(f)
-        if re.search('orr', fin, re.I ):
-            gibbs_vib = catalysis.calc_gibbs_ORR_4e(totE=ene['total energy'], ZPE=ene['zpe'], TS=ene['TS'], pH=pH, Temp=298.15)
-            catalysis.plot_ORR_4e_wU(gibbs_vib, label=f'{fname_root(fin)}', pH=pH, Temp=298.15)
-    else:
-        print(f"Job error: select job in [run, model, incar, plot]")
-        sys.exit(1)
     return 0
 
 def main():
@@ -120,15 +157,18 @@ def main():
                         \n\tselect catalytic job, subjob [run, show incar, ...], some options for vib, overwrite\
                         \n\tsystem params partition, node, etc are applied to specific system")
     parser.add_argument('-j', '--job', default='run', choices=['run', 'model','incar', 'plot'], help='incar: show default params')
-    parser.add_argument('-c', '--cat_rxn', default='orr', choices=['orr', 'her', 'oer'], help='catalytic reactions')
-    parser.add_argument('-ph', '--pH', default=0, type=int, help='get pH from command line')
-    parser.add_argument('-l', '--flabel', default='test', help='label for dirname')
-    parser.add_argument('-p', '--poscar', nargs='*', default=['POSCAR'], help="use any poscar or generate surface: ['Pt', '111', (3,3,3)]=[metal, surface index, size] or json file for job==plot")
-    parser.add_argument('-t', '--test', action='store_true', help="change all the defaults")
-    group_cat  = parser.add_argument_group(title='catalysis running options')
-    group_cat.add_argument('-m', '--mode', default='opt', choices=['opt', 'sp'], help='Opt mode')
-    group_cat.add_argument('-nv', '--novib', action='store_false', help='run orr without vibration')
-    group_cat.add_argument('-fix', '--fix', help='fix bottom layer for slab')
+    parser.add_argument('-r', '--cat_rxn', default='orr', choices=['orr', 'her', 'oer'], help='catalytic reactions')
+    parser.add_argument('-l', '--flabel', default='test', help='label for filename')
+    struct = parser.add_mutually_exclusive_group()
+    struct.add_argument('-i', '--inf', help="any type of atomic structure gets only single file")
+    struct.add_argument('-g', '-m', '--gen', nargs='*', help='input metal series metal series')
+    gplot = parser.add_argument_group(title='user-defined paramters: pH & U')
+    gplot.add_argument('-ph', '--pH', default=0, type=int, help='get pH from command line')
+    gplot.add_argument('-U', '--cellU', nargs='*', type=float, help='series of cell potential')
+    gplot.add_argument('-c', '--colors', nargs='*', help = 'change color order')
+    group_gen  = parser.add_argument_group(title='metal slab generation')
+    group_gen.add_argument('-ss', '--surf_size', nargs='*', help=" ['111', 3, 3, 3]=[surface index & [sizex, sizey] size_z]")
+    group_gen.add_argument('-fix', '--fix', help='fix bottom layer for slab')
     group_sys   = parser.add_argument_group(title='System-dependent inputs')
     group_sys.add_argument('-jn', '--jname', default='test', help='submit job name')
     group_sys.add_argument('-x', '--partition', help='partition name')
@@ -160,20 +200,51 @@ def main():
                 \n\t\tjob finishes: jobname.log -> jobname.out\
                 \n\t2. Direct run inside job directory\
                 \n\t    ORR with POSCAR\
-                \n\t\t$python ../run_catalysis.py -j run -p Pt 111 3 -np {args.nproc} --npar $npar [--ncore $ncore]\
+                \n\t\t$python ../run_catalysis.py -j run -i POSCAR -np {args.nproc} --npar {args.npar} [--ncore $ncore]\
+                \n\t\t$python ../run_catalysis.py -j run -r her -m Pt Au Ag Pd Ni Cu -ss 111 3 -np {args.nproc} --npar {args.npar} [--ncore $ncore]\
                 \n\t3. Plot in the job directory\
-                \n\t\t$python ../run_catalysis.py -c orr[oer] -ph 14\
+                \n\t\t$python ../run_catalysis.py -r orr[oer] -ph 14\
             ")
-        sys.exit(0)
+        sys.exit(9)
     if args.ncore:
         nparallel='c'+str(args.ncore)
     else:
         nparallel='p'+str(args.npar)
-    if args.test:
-        args.mode = 'sp'
-        args.novib = False
 
-    run_catalysis(args.job, args.cat_rxn, args.pH, args.flabel, args.poscar, args.mode, args.novib, args.fix, args.nnode, args.nproc, nparallel)
+    ### if read json file, plot here
+    ### read json file for data (totE, zpe, TS) and replot with U and pH
+    if args.job == 'plot':
+        infile = get_inputfile(args.inf, args.cat_rxn)
+        print(f"{infile}")
+        with open(infile) as f:
+            ene = json.load(f)
+            if args.cat_rxn == 'orr' or args.cat_rxn == 'oer':
+                if args.cat_rxn == 'orr':
+                    gibbs_pH = catalysis.calc_gibbs_ORR_4e_pH(totE=ene['total energy'], zpe=ene['zpe'], TS=ene['TS'], pH=args.pH, Temp=298.15)
+                elif args.cat_rxn == 'oer':
+                    gibbs_pH = catalysis.calc_gibbs_OER_4e_pH(totE=ene['total energy'], zpe=ene['zpe'], TS=ene['TS'], pH=args.pH, Temp=298.15)
+                catalysis.plot_OXR_4e_wU(gibbs_pH, flabel='plot', pH=args.pH, Temp=298.15, U=args.cellU, cat_rxn=args.cat_rxn, colors=args.colors)
+            elif re.search('her', infile, re.I ):
+                print("not coded for HER")
+                sys.exit(3)
+                #Gibbs_vib   = calc_gibbs_HER(totE_sys, totE_sysH, zpe, TS, pH=pH, Temp=T)
+        return 0
+   
+    if args.inf:
+        if os.path.exists(args.inf):
+            atomic_struct = args.inf
+        else:
+            print(f"input file {args.inf} does not exist")
+            sys.exit(2)
+    elif args.gen:
+        ### type(args.metals) == list
+        atomic_struct = args.gen
+    else:
+        print(f"input atomic structures are given by -i POSCAR or -m metals for generation")
+        sys.exit(1)
+    ### input structure can be poscar (str) or generation metal (list)
+    run_catalysis(atomic_struct, args.surf_size, args.fix, args.job, args.cat_rxn, args.pH, args.flabel, args.nnode, args.nproc, nparallel)
+    return 0
 
 if __name__ == "__main__":
     main()

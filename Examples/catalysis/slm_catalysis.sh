@@ -44,10 +44,14 @@ catkind=${cat:-"orr"}     # select [ORR|HER]
 poscar=${pos:-"gen"}
 
 if [ $poscar == 'gen' ]; then
-    str="../$jobfile -j run -c $catkind -p Pt 111 3 -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar -t "
+    if [ $catkind == 'orr' ]; then
+        str="../$jobfile -j run -r orr -m Pt -ss 111 3 -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar "
+    else # HER
+        str="../$jobfile -j run -r $catkind -m Pt Au Ag Pd Ni Cu -ss 111 3 -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar "
+    fi
 else
     cp CONTCAR_Pt-SAC $wdir/POSCAR
-    str="../$jobfile -j run -c $catkind -p POSCAR -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
+    str="../$jobfile -j run -r $catkind -i POSCAR -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
 fi
 
 echo `date` >> $logfile
