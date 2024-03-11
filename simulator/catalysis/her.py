@@ -20,7 +20,7 @@ from ...utils.units import T         # T is imported here from thermo.py
 
 ### Workflow for the calculation of HER in catalysis
 
-def runHER(calc, sim_params, atoms_list=None, mode='opt', fix=None, pivot=None, vib=1, flabel='test', pH=0):
+def runHER(calc, sim_params, atoms_list=None, mode='opt', fix=None, act_site=None, vib=1, flabel='test', pH=0):
     '''
     loop might be here for calc list
     '''
@@ -34,14 +34,14 @@ def runHER(calc, sim_params, atoms_list=None, mode='opt', fix=None, pivot=None, 
             calc    = simulator(atoms)
             calc.set_options(**sim_params)
             print(f"calculate {flabel[i]}")
-            totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, mode, fix, pivot, vib, flabel[i], T)
+            totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, mode, fix, act_site, vib, flabel[i], T)
             gibbs_vib   = calc_gibbs_HER_pH(totE_sys, totE_sysH, zpe, TS, pH=pH, Temp=T)
             gibbsH.append(gibbs_vib)
             
         plot_HER(gibbsH, legend=flabel, pH=pH)
 
     else:
-        totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, mode, fix, pivot, vib, flabel, T)
+        totE_sys, totE_sysH, zpe, TS = run_series_HER(calc, sim_params, mode, fix, act_site, vib, flabel, T)
         print(f"total energy: {totE_sys} {totE_sysH}\nZPE: {zpe}\nEntropy: {TS}")
 
         
@@ -57,14 +57,14 @@ def runHER(calc, sim_params, atoms_list=None, mode='opt', fix=None, pivot=None, 
         #print(f"G_HER: {Gibbs_novib}\nG_HER_vib : {Gibbs_vib}")
     return 0
 
-def run_series_HER(calc, sim_params, mode, fix, pivot, vib, flabel, Temp):
+def run_series_HER(calc, sim_params, mode, fix, act_site, vib, flabel, Temp):
     '''
     mode        opt (default)
     fix         None (default)
                 b1L  fixed bottom 1 layer in case of slab
     vib
     flabel  
-    pivot      passed to 
+    act_site      passed to 
     '''
     simulator = calc.__class__
     simmodule = importlib.import_module(simulator.__module__)
@@ -93,13 +93,13 @@ def run_series_HER(calc, sim_params, mode, fix, pivot, vib, flabel, Temp):
     fsuffix     = f"{flabel}_catH"
     outfile     = f"{simulator.checkfile}_{fsuffix}"
    
-    if not pivot:
-        pivot = calc.atoms.select_pivot(site='center')
-    #print(f"pivot {pivot}")
+    if not act_site:
+        act_site = calc.atoms.select_pivot(site='center')
+    #print(f"act_site {act_site}")
 
     catalyst_opt = simmodule.readAtomicStructure(calc.optfile)
     her_model = Catmodels(catalyst_opt) 
-    atomsH = her_model.HER_intermediate_gen(pivot=pivot)
+    atomsH = her_model.HER_intermediate_gen(act_site=act_site)
     
     calc = simulator(atomsH)
     calc.set_options(**sim_params)

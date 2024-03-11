@@ -37,18 +37,18 @@ def oer_ordering(li):
 
 ### Workflow for the calculation of catalysis
 
-def runORR(calc, sim_param , mode='opt', fix=None, pivot=None, vib=1, flabel='test', pH=0, cat_rxn='orr'):
+def runORR(calc, sim_param , mode='opt', fix=None, act_site=None, vib=1, flabel='test', pH=0, cat_rxn='orr'):
     '''
     input
         T       not given from argument
                 read from ...utils.units
         cat_rxn     ORR/OER
-        pivot  atom index start from 0 to anchor adsorbate
+        act_site  atom index start from 0 to anchor adsorbate
     '''
-    #print(f"0 pivot {pivot}")
+    #print(f"0 act_site {act_site}")
     ### 1. DFT calculation for all the struct (DFT-opt & zpe)
     ### ORR and OER proceed DFT calculation in the same routine but returns different order
-    totE, zpe, TS = run_series_ORR(calc, sim_param, mode, fix, pivot, vib, flabel, T, cat_rxn=cat_rxn)
+    totE, zpe, TS = run_series_ORR(calc, sim_param, mode, fix, act_site, vib, flabel, T, cat_rxn=cat_rxn)
     print(f"{'total energy':^15} {list2_format(totE)}\n{'zpe':^15} {list2_format(zpe)}\n{'Entropy':^15} {list2_format(TS)}")
     with open(f"{cat_rxn}_{flabel}.json", 'w') as f:
         f.write(json.dumps({'total energy': totE, 'zpe': zpe, 'TS': TS}))
@@ -72,7 +72,7 @@ def runORR(calc, sim_param , mode='opt', fix=None, pivot=None, vib=1, flabel='te
     return totE, zpe, TS
 
 
-def run_series_ORR(calc, sim_params, mode, fix, pivot, vib, flabel, Temp, cat_rxn):
+def run_series_ORR(calc, sim_params, mode, fix, act_site, vib, flabel, Temp, cat_rxn):
     '''
     Make intermediates models and Do DFT calculation
     cat_rxn ORR and OER
@@ -81,7 +81,7 @@ def run_series_ORR(calc, sim_params, mode, fix, pivot, vib, flabel, Temp, cat_rx
         fix         None (default)
                     b1L  fixed bottom 1 layer in case of slab
         flabel  
-        pivot      passed to 
+        act_site      passed to 
 
     return: different order and length for ORR(5) and OER(4)
         ltotE, lzpe, lTS
@@ -113,17 +113,17 @@ def run_series_ORR(calc, sim_params, mode, fix, pivot, vib, flabel, Temp, cat_rx
     ### No vib cal for pure catalyst: vib for only adsorbate                                          
 
     ###### Make Intermediates geometry
-    ### pivot is fixed here before atoms are disturbed
-    #print(f"1: pivot {pivot}")
-    if not pivot:
-        pivot = calc.atoms.select_pivot(site='center')
-    print(f"pivot index is {pivot}")
+    ### act_site is fixed here before atoms are disturbed
+    #print(f"1: act_site {act_site}")
+    if not act_site:
+        act_site = calc.atoms.select_pivot(site='center')
+    print(f"act_site index is {act_site}")
     interm_fnames   = ['O2', 'OOH', 'O', 'OH']
     
     catalyst_opt    = simmodule.readAtomicStructure(calc.optfile)
     orr_model       = Catmodels(catalyst_opt)
 
-    interm_models   = orr_model.four_electron_intermediates_gen(mode='ORR', pivot=pivot)
+    interm_models   = orr_model.four_electron_intermediates_gen(mode='ORR', act_site=act_site)
         
     ### list for data
     ltotE       = [totE_cat]
