@@ -23,45 +23,45 @@ class Catmodels:
         maxindex = z_axis.index(max(z_axis))
         return maxindex
 
-    def HER_intermediate_gen(self, pivot=None, zdist=1.5):
+    def HER_intermediate_gen(self, act_site=None, zdist=1.5):
         """
         specify hydrogen atomic position on the catalyst
 
         Parameters
         ----------
-        pivot = list of position or int(atom index)
+        act_site = list of position or int(atom index)
         zdist   = 1.5
             assign the position [A] of adsorbed hydrogen [x, y, z]
-            Ex. pivot = [1.2, 1.35, 23.75]
-            if pivot is None, the atomic position is automatically assigned
+            Ex. act_site = [1.2, 1.35, 23.75]
+            if act_site is None, the atomic position is automatically assigned
             along to highest z-axis position (ontop site) with specific distance (dist=1.5)
         """
         atoms = self.atoms
         vHdist     = Vector(  0.,      0.,     zdist)
-        if pivot is None: # do not obtain pivot after geometry is disturbed
+        if act_site is None: # do not obtain act_site after geometry is disturbed
            top_index = self.get_zmax_index()
            pivot_position = atoms[top_index][0], atoms[top_index][1], atoms[top_index][2]
         else:
-           if type(pivot) is int:
-                pivot_position = atoms[pivot-1].get_position()
+           if type(act_site) is int:
+                pivot_position = atoms[act_site-1].get_position()
            else:
-                pivot_position = (pivot[0], pivot[1], pivot[2])
+                pivot_position = (act_site[0], act_site[1], act_site[2])
 
         vpivot = Vector(pivot_position)
         atomsH = atoms + Atom('H', vpivot + vHdist)
         return atomsH
 
-    def four_electron_intermediates_gen(self, pivot=None, zdist=1.5, mode='ORR'):
+    def four_electron_intermediates_gen(self, act_site=None, zdist=1.5, mode='ORR'):
         """
         specify initial atomic position on the catalyst
 
         Parameters
         ----------
-        pivot = int (pivot id), list
+        act_site = int (act_site id), list
             same as HER_intermediate_gen
             assign the position [A] of adsorbed hydrogen [x, y, z]
-            Ex. pivot = [1.2, 1.35, 23.75]
-            if pivot is None, the atomic position is automatically assigned
+            Ex. act_site = [1.2, 1.35, 23.75]
+            if act_site is None, the atomic position is automatically assigned
             along to highest z-axis position (ontop site) with specific distance (dist=1.5)
         dist   = 1.5
         vdist   vector distance
@@ -69,6 +69,20 @@ class Catmodels:
         
         return 4 atoms images
         """
+
+        if act_site is None: # find center
+            top_index = self.get_zmax_index()
+            pivot_position = atoms[top_index][0], atoms[top_index][1], atoms[top_index][2]
+            
+        else:
+            if type(act_site) is int:
+                pivot_position = atoms[act_site-1].get_position()
+                print(f"pivot_position: {pivot_position}")
+            else:
+                pivot_position = (act_site[0], act_site[1], act_site[2])
+                zdist = 0.0
+        vpivot = Vector(pivot_position)
+
         atoms = self.atoms
         vO1dist     = Vector(  0.,      0.,     zdist)
         vO2dist     = Vector(-1.0,      0.4,    zdist + 0.6 )
@@ -76,17 +90,7 @@ class Catmodels:
         vHdist      = Vector(-1.350,    1.196,  zdist + 0.480) 
         vH2dist     = Vector(   0.,     0.,     zdist+0.971)   
         
-        if pivot is None: # find center
-            top_index = self.get_zmax_index()
-            pivot_position = atoms[top_index][0], atoms[top_index][1], atoms[top_index][2]
-            
-        else:
-            if type(pivot) is int:
-                pivot_position = atoms[pivot-1].get_position()
-                print(f"pivot_position: {pivot_position}")
-            else:
-                pivot_position = (pivot[0], pivot[1], pivot[2])
-        vpivot = Vector(pivot_position)
+        
         
         atomsO2  = atoms \
                    + Atom('O', vpivot+vO1dist) \

@@ -37,7 +37,7 @@ def polygon_under_graph(x, y):
 
 # New ----------------------------------------------------------
 
-def New_wf_projection(figType,zbox,mu,muG,region,eigfile):
+def new_wf_projection(figType,zbox,mu,muG,region,eigfile):
     global wfdata
     global verts, fcolor_list
     global Eig_list, Z_list, S_list, S_list_w, Occ_list, Occ_list_z, Eig_list_z
@@ -314,11 +314,11 @@ def draw_QFL(dir_Loc):
         if ER_i == 'left':
             print ('JLee&HYeo: Left')
             mu = muL
-            New_wf_projection(figType, zbox, mu,muG, ER_i, eigfile)
+            n(figType, zbox, mu,muG, ER_i, eigfile)
         else:
             print ('JLee&HYeo: Right')
             mu = muR
-            New_wf_projection(figType, zbox, mu,muG, ER_i, eigfile)
+            n(figType, zbox, mu,muG, ER_i, eigfile)
         os.chdir(cwd)
 
     eigf.close()
@@ -496,15 +496,15 @@ def draw_QFL(dir_Loc):
     R_min =  Z_values_R_norm.min()
 
 
-    OCC_value = np.array(Occ_list_z)  
+    occ_value = np.array(Occ_list_z)  
 
-    OCC_value_max = np.max(OCC_value)
-    OCC_value_min = np.min(OCC_value)
+    occ_value_max = np.max(occ_value)
+    occ_value_min = np.min(occ_value)
 
-    OCC_value_norm = (OCC_value-OCC_value_min)/(OCC_value_max-OCC_value_min)
+    occ_value_norm = (occ_value-occ_value_min)/(occ_value_max-occ_value_min)
 
-    OCC_values_L_norm = OCC_value_norm[:Left_Last_i+1].flatten()  # 임의의 z 값 생성
-    OCC_values_R_norm = OCC_value_norm[Left_Last_i+1:].flatten()  # 임의의 z 값 생성
+    occ_values_L_norm = occ_value_norm[:Left_Last_i+1].flatten()  # 임의의 z 값 생성
+    occ_values_R_norm = occ_value_norm[Left_Last_i+1:].flatten()  # 임의의 z 값 생성
 
 
     fig = plt.figure(figsize=(10, 10))
@@ -513,8 +513,8 @@ def draw_QFL(dir_Loc):
     #fig.patch.set_facecolor('black')  # Figure의 배경색 설정
     ax.set_facecolor('black')  # 원하는 색으로 변경하세요.
     # 색상 계산
-    colors_L = np.array([color_function(xi, yi, zi, oi, 'L') for xi, yi, zi, oi in zip(xp_L_norm, yp_L_norm, Z_values_L_norm, OCC_values_L_norm)])
-    colors_R = np.array([color_function(xi, yi, zi, oi, 'R') for xi, yi, zi, oi in zip(xp_R_norm, yp_R_norm, Z_values_R_norm, OCC_values_R_norm)])
+    colors_L = np.array([color_function(xi, yi, zi, oi, 'L') for xi, yi, zi, oi in zip(xp_L_norm, yp_L_norm, Z_values_L_norm, occ_values_L_norm)])
+    colors_R = np.array([color_function(xi, yi, zi, oi, 'R') for xi, yi, zi, oi in zip(xp_R_norm, yp_R_norm, Z_values_R_norm, occ_values_R_norm)])
 
     # Scatter plot with x_scale markers
     ax.scatter(xp_L_norm, yp_L_norm, color=colors_L, marker='s', s=3, edgecolors='none')  # 's'는 사각형, s는 마커 크기
