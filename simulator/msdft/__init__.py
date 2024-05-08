@@ -314,11 +314,11 @@ def draw_QFL(dir_Loc):
         if ER_i == 'left':
             print ('JLee&HYeo: Left')
             mu = muL
-            n(figType, zbox, mu,muG, ER_i, eigfile)
+            new_wf_projection(figType, zbox, mu,muG, ER_i, eigfile)
         else:
             print ('JLee&HYeo: Right')
             mu = muR
-            n(figType, zbox, mu,muG, ER_i, eigfile)
+            new_wf_projection(figType, zbox, mu,muG, ER_i, eigfile)
         os.chdir(cwd)
 
     eigf.close()
