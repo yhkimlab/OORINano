@@ -84,6 +84,13 @@ class Vasp(object):
             'NEDOS'     :       4001,       # number of Egrid between EMAX and EMIN
             'EMIN'      :        -25,       # Emin for DOS cal.
             'EMAX'      :         15,       # Emax for DOS cal.
+            # 5. Hubbard U correction
+            'LDAU'      :        'F',
+            'LDAUTYPE'  :          2,
+            'LDAUL'     :  '-1 -1 2',       # (C N Fe), -1: No, p(1), d(2), f(3)
+            'LDAUU'     : '0.0 0.0 2.8',    # U - J is the value
+            'LDAUJ'     : '0.0 0.0 1.0',    #
+            'LDAUPRINT' :           2
             }
         
 
@@ -539,8 +546,16 @@ def readAtomicStructure(file_name):
     line_cell1 = lines[2].split()
     line_cell2 = lines[3].split()
     line_cell3 = lines[4].split()
-    line_symb  = lines[5].split()
-    line_numb  =lines[6].split()
+    ### Whether symbol line exists or not
+    if any(i.isdigit() for i in lines[5]): # no symbol line
+        ### try to find symbol in line_title
+        line_symb  = lines[0].split() # if read POTCAR for ordering, this line will be error
+        line_numb  = lines[5].split()
+        ipivot = 6          # number of lines are different
+    else:
+        line_symb  = lines[5].split()
+        line_numb  = lines[6].split()
+        ipivot = 7
 
     # number of atoms
     n_system = 0
@@ -562,14 +577,14 @@ def readAtomicStructure(file_name):
     for v3 in line_cell3:
         cell3.append(line_cell_unit*float(v3))   
     cell = [cell1, cell2, cell3]
-
+    
     # Constraint
     line_atoms = ''
-
-    if lines[7].lower()[:9] == 'selective':
-        line_atoms = lines[8:]
+    ### whether selective line exists or not
+    if lines[ipivot].lower()[:9] == 'selective':
+        line_atoms = lines[ipivot+1:]
     else:
-        line_atoms = lines[7:]
+        line_atoms = lines[ipivot:]
 
     i = 0
     for line in line_atoms:

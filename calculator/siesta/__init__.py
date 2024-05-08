@@ -676,7 +676,7 @@ def print_dicts(var):
 ### write and read structure in fdf format
 def writeAtomicStructure(atoms, cellparameter=1.0, fname = "STRUCT.fdf"):
 
-    if atoms.get_cell() is not  None:
+    if atoms.get_cell().any():
         cell1 = atoms.get_cell()[0]
         cell2 = atoms.get_cell()[1]
         cell3 = atoms.get_cell()[2]

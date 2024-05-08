@@ -69,7 +69,8 @@ class Catmodels:
         
         return 4 atoms images
         """
-
+        atoms = self.atoms
+        
         if act_site is None: # find center
             top_index = self.get_zmax_index()
             pivot_position = atoms[top_index][0], atoms[top_index][1], atoms[top_index][2]
