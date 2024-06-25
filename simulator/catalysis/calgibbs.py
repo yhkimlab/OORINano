@@ -20,9 +20,9 @@ def mol_free_energies(Temp=298.15, pH=0, p=0.035, sol=0):
     '''
     Absolute Gibbs energy calculation for molecule and water
     '''
-    #global Etot_H2O, zpe_H2O, Etot_H2, zpe_H2, R, kB, p0
+    # N.B. by def, H2(g) and O2(g) are used for 4.92 eV
     
-    #if sol == 1:
+    #if sol == 1:       
     #    Etot_H2O -= 0.310
     #    Etot_H2 += 0.056
     G_H2O_g = Etot_H2O + zpe_H2O - Temp * S_H2O

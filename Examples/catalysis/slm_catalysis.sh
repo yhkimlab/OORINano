@@ -50,7 +50,8 @@ if [ $poscar == 'gen' ]; then
         str="../$jobfile -j run -r $catkind -m Pt Au Ag Pd Ni Cu -ss 111 3 -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar "
     fi
 else
-    cp CONTCAR_Pt-SAC $wdir/POSCAR
+    #cp CONTCAR_Pt-SAC $wdir/POSCAR
+    cp $pos $wdir/POSCAR
     str="../$jobfile -j run -r $catkind -i POSCAR -n $SLURM_JOB_NUM_NODES -np $SLURM_NTASKS --npar $npar"
 fi
 

@@ -1,9 +1,8 @@
 #### server name
 import os
 import subprocess
-import base64
 
-###### KHKIM's lab
+###### YHKIM's lab
 ### partition and number of process per node
 np_Xn = { 'X1': 8, 'X2': 12, 'X3': 20, 'X4':24, 'X5':32, 'X6':32 }
 
@@ -17,7 +16,7 @@ hostname = host_name.decode()
 if  'login' in hostname:
     host = 'kisti'
     home = "/home01/x2818a02"
-elif 'tgm' in hostname:
+else: # 'tgm' in hostname:
     host = 'cluster'
     home = "/home/joonho"
 
