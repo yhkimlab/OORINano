@@ -4,7 +4,6 @@ from oorinano import catalysis
 from oorinano.calculator.vasp import Vasp
 from oorinano.calculator.vasp import readAtomicStructure as read_geo
 from oorinano import surflab
-from oorinano.utils.auxil import fname_ext, fname_root
 from oorinano.utils import np_Xn, host
 import json
 
@@ -60,7 +59,7 @@ def set_simulation_params(vasp_parallel, nproc):
     if ldau:
         incar_params.update(dict(ldau=True, ldauuj=ldauuj))
     ### include solvent effect (water) or comment it out
-    lsol = False     # python syntax
+    lsol = True     # python syntax
     if lsol:
         incar_params.update(dict(lsol=True))
 
@@ -210,18 +209,19 @@ def main():
 
     args = parser.parse_args()
     print(f"host {host}")
-    if args.usage:
-        if not args.nproc:
-            if host == 'cluster':
-                print(f"np_Xn {np_Xn}")
-                if 'np_Xn' in globals():
-                    nproc = args.nnode * np_Xn[args.partition]
-                else:
-                    print("no args.nproc and no globals() for np_Xn")
+    if not args.nproc:
+        if host == 'cluster':
+            #print(f"np_Xn {np_Xn}")
+            if 'np_Xn' in globals():
+                nproc = args.nnode * np_Xn[args.partition]
             else:
-                nproc = args.nnode * 40
+                print("no args.nproc and no globals() for np_Xn")
         else:
-            nproc = args.nproc
+            nproc = args.nnode * 40
+    else:
+        nproc = args.nproc
+    if args.usage:
+        
         print(f"Usage::\
                 \n    These are examples for job submit in queue systems and direct run\
                 \n    Check 'readme.txt' to set VASP envirionment\
