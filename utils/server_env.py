@@ -12,7 +12,8 @@ np_Xn = { 'X1': 8, 'X2': 12, 'X3': 20, 'X4':24, 'X5':32, 'X6':32 }
 ###### KISTI
 host_name = subprocess.check_output('hostname', shell=True)
 hostname = host_name.decode()
-print(f"host {hostname}")
+#print(f"host {hostname}")
+
 if  'login' in hostname:
     host = 'kisti'
     home = "/home01/x2818a02"
