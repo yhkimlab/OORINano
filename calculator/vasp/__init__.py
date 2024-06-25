@@ -80,19 +80,13 @@ class Vasp(object):
             'ISPIN'     :          1,       # 1 = Spin-restricted, 2 = spin-unrestricted
             'MAGMOM'    :       None,       # can be in or use default
             # 4. Postprocess: DOS calculation
-            'LORBIT'    :         11,       # lm-decomposed DOSCAR
-            'NEDOS'     :       4001,       # number of Egrid between EMAX and EMIN
-            'EMIN'      :        -25,       # Emin for DOS cal.
-            'EMAX'      :         15,       # Emax for DOS cal.
-            # 5. Hubbard U correction
-            'LDAU'      :        'F',
-            'LDAUTYPE'  :          2,
-            'LDAUL'     :  '-1 -1 2',       # (C N Fe), -1: No, p(1), d(2), f(3)
-            'LDAUU'     : '0.0 0.0 2.8',    # U - J is the value
-            'LDAUJ'     : '0.0 0.0 1.0',    #
-            'LDAUPRINT' :           2
+            #  DOS kw comes with mode='dos' in write_INCAR
+            # 5. optional for Hubbard U correction & solvent
+            'LDAU'      :        False,     # valued as python syntax
+            'LSOL'      :        False,     # valued as python syntax
             }
-        
+        self.poscar_composition = None      # made in write_POSCAR and used in INCAR Ucorr
+        self.incar_addkw = 0                # INCAR KW added by user
 
     def get_options(self):
         """
@@ -145,6 +139,7 @@ class Vasp(object):
     ### might be redundant with vasp.write_poscar
     def write_POSCAR(self, file_name='POSCAR', coord_type='cartesian', fix=None):
         components = self.atoms.get_contents().items()
+        self.poscar_composition = components
         message  = ' '
         for i in components:
             message = message + str(i[0]) + '   '
@@ -268,7 +263,7 @@ class Vasp(object):
         all_params=[]               # contains already list params
         
         list_basic = [ 'SYSTEM', 'ISTART', 'ICHARG', 'ISIF', 'IBRION', 'NSW', 'PREC', 'ALGO', 'LWAVE', 'LCHARG']
-        incar.write("# VASP basic control parameters\n\n")
+        incar.write("### VASP basic control parameters\n\n")
         for key in list_basic:
             incar.write(f"{key:<12}=    {p[key]}\n")
         if p['NCORE'] :
@@ -280,7 +275,7 @@ class Vasp(object):
         
 
         list_converge = ['ENCUT', 'ISMEAR', 'SIGMA', 'NSIM', 'NELMIN', 'NELM', 'EDIFF', 'EDIFFG']
-        incar.write("\n# VASP convergence parameters \n\n")
+        incar.write("\n### VASP convergence parameters \n\n")
         for key in list_converge:
             incar.write(f"{key:<12}=    {p[key]}\n")
         incar.write(f"{p['XC']:<12}=    {p['XCAUTHOR']}\n\n")
@@ -288,12 +283,11 @@ class Vasp(object):
         all_params.extend(['XC', 'XCAUTHOR'])
 
         list_optional = ['POTIM', 'IVDW', 'LDIPOL', 'IDIPOL', 'LPLANE', 'ADDGRID', 'LREAL', 'ISYM', 'LASPH', 'LMAXMIX', 'ISPIN']
-        incar.write("# VASP optional parameters \n\n")
+        incar.write("### VASP optional parameters \n\n")
         for key in list_optional:
             incar.write(f"{key:<12}=    {p[key]}\n")
         all_params.extend(list_optional)
 
-        #print(f"p[ISPIN] = {p['ISPIN']} : {p['MAGMOM']} in {whereami()}")
         if p['ISPIN'] == 2:
             if p['MAGMOM']:
                 #print(f"True {p['MAGMOM']}"), do no pass p['MAGMOM'] if it is {} -> it became True
@@ -304,24 +298,76 @@ class Vasp(object):
             incar.write(f"{str_mag}\n")
         all_params.append('MAGMOM')
 
+        ###############################################################3 
+        ### Additional incar params: Ucorrection, solvent, DOS
+        if p['LDAU'] == True:
+            incar.write("\n### LDAU correction with TYPE2 only \n\n")
+            lst_Ucorr = ['LDAU', 'LDAUTYPE', 'LDAUL', 'LDAUU', 'LDAUJ', 'LDAUPRINT']
+
+            p['LDAU'] = '.TRUE.'
+            if not 'LDAUTYPE' in p.keys():
+                p['LDAUTYPE'] = 2
+
+            if not 'LDAUU' in p.keys():
+                if 'LDAUUJ' in p.keys():
+                    val_j = 1.0
+                    val_u = val_j + p['LDAUUJ']
+                    del p['LDAUUJ']
+
+            #else:   ### encode for different type
+            #    val_j = 0.0; value
+            if not 'LDAUL' in p.keys():
+                ldaul = '  '
+                ldauu = '  '
+                ldauj = '  '
+                for sym, natom in self.poscar_composition: # POSCAR was written before
+                    if hatomic_number[sym] in metals:
+                        ldaul += '    2' # find d-orbital
+                        ldauu += f'{val_u:5.1f}'
+                        ldauj += f'{val_j:5.1f}'
+                    else: 
+                        ldaul += '   -1'
+                        ldauu += '  0.0'
+                        ldauj += '  0.0'
+            p['LDAUL'] = ldaul
+            p['LDAUU'] = ldauu
+            p['LDAUJ'] = ldauj
+            p['LDAUPRINT'] = 2
+            for key in lst_Ucorr:
+                incar.write(f"{key:<12}=    {p[key]}\n")
+            self.incar_addkw += 1
+            all_params.extend(lst_Ucorr)
+        else:
+            p['LDAU'] = '.FALSE.'
+
+        ### Additional incar params: Solvent, DOS
+        if p['LSOL'] == True:
+            lst_solvent = ['LSOL', 'EB_K', 'SIGMA_K', 'NC_K']
+            p['LSOL'] = '.TRUE.'
+            if not 'EB_K' in p.keys():
+                pass
+            self.incar_addkw += 1
+        else:
+            p['LSOL'] = '.FALSE.' # in case solvent is not water, EB_K needs to be defined
+
         ### Additional incar params: DOS
-        list_dos = ['LORBIT', 'NEDOS', 'EMAX', 'EMIN']
-        if mode == 'dos':            
+        if mode == 'dos':
+            list_dos = ['LORBIT', 'NEDOS', 'EMAX', 'EMIN']
             incar.write("\n### DOSCAR calculation\n")
             for key in list_dos:
                 incar.write(f"{key:<12}=    {p[key]}\n")
-        all_params.extend(list_dos)
-        
-        ### treat not listed params <- user input params
-        ### if there are keys not listed in writing INCAR
+            all_params.extend(list_dos)
 
+        ### More user input params
         res = list (filter (lambda i: i not in all_params, p.keys()))
-        if len(res):
-            print(f"There are {len(res)} user-added params")
-            incar.write("\nUser-added params\n")
-            for key in res:
-                incar.write(f"{key:<12}=    {p[key]}\n")
-    
+        
+            
+        incar.write("\n### MORE user-added params\n")
+        for key in res:
+            incar.write(f"{key:<12}=    {p[key]}\n")
+            self.incar_addkw += 1
+        print(f"There are {self.incar_addkw} user-added params including Ucorr and sol")
+
         incar.close()
         
         return 0
@@ -375,6 +421,7 @@ class Vasp(object):
             p['POTIM']  = 0.015
             p['NSW']    = 1
         
+        #print(f"in VASP run_calculator mode {mode}")
         if mode == 'dos':
             p['IBRION'] = -1
             p['ISTART'] = 1
@@ -382,6 +429,11 @@ class Vasp(object):
             p['NSW']    = 0
             p['ALGO']   = "Normal"
             p['LCHARG'] = ".False."
+
+            p['LORBIT'] =  11       # lm-decomposed DOSCAR
+            p['NEDOS']  = 4001      # number of Egrid between EMAX and EMIN
+            p['EMIN']   = -25       # Emin for DOS cal.
+            p['EMAX']   =  15       # Emax for DOS cal.
 
         # run_simulation
         cmd = f'mpirun -np {nproc}  {executable} > stdout.txt'

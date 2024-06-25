@@ -406,6 +406,10 @@ class AtomsSystem(object):
         return species
 
     def get_contents(self):
+        '''
+        returns contents {symbol: number of symbol with default of 0}
+
+        '''
         contents = {}
         for atom in self._atoms:
             contents[atom.get_symbol()] = contents.get(atom.get_symbol(),0)+1

@@ -43,6 +43,11 @@ atomic_symbol = {
 104:'Had', 105:'Oad'
 }
 
+### metal atomic numbers to Hubbard Ucorrection for d-orbital
+metals = [ 3, 4, 11, 12, 13 ]
+metal2 = list(range(19,31))
+metals.extend(metal2)
+
 hatomic_number = {
 #Period 1   
  'H':1,                                                         'He':2,

@@ -5,11 +5,12 @@ from oorinano.calculator.vasp import Vasp
 from oorinano.calculator.vasp import readAtomicStructure as read_geo
 from oorinano import surflab
 from oorinano.utils.auxil import fname_ext, fname_root
+from oorinano.utils import np_Xn
 import json
 
 '''
 input   Atomic structure should be given in a file
-        metals are series for generating metal slabs
+        metals are series for generating several metal slabs
 '''
 
 def get_inputfile(inf, prefix):
@@ -41,19 +42,37 @@ def set_simulation_params(vasp_parallel, nproc):
     '''
     User defined parameters for INCAR, KPOINTS, and simulation such as nproc (number of process)
     User defined parameters will overwrite the default values the default values
+
+    ucorr   value: LDAUTYPE [2 for U-J] U-J 1.8  
+            LDAU=.TRUE.
+            LDAUL = atoms (POSCAR) list: -1 (No) 0 (s) ... 2 (d-orbit)
+
+    solvent LSOL=.TRUE.
+            EB_K = value    (default: 78.3 for water)
     '''
-    vasp_params={}
     ediff = 0.0001; ediffg=-0.05; encut=400
     ispin = 2
-    kpoints=[4,4,1]
+    incar_params=dict(ediff=ediff, ediffg=ediffg, encut=encut, ispin=ispin)
+    
+    ### include Ucorr or make it False
+    ldau = True     # python syntax
+    ldauuj = 1.8    # this is not INCAR kw
+    if ldau:
+        incar_params.update(dict(ldau=True, ldauuj=ldauuj))
+    ### include solvent effect (water) or comment it out
+    lsol = False     # python syntax
+    if lsol:
+        incar_params.update(dict(lsol=True))
+
     ## npar vs ncore exclusive
     if re.match('c', vasp_parallel ):
         ncore=int(vasp_parallel[1:])
-        vasp_params['ncore'] = ncore
+        incar_params['ncore'] = ncore
     else:
         npar=int(vasp_parallel[1:])
-        vasp_params['npar']  = npar
-    
+        incar_params['npar']  = npar
+ 
+    vasp_params=dict(kpoints=[4,4,1])
     sim_params = dict(nproc=nproc)
 
     ### orr or oer: vasp_params.update(dict(kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2))
@@ -61,23 +80,24 @@ def set_simulation_params(vasp_parallel, nproc):
     #vasp_params['kband'] = "67 68 69 70"
     ### her: vasp_params.update(dict(kpoints=[4,4,1], ediff=0.0001, ediffg=-0.05, encut=400, ispin=2))
     ### add user defined parameters here
-    vasp_params.update(dict(kpoints=kpoints, ediff=ediff, ediffg=ediffg, encut=encut, ispin=ispin))
+    vasp_params.update(incar_params)
     sim_params.update(vasp_params)
     return sim_params
 
 
-def run_catalysis(cat_struct, surf_size, fix, job, cat_rxn, pH, flabel, nnode, nproc, Vasp_par ):
+def run_catalysis(cat_struct, surf_size, fix, act_site, job, cat_rxn, pH, flabel, nproc, Vasp_par):
     '''
     cat_struct   file with any type for atomic structure | metal list
     job         run, model (check POSCAR), incar (check INCAR)
     cat_rxn     ORR(default=orr), HER, OER
     flabel      filename of job to save OUTCAR, CONTCAR, XDATCAR (default='test')
+    act_site    atom index which starts from 1
     
     Run params:
         flabel  tag for filename to save OUTCAR, CONTCAR, XDATCAR, etc
         fix     None (default)
                 b1L for slab to fix bottom 1 layer of slab
-        pivot   adsorbate anchored position: list (position) or (int) atom index
+        act_site   adsorbate anchored position: list (position) or (int) which atom index start from 1
                 default: 1. the highest z, 2. center of xy-plane of supercell
     VASP params for INCAR, KPOINTS & mpirun:
         nproc
@@ -86,10 +106,13 @@ def run_catalysis(cat_struct, surf_size, fix, job, cat_rxn, pH, flabel, nnode, n
             magmom will be list|dict such as ispin=2 & magmom=['N',2,...]|{'N':2,...(not checked)}
             mod change value in Vasp.wrtie_INCAR, Vasp.run_calculator
             ispin define here (below)
+        incar_arg   Ucorr, solvent
+                    Ucorr: value
+                    solvent: LSOL, EB_K=value (default: water=78.3) & SIGMA_K, NC_K 
     Other controllable parameters
         runORR()    calc, sim_param, mode, fix, pivot, vib, flabel, pH, cat_rnx=(orr|oer)
         runHER()    calc, sim_param, mode, fix, pivot, vib, flabel, pH, atoms_list=(many catalysts)
-                    pivot  int-atom index, list (len=3): coordinate
+                    act_site  int-atom index which starts from 1, list (len=3): coordinate
                     oer     uses runORR
 
     '''
@@ -123,7 +146,7 @@ def run_catalysis(cat_struct, surf_size, fix, job, cat_rxn, pH, flabel, nnode, n
         if fix is None:
             fix = 'b1L'
 
-    ###### 2. Set params: VASP params (INCAR, KPOINTS), Server params (nproc)
+    ###### 2. Set params: VASP params (INCAR, KPOINTS)
     sim_params = set_simulation_params(Vasp_par, nproc)
 
     ### Make Vasp instance and pass to runORR to make Vasp instance inside module 
@@ -132,10 +155,13 @@ def run_catalysis(cat_struct, surf_size, fix, job, cat_rxn, pH, flabel, nnode, n
 
     ### 3. Run catalysis (VASP) | Show INCAR | Plot
     ### to test set mode = 'sp', vib = False
-    mode    = 'sp'; vib     = True                                                                 # user defined parameters
+    mode    = 'opt'; vib     = True                                                                 # user defined parameters
+    
+    act_site = 19
+
     if job == 'run':
         if cat_rxn == 'orr' or cat_rxn ==  'oer':
-            catalysis.runORR(calc, sim_params, mode=mode, vib=vib, fix=fix, flabel=flabel, pH=pH, cat_rxn=cat_rxn)    #pivot = 24 (atom index)
+            catalysis.runORR(calc, sim_params, mode=mode, vib=vib, fix=fix, flabel=flabel, pH=pH, cat_rxn=cat_rxn, act_site=act_site)    #act_site = 24 (atom index)
         elif cat_rxn == 'her':
             if struct_type == 'file':
                 catalysis.runHER(calc, sim_params, mode=mode, vib=vib, fix=fix, flabel=flabel, pH=pH)
@@ -169,17 +195,27 @@ def main():
     group_gen  = parser.add_argument_group(title='metal slab generation')
     group_gen.add_argument('-ss', '--surf_size', nargs='*', help=" ['111', 3, 3, 3]=[surface index & [sizex, sizey] size_z]")
     group_gen.add_argument('-fix', '--fix', help='fix bottom layer for slab')
+    group_gen.add_argument('-as', '--active_site', type=int, help='atom index for active site which starts for 1')
+    #group_vasp  = parser.add_argument_group(title='VASP speciall job parameters: Ucorr, sol_water')
+    #group_vasp.add_argument('--incar', nargs='*', help='special kw for INCAR, Ucorr, value, solvent, value (default: 78.3 for water)')
     group_sys   = parser.add_argument_group(title='System-dependent inputs')
-    group_sys.add_argument('-jn', '--jname', default='test', help='submit job name')
+    group_sys.add_argument('-q', '--qname', default='test', help='queue submit job name')
     group_sys.add_argument('-x', '--partition', help='partition name')
     group_sys.add_argument('-n', '--nnode', default=1, type=int, help='number of nodes: if needed')
-    group_sys.add_argument('-np', '--nproc', type=int, default=24, help='number of process for mpirun')
+    group_sys.add_argument('-np', '--nproc', type=int, help='number of process for mpirun') # auto calculation from env_slurm
     parallel = group_sys.add_mutually_exclusive_group()
     parallel.add_argument('--npar', type=int, default=4, help='npar value in INCAR')
     parallel.add_argument('--ncore', type=int, help='ncore value in INCAR for KISTI')
     parser.add_argument('-u', '--usage', action='store_true', help='explains how to run.')
 
     args = parser.parse_args()
+    if not args.nproc:
+        if 'np_Xn' in globals():
+            nproc = args.nnode * np_Xn[args.partition]
+        else:
+            print("no args.nproc and no globals() for np_Xn")
+    else:
+        nproc = args.nproc
     if args.usage:
         print(f"Usage::\
                 \n    These are examples for job submit in queue systems and direct run\
@@ -187,12 +223,12 @@ def main():
                 \n    Run:\
                 \n\t1. Submit jobscript with jobname, (slurm: partition, nnode, nproc) with variables\
                 \n\t    slurm-cat::\
-                \n\t\t$sbatch -J {args.jname} -p {args.partition} -N {args.nnode} -n {args.nproc}  slm_catalysis.sh\
-                \n\t\t$sbatch -J {args.jname} -p {args.partition} -N {args.nnode} -n {args.nproc} --export=cat='{args.cat_rxn}',pos='gen' slm_catalysis.sh (default)\
-                \n\t\t$sbatch -J {args.jname} -p {args.partition} -N {args.nnode} -n {args.nproc} --export=cat='{args.cat_rxn}',pos='cp' slm_catalysis.sh\
+                \n\t\t$sbatch -J {args.qname} -p {args.partition} -N {args.nnode} -n {nproc}  slm_catalysis.sh\
+                \n\t\t$sbatch -J {args.qname} -p {args.partition} -N {args.nnode} -n {nproc} --export=cat='{args.cat_rxn}',pos='gen' slm_catalysis.sh (default)\
+                \n\t\t$sbatch -J {args.qname} -p {args.partition} -N {args.nnode} -n {nproc} --export=cat='{args.cat_rxn}',pos='{args.inf}' slm_catalysis.sh\
                 \n\t\t    - pos='cp' for copy existing poscar & other char for slab generation\
                 \n\t    pbs  ::\
-                \n\t\t$qsub -N {args.jname} pbs_vasp_kisti_skl.sh\
+                \n\t\t$qsub -N {args.qname} pbs_vasp_kisti_skl.sh\
                 \n\t    Output::\
                 \n\t\t/test     job directory is generated\
                 \n\t\trun_catalysis.py is run inside job script\
@@ -206,6 +242,7 @@ def main():
                 \n\t\t$python ../run_catalysis.py -r orr[oer] -ph 14\
             ")
         sys.exit(9)
+    ### nparallel passes only ncore or npar
     if args.ncore:
         nparallel='c'+str(args.ncore)
     else:
@@ -218,6 +255,7 @@ def main():
         print(f"{infile}")
         with open(infile) as f:
             ene = json.load(f)
+            print(f"total energy: {ene['total energy']}")
             if args.cat_rxn == 'orr' or args.cat_rxn == 'oer':
                 if args.cat_rxn == 'orr':
                     gibbs_pH = catalysis.calc_gibbs_ORR_4e_pH(totE=ene['total energy'], zpe=ene['zpe'], TS=ene['TS'], pH=args.pH, Temp=298.15)
@@ -243,7 +281,8 @@ def main():
         print(f"input atomic structures are given by -i POSCAR or -m metals for generation")
         sys.exit(1)
     ### input structure can be poscar (str) or generation metal (list)
-    run_catalysis(atomic_struct, args.surf_size, args.fix, args.job, args.cat_rxn, args.pH, args.flabel, args.nnode, args.nproc, nparallel)
+    #generate_models()
+    run_catalysis(atomic_struct, args.surf_size, args.fix, args.active_site, args.job, args.cat_rxn, args.pH, args.flabel, nproc, nparallel)
     return 0
 
 if __name__ == "__main__":
