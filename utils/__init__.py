@@ -1,6 +1,6 @@
 from .thermodata import *
 from .units import *
-from .env   import np_Xn
+from .server_env import np_Xn, host
 
 
 

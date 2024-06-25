@@ -1,21 +1,24 @@
 #### server name
 import os
 import subprocess
+import base64
 
 ###### KHKIM's lab
 ### partition and number of process per node
-nXn = { 1: 8, 2: 12, 3: 20, 4:24, 5:32, 6:32 }
+np_Xn = { 'X1': 8, 'X2': 12, 'X3': 20, 'X4':24, 'X5':32, 'X6':32 }
+
 #print(f'nproc is {nXn[4]} in {__name__}')
 
 ###### KISTI
-_HOSTname = subprocess.check_output('hostname', shell=True)
-if _HOSTname == 'login02':
+host_name = subprocess.check_output('hostname', shell=True)
+hostname = host_name.decode()
+print(f"host {hostname}")
+if  'login' in hostname:
     host = 'kisti'
-else:
-    host = _HOSTname
-
-if host == 'kisti':    
-    home = "/home01/x2462a02"
+    home = "/home01/x2818a02"
+elif 'tgm' in hostname:
+    host = 'cluster'
+    home = "/home/joonho"
 
 '''
 PPNs={'chi':1, 'login':4, 'iron':''}

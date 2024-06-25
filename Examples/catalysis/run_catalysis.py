@@ -5,7 +5,7 @@ from oorinano.calculator.vasp import Vasp
 from oorinano.calculator.vasp import readAtomicStructure as read_geo
 from oorinano import surflab
 from oorinano.utils.auxil import fname_ext, fname_root
-from oorinano.utils import np_Xn
+from oorinano.utils import np_Xn, host
 import json
 
 '''
@@ -157,7 +157,7 @@ def run_catalysis(cat_struct, surf_size, fix, act_site, job, cat_rxn, pH, flabel
     ### to test set mode = 'sp', vib = False
     mode    = 'opt'; vib     = True                                                                 # user defined parameters
     
-    act_site = 19
+    act_site = 40
 
     if job == 'run':
         if cat_rxn == 'orr' or cat_rxn ==  'oer':
@@ -200,7 +200,7 @@ def main():
     #group_vasp.add_argument('--incar', nargs='*', help='special kw for INCAR, Ucorr, value, solvent, value (default: 78.3 for water)')
     group_sys   = parser.add_argument_group(title='System-dependent inputs')
     group_sys.add_argument('-q', '--qname', default='test', help='queue submit job name')
-    group_sys.add_argument('-x', '--partition', help='partition name')
+    group_sys.add_argument('-x', '--partition', default='X3', help='partition name as string')
     group_sys.add_argument('-n', '--nnode', default=1, type=int, help='number of nodes: if needed')
     group_sys.add_argument('-np', '--nproc', type=int, help='number of process for mpirun') # auto calculation from env_slurm
     parallel = group_sys.add_mutually_exclusive_group()
@@ -209,14 +209,19 @@ def main():
     parser.add_argument('-u', '--usage', action='store_true', help='explains how to run.')
 
     args = parser.parse_args()
-    if not args.nproc:
-        if 'np_Xn' in globals():
-            nproc = args.nnode * np_Xn[args.partition]
-        else:
-            print("no args.nproc and no globals() for np_Xn")
-    else:
-        nproc = args.nproc
+    print(f"host {host}")
     if args.usage:
+        if not args.nproc:
+            if host == 'cluster':
+                print(f"np_Xn {np_Xn}")
+                if 'np_Xn' in globals():
+                    nproc = args.nnode * np_Xn[args.partition]
+                else:
+                    print("no args.nproc and no globals() for np_Xn")
+            else:
+                nproc = args.nnode * 40
+        else:
+            nproc = args.nproc
         print(f"Usage::\
                 \n    These are examples for job submit in queue systems and direct run\
                 \n    Check 'readme.txt' to set VASP envirionment\
@@ -229,6 +234,7 @@ def main():
                 \n\t\t    - pos='cp' for copy existing poscar & other char for slab generation\
                 \n\t    pbs  ::\
                 \n\t\t$qsub -N {args.qname} pbs_vasp_kisti_skl.sh\
+                \n\t\t$qsub -N {args.qname} -v cat='{args.cat_rxn}' -v pos='{args.inf}' pbs_vasp_kisti_skl.sh\
                 \n\t    Output::\
                 \n\t\t/test     job directory is generated\
                 \n\t\trun_catalysis.py is run inside job script\

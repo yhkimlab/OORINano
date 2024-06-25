@@ -7,8 +7,6 @@ setting variables:
     vasp_POTCAR_LDA     siesta_default_location
     vasp_POTCAR_PBE
 '''
-### partition
-np_Xn = { 'X1': 8, 'X2': 12, 'X3': 20, 'X4':24, 'X5':32, 'X6':32 }
 ###    HOME
 vasp_odir="/TGM/Apps/VASP/OLD_BIN/5.4.4/O2/NORMAL"
 vasp_ndir="/TGM/Apps/VASP/5.4.4.pl2"

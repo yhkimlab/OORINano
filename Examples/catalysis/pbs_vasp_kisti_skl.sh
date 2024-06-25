@@ -17,8 +17,8 @@ logfile=$log_dir/$jobname.log
 outfile=$log_dir/$jobname.out
 
 ### set env file here
-ncpackage=$HOME/NanoCore/oorinano/
-env_dir=$ncpackage/etc
+oorinano=$HOME/pywork/oorinano
+env_dir=$oorinano/utils
 rm $env_dir/env.py
 ln -s $env_dir/env_kisti.py env.py
 
@@ -36,13 +36,13 @@ fi
 
 jobfile="run_catalysis.py"
 catkind=${cat:-"orr"}     # select [ORR|HER]
-poscar=${pos:-"cp"}
+poscar=${pos:-"gen"}
 
-if [ $poscar == 'cp' ]; then
-    cp CONTCAR_Pt-SAC $wdir/POSCAR
-	str="../$jobfile -j run -c $catkind -p POSCAR -np $NPROC --ncore 10"
-else
+if [ $poscar == 'gen' ]; then
 	str="../$jobfile -j run -c $catkind -p Pt 111 3 -np $NPROC --ncore 10"
+else
+    cp $pos $wdir/POSCAR
+	str="../$jobfile -j run -c $catkind -p POSCAR -np $NPROC --ncore 10"
 fi
 
 cd $log_dir/$wdir
