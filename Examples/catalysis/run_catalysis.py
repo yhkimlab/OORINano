@@ -59,7 +59,7 @@ def set_simulation_params(vasp_parallel, nproc):
     if ldau:
         incar_params.update(dict(ldau=True, ldauuj=ldauuj))
     ### include solvent effect (water) or comment it out
-    lsol = True     # python syntax
+    lsol = False     # python syntax
     if lsol:
         incar_params.update(dict(lsol=True))
 
@@ -234,7 +234,7 @@ def main():
                 \n\t\t    - pos='cp' for copy existing poscar & other char for slab generation\
                 \n\t    pbs  ::\
                 \n\t\t$qsub -N {args.qname} pbs_vasp_kisti_skl.sh\
-                \n\t\t$qsub -N {args.qname} -v cat='{args.cat_rxn}' -v pos='{args.inf}' pbs_vasp_kisti_skl.sh\
+                \n\t\t$qsub -N {args.qname} -v cat='{args.cat_rxn}',pos='{args.inf}' pbs_vasp_kisti_skl.sh\
                 \n\t    Output::\
                 \n\t\t/test     job directory is generated\
                 \n\t\trun_catalysis.py is run inside job script\

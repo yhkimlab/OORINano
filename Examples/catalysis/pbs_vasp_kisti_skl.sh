@@ -10,28 +10,23 @@ if [ -z $PBS_JOBNAME ]; then
     exit 1
 fi
 
-log_dir=$PBS_O_WORKDIR
+workdir=$PBS_O_WORKDIR
 jobname=$PBS_JOBNAME
-wdir=$jobname
-logfile=$log_dir/$jobname.log
-outfile=$log_dir/$jobname.out
-
-### set env file here
-oorinano=$HOME/pywork/oorinano
-env_dir=$oorinano/utils
-rm $env_dir/env.py
-ln -s $env_dir/env_kisti.py env.py
+jobdir=$workdir/$jobname
+logfile=$workdir/$jobname.log
+outfile=$workdir/$jobname.out
 
 echo $jobname > $logfile
+echo $jobdir >> $logfile
 NPROC=`wc -l < $PBS_NODEFILE`
 echo "NPROC = $NPROC" >> $logfile
 echo start >> $logfile
 date >> $logfile
 
-if [ ! -f "$wdir" ]; then
-    mkdir $wdir
+if [ ! -f "$jobdir" ]; then
+    mkdir $jobdir
 else
-    echo "there exists $wdir"
+    echo "there exists $jobdir"
 fi
 
 jobfile="run_catalysis.py"
@@ -39,19 +34,17 @@ catkind=${cat:-"orr"}     # select [ORR|HER]
 poscar=${pos:-"gen"}
 
 if [ $poscar == 'gen' ]; then
-	str="../$jobfile -j run -c $catkind -p Pt 111 3 -np $NPROC --ncore 10"
+	str="../$jobfile -j run -r $catkind -m Pt 111 3 -np $NPROC --ncore 10"
 else
-    cp $pos $wdir/POSCAR
-	str="../$jobfile -j run -c $catkind -p POSCAR -np $NPROC --ncore 10"
+    cp $workdir/$pos $jobdir/POSCAR
+	str="../$jobfile -j run -r $catkind -i POSCAR -np $NPROC --ncore 10"
 fi
 
-cd $log_dir/$wdir
+cd $jobdir
 
 echo "python3  $str " >> $logfile
 python3 $str >> $logfile
 echo `date` >> $logfile
 echo "end" >> $logfile
 
-mv $logfile $jobfile
-
-
+mv $logfile $outfile

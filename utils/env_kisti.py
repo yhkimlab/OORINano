@@ -23,8 +23,11 @@ vasp_POTCAR_PW91 = vaspini + '2.POTPAW.PBE.54.RECOMMEND'        # connect to cor
 #
 
 # Siesta calculator location
-siesta_calculator = '[siesta-installed-location]/siesta-4.1-b3/Obj/siesta'
+siesta_dir = '/home01/x2818a02/sciwares'
+siesta_calculator = siesta_dir + '/Obj/siesta'
 
+### Default siesta location
+siesta_default_location='/home01/x2818a02/pywork/oorinano/calculator/siesta/siesta_default'
 # Pseudopentiential files location
 siesta_psf_location = ''
 
