@@ -45,7 +45,7 @@ atomic_symbol = {
 
 ### metal atomic numbers to Hubbard Ucorrection for d-orbital
 metals = [ 3, 4, 11, 12, 13 ]
-metal2 = list(range(19,31))
+metal2 = list(range(19,31)) # upto 30
 metals.extend(metal2)
 
 hatomic_number = {

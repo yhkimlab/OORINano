@@ -37,7 +37,7 @@ def oer_ordering(li):
 
 ### Workflow for the calculation of catalysis
 
-def runORR(calc, sim_param , mode='opt', fix=None, act_site=None, vib=1, flabel='test', pH=0, cat_rxn='orr'):
+def runORR(calc, sim_param , mode='opt', fix=None, act_site=None, vib=1, flabel='test', pH=0, cat_rxn='orr', interm=None):
     '''
     input
         T       not given from argument
@@ -48,7 +48,7 @@ def runORR(calc, sim_param , mode='opt', fix=None, act_site=None, vib=1, flabel=
     #print(f"0 act_site {act_site}")
     ### 1. DFT calculation for all the struct (DFT-opt & zpe)
     ### ORR and OER proceed DFT calculation in the same routine but returns different order
-    totE, zpe, TS = run_series_ORR(calc, sim_param, mode, fix, act_site, vib, flabel, T, cat_rxn=cat_rxn)
+    totE, zpe, TS = run_series_ORR(calc, sim_param, mode, fix, act_site, vib, flabel, T, cat_rxn, interm)
     print(f"{'total energy':^15} {list2_format(totE)}\n{'zpe':^15} {list2_format(zpe)}\n{'Entropy':^15} {list2_format(TS)}")
     with open(f"{cat_rxn}_{flabel}.json", 'w') as f:
         f.write(json.dumps({'total energy': totE, 'zpe': zpe, 'TS': TS}))
@@ -72,7 +72,7 @@ def runORR(calc, sim_param , mode='opt', fix=None, act_site=None, vib=1, flabel=
     return totE, zpe, TS
 
 
-def run_series_ORR(calc, sim_params, mode, fix, act_site, vib, flabel, Temp, cat_rxn):
+def run_series_ORR(calc, sim_params, mode, fix, act_site, vib, flabel, Temp, cat_rxn, interm):
     '''
     Make intermediates models and Do DFT calculation
     cat_rxn ORR and OER
@@ -86,12 +86,13 @@ def run_series_ORR(calc, sim_params, mode, fix, act_site, vib, flabel, Temp, cat
     return: different order and length for ORR(5) and OER(4)
         ltotE, lzpe, lTS
     '''
+    Lalgo_test = 0
     simulator = calc.__class__
     simmodule = importlib.import_module(simulator.__module__)
     #print(f"in run_series_ORR: {sim_params}")
     irc = 0
     natoms      = len(calc.atoms._atoms)
-
+    if Lalgo_test: print(f"irc {irc}")
     ### fixed start from 0
     ngroup = calc.atoms.make_groups()
     if fix:
@@ -108,8 +109,10 @@ def run_series_ORR(calc, sim_params, mode, fix, act_site, vib, flabel, Temp, cat
     if not os.path.isfile(outfile):
         calc.run_calculator(mode=mode, fix=fixed_atoms)
         calc.save_files(fsuffix)
+        
     totE_cat    = calc.get_total_energy(output_name=outfile)
-
+    ###  For reuse in selective calculation
+    calc.fcatopt = f"CONTCAR_{fsuffix}"
     ### No vib cal for pure catalyst: vib for only adsorbate                                          
 
     ###### Make Intermediates geometry
@@ -117,38 +120,47 @@ def run_series_ORR(calc, sim_params, mode, fix, act_site, vib, flabel, Temp, cat
     #print(f"1: act_site {act_site}")
     if not act_site:
         act_site = calc.atoms.select_pivot(site='center')
-    print(f"act_site index is {act_site}")
-    interm_fnames   = ['O2', 'OOH', 'O', 'OH']
-    
-    catalyst_opt    = simmodule.readAtomicStructure(calc.optfile)
-    orr_model       = Catmodels(catalyst_opt)
-
-    interm_models   = orr_model.four_electron_intermediates_gen(mode='ORR', act_site=act_site)
+    if Lalgo_test: print(f"act_site index is {act_site}")
+    if not interm:
+        interm   = ['O2', 'OOH', 'O', 'OH']  # not just naming, it is input in Catmodels
+        if cat_rxn == 'oer':
+            interm   = [ 'OH', 'O', 'OOH']
+            interm   = [ 'OOH', 'O', 'OH']   # put the same order
+     
+    catalyst_opt    = simmodule.readAtomicStructure(calc.fcatopt)
+    orr_model       = Catmodels(catalyst_opt, interm=interm)   # interm passes to class ins
+    ### if interm, mode='orr' does not used
+    ### dic_interm is dict of key = ['O2', 'OOH', 'O', 'OH'], value [atomsO2, ...]
+    dic_interm  = orr_model.four_electron_intermediates_gen(mode='ORR', act_site=act_site)
         
     ### list for data
     ltotE       = [totE_cat]
     lzpe        = [float(0.000)]
     lTS         = [float(0.000)]
     
-    ### all the atoms of cat (natoms) are fixed starting index from 1
+    ### all the atoms of cat (natoms) are fixed? starting index from 1
     fix_vib      = []
     for j in range(natoms):
         idx = j+1
         fix_vib.append(idx)
     
     ### DFT calculation for each model 
-    for i in range(len(interm_models)):
+    
+    for model_key in interm:
         ### if OER, skip calc of catOO but keep index for output files
-        if i==0 and cat_rxn == 'oer':
-            continue
-        #print(f"Make a new class instance with {i+1}th intermediates")
-        calc = simulator(interm_models[i])
+        irc += 1
+        #if i==0 and cat_rxn == 'oer':
+        #    continue
+        
+        if Lalgo_test: print(f"irc {irc} with interm frame {model_key}")
+        calc = simulator(dic_interm[model_key])
         calc.set_options(**sim_params)
 
         ### skip if there is calc.checkfile
-        print(f"{len(interm_models[i])}")
-        fsuffix = f"{flabel}_{i+1}_cat{interm_fnames[i]}"
+        #print(f"size of {model_key}: {len(model_key)}")
+        fsuffix = f"{flabel}_{irc}_cat{model_key}"
         outfile = f"{simulator.checkfile}_{fsuffix}"
+        if Lalgo_test: print(f"outfile {outfile}")
         if not os.path.isfile(outfile):
             calc.run_calculator(mode=mode, fix=fixed_atoms)
             calc.save_files(fsuffix)
@@ -158,9 +170,13 @@ def run_series_ORR(calc, sim_params, mode, fix, act_site, vib, flabel, Temp, cat
         ### vib calculation for adsorbate
         #print("start vib calculation")
         if vib:
+            fsuffix_old = fsuffix
             fsuffix += '_vib'
             outfile  = f"{simulator.checkfile}_{fsuffix}"
-            optfile  = simmodule.readAtomicStructure(calc.optfile)
+            if os.path.isfile(calc.optfile):
+                optfile  = simmodule.readAtomicStructure(calc.optfile)  # in case continously
+            elif os.path.isfile(f"CONTCAR_{fsuffix_old}"):
+                optfile  = simmodule.readAtomicStructure(f"CONTCAR_{fsuffix_old}")
             calc = simulator(optfile)
             calc.set_options(**sim_params)
             if not os.path.isfile(outfile):

@@ -22,7 +22,7 @@ class Vasp(object):
         cpfiles     for copy after running simulator
         mvfiles     for mv after running simulator
         checkfile   to check whether checkfile exists for running simulator
-        optfile     opt file to be read for vib calculation
+        optfile     to calculate vib, the opt file is used
     Parameters
     ----------
     symbol  : AtomsSystem
@@ -35,7 +35,8 @@ class Vasp(object):
     cpfiles = ['POSCAR', 'CONTCAR', 'OSZICAR']
     mvfiles = ['OUTCAR', 'XDATCAR']
     checkfile = 'OUTCAR'
-    optfile = 'CONTCAR'
+    optfile = 'CONTCAR'                     
+    
 
     def __init__(self, atoms):
         self.__class__.nitem += 1
@@ -87,6 +88,7 @@ class Vasp(object):
             }
         self.poscar_composition = None      # made in write_POSCAR and used in INCAR Ucorr
         self.incar_addkw = 0                # INCAR KW added by user
+        self.fcatopt = None                 # for reuse in optional vasp cal
 
     def get_options(self):
         """
@@ -337,18 +339,18 @@ class Vasp(object):
                 incar.write(f"{key:<12}=    {p[key]}\n")
             self.incar_addkw += 1
             all_params.extend(lst_Ucorr)
-        else:
-            p['LDAU'] = '.FALSE.'
+        #else:
+        #    p['LDAU'] = '.FALSE.'
 
         ### Additional incar params: Solvent, DOS
-        if p['LSOL'] == True:
+        if p['LSOL'] == True: # in case solvent is not water, EB_K needs to be defined
             lst_solvent = ['LSOL', 'EB_K', 'SIGMA_K', 'NC_K']
             p['LSOL'] = '.TRUE.'
             if not 'EB_K' in p.keys():
                 pass
             self.incar_addkw += 1
-        else:
-            p['LSOL'] = '.FALSE.' # in case solvent is not water, EB_K needs to be defined
+        #else:
+        #    p['LSOL'] = '.FALSE.' 
 
         ### Additional incar params: DOS
         if mode == 'dos':
@@ -366,7 +368,7 @@ class Vasp(object):
         for key in res:
             incar.write(f"{key:<12}=    {p[key]}\n")
             self.incar_addkw += 1
-        print(f"There are {self.incar_addkw} user-added params including Ucorr and sol")
+        print(f"There are added user params {res} including DOS, LDAU, LSOL")
 
         incar.close()
         

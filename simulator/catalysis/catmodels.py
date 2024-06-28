@@ -9,10 +9,12 @@ only class Catmodels
 class Catmodels:
     '''
     atoms   AtomsSystems instance
+    interm  intermediate dictionary for key-value: 'O2': atomsO2
     '''
 
-    def __init__(self, atoms):
+    def __init__(self, atoms, interm=None):
         self.atoms = atoms
+        self.interm=interm
 
     def get_zmax_index(self):
         atoms = self.atoms
@@ -91,8 +93,6 @@ class Catmodels:
         vHdist      = Vector(-1.350,    1.196,  zdist + 0.480) 
         vH2dist     = Vector(   0.,     0.,     zdist+0.971)   
         
-        
-        
         atomsO2  = atoms \
                    + Atom('O', vpivot+vO1dist) \
                    + Atom('O', vpivot+vO2dist) 
@@ -107,12 +107,21 @@ class Catmodels:
         atomsOH  = atoms \
                    + Atom('O', vpivot+vO1dist) \
                    + Atom('H', vpivot+vH2dist)
-
-        if mode == 'ORR':
-            return atomsO2, atomsOOH, atomsO, atomsOH 
         
-        elif mode == 'OER':
-            return atomsOH, atomsO, atomsOOH
+        dic_interm = {'O2': atomsO2, 'OOH': atomsOOH, 'O': atomsO, 'OH': atomsOH}
+
+        ### returns dict
+        
+        #if self.interm:
+        return dic_interm
+        '''
+        else:
+            if mode == 'ORR':
+                return atomsO2, atomsOOH, atomsO, atomsOH 
+            
+            elif mode == 'OER':
+                return atomsOH, atomsO, atomsOOH
+        '''
         
     
 

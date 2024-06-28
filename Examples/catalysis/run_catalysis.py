@@ -156,7 +156,7 @@ def run_catalysis(cat_struct, surf_size, fix, act_site, job, cat_rxn, pH, flabel
     ### to test set mode = 'sp', vib = False
     mode    = 'opt'; vib     = True                                                                 # user defined parameters
     
-    act_site = 40
+    act_site = 40       # 19 for sac, 40 for apcc
 
     if job == 'run':
         if cat_rxn == 'orr' or cat_rxn ==  'oer':
@@ -220,8 +220,8 @@ def main():
             nproc = args.nnode * 40
     else:
         nproc = args.nproc
+    
     if args.usage:
-        
         print(f"Usage::\
                 \n    These are examples for job submit in queue systems and direct run\
                 \n    Check 'readme.txt' to set VASP envirionment\
@@ -231,7 +231,7 @@ def main():
                 \n\t\t$sbatch -J {args.qname} -p {args.partition} -N {args.nnode} -n {nproc}  slm_catalysis.sh\
                 \n\t\t$sbatch -J {args.qname} -p {args.partition} -N {args.nnode} -n {nproc} --export=cat='{args.cat_rxn}',pos='gen' slm_catalysis.sh (default)\
                 \n\t\t$sbatch -J {args.qname} -p {args.partition} -N {args.nnode} -n {nproc} --export=cat='{args.cat_rxn}',pos='{args.inf}' slm_catalysis.sh\
-                \n\t\t    - pos='cp' for copy existing poscar & other char for slab generation\
+                \n\t\t    - pos='POSCAR.xxx' for copy existing file to POSCAR & 'gen' for slab generation\
                 \n\t    pbs  ::\
                 \n\t\t$qsub -N {args.qname} pbs_vasp_kisti_skl.sh\
                 \n\t\t$qsub -N {args.qname} -v cat='{args.cat_rxn}',pos='{args.inf}' pbs_vasp_kisti_skl.sh\
