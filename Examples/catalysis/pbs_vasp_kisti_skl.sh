@@ -3,7 +3,7 @@
 #PBS -A vasp
 #PBS -q normal
 #PBS -l select=10:ncpus=40:mpiprocs=40:ompthreads=1
-#PBS -l walltime=24:00:00
+#PBS -l walltime=48:00:00
 
 if [ -z $PBS_JOBNAME ]; then
     echo "Usage:: qsub -N dirname $SB/pypbs/pbs_vasp.sh"

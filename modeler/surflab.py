@@ -16,6 +16,8 @@ import numpy as np
 
 
 def find_lattice_parameters(symb):
+    if symb.islower():
+        symb=symb.capitalize()
     info = reference_state[symb]
     if info == None:
         raise ValueError('Can`t guess lattice.')

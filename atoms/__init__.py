@@ -73,6 +73,8 @@ class Atom(object):
 
     def set_symbol(self, symbol):
         if isinstance(symbol, str):
+            if symbol.islower():
+                symbol = symbol.capitalize()
             if symbol not in atomic_symbol.values():
                 if symbol == 'X': self._symbol = 'X'
 #                elif symbol == 'H_HER': self._symbol = 'H'  # NMJ update

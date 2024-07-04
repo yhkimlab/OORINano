@@ -3,6 +3,7 @@ from ...atoms.atomic_data import *
 from ...rw    import cleansymb, get_unique_symbs, convert_xyz2abc
 from ...utils.units   import R
 from ...utils.fermidirac import fd_derivative_weight
+from ...utils.tmp       import read_file
 from glob import glob
 import os, math, sys
 import numpy as np
@@ -47,8 +48,8 @@ class Vasp(object):
             'NPAR'      :          1,       # integer, number of bands
             'NCORE'     :          0,       # integer, number of cores
             'IBRION'    :          2,       # 2=CG/Default, 5=Hessian 
-            'LWAVE'     :        'F',       # boolean, write WAVECAR
-            'LCHARG'    :        'F',       # boolean, write CHGCAR
+            'LWAVE'     :  '.FALSE.',       # boolean, write WAVECAR
+            'LCHARG'    :  '.FALSE.',       # boolean, write CHGCAR
             'NSW'       :          0,       # integer, optimization step
             'PREC'      : 'Accurate',       # precision (Low, Normal, Accurate)
             'ALGO'      :     'FAST',       # Algorithm, GGA/LDA=Normal, Fast
@@ -70,13 +71,13 @@ class Vasp(object):
             'POTIM'     :        0.3,       # displacement  
             'EDIFFG'    :      -0.05,       # float, stopping relaxation loop
             'IVDW'      :         12,       # 11: D3 zero damping 12: D3 BJ damping
-            'LDIPOL'    :        'F',       # dipole correction
+            'LDIPOL'    :  '.FALSE.',       # dipole correction
             'IDIPOL'    :          3,       # 1: x, 2: y, 3: z, 4: all
-            'LPLANE'    :        'T',       # data distribution over Nodes
-            'ADDGRID'   :        'T',       # add grid for charge augmentation
+            'LPLANE'    :   '.TRUE.',       # data distribution over Nodes
+            'ADDGRID'   :   '.TRUE.',       # add grid for charge augmentation
             'LREAL'     :     'Auto',       # for real space projection
             'ISYM'      :         -1,       # -1 = symmetry off completely
-            'LASPH'     :        'T',       # non-spherical contribtuion
+            'LASPH'     :   '.TRUE.',       # non-spherical contribtuion
             'LMAXMIX'   :          4,       # Density Mixer handles quantumNumber upto (4: d-elements, 6: f-elements)
             'ISPIN'     :          1,       # 1 = Spin-restricted, 2 = spin-unrestricted
             'MAGMOM'    :       None,       # can be in or use default
@@ -86,7 +87,6 @@ class Vasp(object):
             'LDAU'      :        False,     # valued as python syntax
             'LSOL'      :        False,     # valued as python syntax
             }
-        self.poscar_composition = None      # made in write_POSCAR and used in INCAR Ucorr
         self.incar_addkw = 0                # INCAR KW added by user
         self.fcatopt = None                 # for reuse in optional vasp cal
 
@@ -139,9 +139,8 @@ class Vasp(object):
         self.atoms = readAtomicStructure(contcar)
 
     ### might be redundant with vasp.write_poscar
-    def write_POSCAR(self, file_name='POSCAR', coord_type='cartesian', fix=None):
+    def write_POSCAR(self, foutf='POSCAR', coord_type='cartesian', fix=None):
         components = self.atoms.get_contents().items()
-        self.poscar_composition = components
         message  = ' '
         for i in components:
             message = message + str(i[0]) + '   '
@@ -150,7 +149,7 @@ class Vasp(object):
         cell3    = self.atoms.get_cell()[2]
 
         #------------- POSCAR --------------------
-        fout = open(file_name, 'w')
+        fout = open(foutf, 'w')
         fout.write("%s\n" % message)
         fout.write("1.000  # fixed lattice parameter unit\n")
         fout.write("%15.9f %15.9f %15.9f\n" % tuple(cell1))
@@ -252,16 +251,18 @@ class Vasp(object):
         cmd = cmd + ' > POTCAR'
         os.system('%s' % cmd)
 
-    def write_INCAR(self, mode=None):
+    def write_INCAR(self, mode=None, outf="INCAR"):
         #-------------INCAR---------------------
         '''
         INCAR is 1st assinged here
         More modified in run_calculator() using mode=[sp|opt|vib|dos]
         '''
         p = self._params
-        #print(f"in writing INCAR {p['NPAR']}")
-        
-        incar = open('INCAR', 'w')
+        print(f"in writing INCAR with mode {mode} {p['NPAR']}")
+        if 'w' in mode:
+            incar = sys.stdout
+        else:
+            incar = open(outf, 'w')
         all_params=[]               # contains already list params
         
         list_basic = [ 'SYSTEM', 'ISTART', 'ICHARG', 'ISIF', 'IBRION', 'NSW', 'PREC', 'ALGO', 'LWAVE', 'LCHARG']
@@ -319,10 +320,10 @@ class Vasp(object):
             #else:   ### encode for different type
             #    val_j = 0.0; value
             if not 'LDAUL' in p.keys():
-                ldaul = '  '
-                ldauu = '  '
-                ldauj = '  '
-                for sym, natom in self.poscar_composition: # POSCAR was written before
+                ldaul = ''
+                ldauu = ''
+                ldauj = ''
+                for sym, natom in self.atoms.get_contents().items():
                     if hatomic_number[sym] in metals:
                         ldaul += '    2' # find d-orbital
                         ldauu += f'{val_u:5.1f}'
@@ -353,7 +354,7 @@ class Vasp(object):
         #    p['LSOL'] = '.FALSE.' 
 
         ### Additional incar params: DOS
-        if mode == 'dos':
+        if 'dos' in mode:
             list_dos = ['LORBIT', 'NEDOS', 'EMAX', 'EMIN']
             incar.write("\n### DOSCAR calculation\n")
             for key in list_dos:
@@ -368,7 +369,7 @@ class Vasp(object):
         for key in res:
             incar.write(f"{key:<12}=    {p[key]}\n")
             self.incar_addkw += 1
-        print(f"There are added user params {res} including DOS, LDAU, LSOL")
+        #print(f"There are added user params {res} including DOS, LDAU, LSOL")
 
         incar.close()
         
@@ -400,31 +401,24 @@ class Vasp(object):
         else:
             nproc = 1
         del p['NPROC']
-
-        ### these are set in set_params() 
-        #p['NPAR']       = npar
-        #p['ENCUT']      = encut
-        #p['EDIFF']      = ediff
-        #p['EDIFFG']     = ediffg
-        #p['KPOINTS']    = kpoints
         
-        if mode == 'opt':
+        if 'opt' in mode:
             p['IBRION'] = 2
             p['POTIM']  = 0.300
             p['NSW']    = 500
         
-        if mode == 'sp':
+        elif 'sp' in mode:
             p['IBRION'] = 2
             p['POTIM']  = 0.300
             p['NSW']    =   0
 
-        if mode == 'vib':   # cal adsorbate for T*S
+        elif 'vib' in mode:   # cal adsorbate for T*S
             p['IBRION'] = 5
             p['POTIM']  = 0.015
             p['NSW']    = 1
         
         #print(f"in VASP run_calculator mode {mode}")
-        if mode == 'dos':
+        elif 'dos' in mode:
             p['IBRION'] = -1
             p['ISTART'] = 1
             p['ICHARG'] = 11
@@ -440,11 +434,12 @@ class Vasp(object):
         # run_simulation
         cmd = f'mpirun -np {nproc}  {executable} > stdout.txt'
 
-        self.write_POSCAR(fix=fix)
-        self.write_KPOINTS()
-        del p['KPOINTS']        # remove params not in INCAR
-        self.write_POTCAR() 
-        self.write_INCAR(mode=mode)      # remove p['SERVER']
+        self.write_POSCAR(fix=fix)  # 1st POSCAR
+        self.write_KPOINTS()        # 2nd KPOINTS
+        del p['KPOINTS']            # remove params not in INCAR
+        self.write_POTCAR()
+        self.write_INCAR(mode=mode) # in case mode='DOS', 'w'
+        
         
         os.system(cmd)
     
@@ -576,41 +571,29 @@ class Vasp(object):
             plt.savefig('VDOS.png', format='png', dpi=600, bbox_inches='tight')
         else:
             pass
-### useless: deprecate
-def read_file(fname):
-    lineinfo = []
-    wordinfo = []
-    with open(fname) as f:
-        for i, l in enumerate(f):
-            line = l
-            word = line.split()
-            lineinfo.append(line)
-            wordinfo.append(word)
-
-    return lineinfo, wordinfo
-
-### functions inside module vasp
+### functions inside module vasp, out of Vasp
+### Read structure out of Vasp
 def readAtomicStructure(file_name):
     f = open(file_name)
     lines = f.readlines()
 
     # system info.
     line_title = lines[0]
-    line_cell_unit = float(lines[1].split()[0])
-    line_cell1 = lines[2].split()
-    line_cell2 = lines[3].split()
-    line_cell3 = lines[4].split()
+    line_cell_unit = float(lines[1].strip().split()[0])
+    line_cell1 = lines[2].strip().split()
+    line_cell2 = lines[3].strip().split()
+    line_cell3 = lines[4].strip().split()
     ### Whether symbol line exists or not
     if any(i.isdigit() for i in lines[5]): # no symbol line
         ### try to find symbol in line_title
-        line_symb  = lines[0].split() # if read POTCAR for ordering, this line will be error
-        line_numb  = lines[5].split()
+        line_symb  = lines[0].strip().split() # if read POTCAR for ordering, this line will be error
+        line_numb  = lines[5].strip().split()
         ipivot = 6          # number of lines are different
     else:
-        line_symb  = lines[5].split()
-        line_numb  = lines[6].split()
+        line_symb  = lines[5].strip().split()
+        line_numb  = lines[6].strip().split()
         ipivot = 7
-
+    #print(f"line symbols: {line_symb}")
     # number of atoms
     n_system = 0
     for n in line_numb:
