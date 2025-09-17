@@ -11,7 +11,7 @@ export PYTHONPATH=$path_to_before_oorinano:$PYTHONPATH
 #set PATH to oorinano/bin or mv oorinano/bin/* to your bin directory
 export PATH=$path_to_oorinano/bin
 
-#modify aux/env.py for pathway to simulator
+#modify utility/env.py for pathway to simulator
 
 ###### Copy examples and refer to readme file in each example directory
 ### copy example directory to your_work_dir and run examples

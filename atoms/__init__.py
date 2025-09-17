@@ -410,7 +410,7 @@ class AtomsSystem(object):
     def get_contents(self):
         '''
         returns contents {symbol: number of symbol with default of 0}
-
+        the same atom kind sort or not?
         '''
         contents = {}
         for atom in self._atoms:

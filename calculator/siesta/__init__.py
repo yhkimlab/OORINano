@@ -178,7 +178,7 @@ class Siesta(object):
     #__slots__ = ['_params', '_atoms', '_inputs']
     basic_inputs = ['KPT.fdf', 'BASIS.fdf', 'RUN.fdf']
 
-    def __init__(self):
+    def __init__(self, atoms=None):
 
         self.set_clean()
         
@@ -186,7 +186,7 @@ class Siesta(object):
         self._req_files = {}
         # self._read_default_fdf()
         self.set_necessary_files()
-        self._atoms = None
+        self._atoms = atoms
 
     def set_clean(self):
         '''

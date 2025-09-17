@@ -380,9 +380,13 @@ class Vasp(object):
     def run_calculator(self, mode='sp', fix=None):
         """ 
         Run VASP with options
-        mode    opt for optimization
-                sp  
-                vib for calc of vibrational frequency
+        mode    opt[w] for optimization
+                sp[w]  
+                vib[w] for calc of vibrational frequency
+                dos[w] for dos calc as post-processing
+                band[w] is developing
+                md[w]
+                [w] prints INCAR 
         fix     atom index (starts from 1) to be fixed for vibration calc      
         """
         p = self._params
@@ -430,6 +434,21 @@ class Vasp(object):
             p['NEDOS']  = 4001      # number of Egrid between EMAX and EMIN
             p['EMIN']   = -25       # Emin for DOS cal.
             p['EMAX']   =  15       # Emax for DOS cal.
+        #elif 'band' in mode:
+        elif 'md' in mode:          # MD: NVT
+            p['PREC']   = 'Normal'
+            p['ISYM']   =  0
+            p['SIGMA']  =  0.1
+            p['ISIF']   =  2        # fixed cell V/shape, needs to be pre-opt
+            p['IBRION'] =  0        # for MD
+            p['NSW']    =  1000     # for 1 ps
+            p['POTIM']  =  1.0      # timestep 1 fs, default 0.5
+            p['EDIFFG'] = -0.01     # Default= EDIFF*10 / -0.02
+            p['TEBEG']  =  300
+            p['TEEND']  =  300
+            p['SMASS']  =  1.0      # NVT
+            p['MDALGO'] =  2        # NVT, Nose-Hoover, if not compiled with -Dtbdyn use 0
+            p['NBLOCK'] =  1
 
         # run_simulation
         cmd = f'mpirun -np {nproc}  {executable} > stdout.txt'
